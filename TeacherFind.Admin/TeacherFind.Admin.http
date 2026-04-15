@@ -1,0 +1,6 @@
+@TeacherFind.Admin_HostAddress = http://localhost:5283
+
+GET {{TeacherFind.Admin_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

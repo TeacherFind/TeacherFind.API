@@ -1,0 +1,45 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TeacherFind.Contracts\TeacherFind.Contracts.csproj" />
+    <ProjectReference Include="..\TeacherFind.Domain\TeacherFind.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Abstractions\Identity\" />
+    <Folder Include="Abstractions\Files\" />
+    <Folder Include="Abstractions\Common\" />
+    <Folder Include="Abstractions\Notifications\" />
+    <Folder Include="Abstractions\Services\" />
+    <Folder Include="Abstractions\Repositories\" />
+    <Folder Include="Features\Auth\" />
+    <Folder Include="Features\LessonRequests\" />
+    <Folder Include="Features\Listings\Commands\" />
+    <Folder Include="Features\Listings\Handlers\" />
+    <Folder Include="Features\Listings\Models\" />
+    <Folder Include="Features\Listings\Mappers\" />
+    <Folder Include="Features\Listings\Queries\" />
+    <Folder Include="Features\Messages\" />
+    <Folder Include="Features\Favorites\" />
+    <Folder Include="Features\Admin\" />
+    <Folder Include="Features\ReferenceData\" />
+    <Folder Include="Features\Notifications\" />
+    <Folder Include="Features\Reviews\" />
+    <Folder Include="Features\Parents\" />
+    <Folder Include="Features\Students\" />
+    <Folder Include="Features\Teachers\" />
+    <Folder Include="Features\Users\" />
+    <Folder Include="Mapping\" />
+    <Folder Include="Behaviors\" />
+    <Folder Include="Exceptions\" />
+    <Folder Include="DependencyInjection\" />
+    <Folder Include="Validators\" />
+  </ItemGroup>
+
+</Project>

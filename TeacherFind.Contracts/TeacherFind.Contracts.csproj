@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="Common\" />
+    <Folder Include="Auth\" />
+    <Folder Include="Listings\" />
+    <Folder Include="LessonRequests\" />
+    <Folder Include="Messages\" />
+    <Folder Include="Favorites\" />
+    <Folder Include="Admin\" />
+    <Folder Include="Enums\" />
+    <Folder Include="Notifications\" />
+    <Folder Include="Reviews\" />
+    <Folder Include="Parents\" />
+    <Folder Include="Students\" />
+    <Folder Include="Teachers\" />
+    <Folder Include="Users\" />
+  </ItemGroup>
+
+</Project>
