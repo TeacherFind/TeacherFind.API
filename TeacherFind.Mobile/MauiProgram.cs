@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using TeacherFind.Mobile.App;
 
 namespace TeacherFind.Mobile
 {

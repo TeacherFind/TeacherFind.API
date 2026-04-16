@@ -1,12 +1,9 @@
-﻿namespace TeacherFind.Mobile
-{
-    public partial class App : Application
-    {
-        public App()
-        {
-            InitializeComponent();
+namespace TeacherFind.Mobile.App;
 
-            MainPage = new AppShell();
-        }
-    }
+public partial class App : ResourceDictionary
+{
+	public App()
+	{
+		InitializeComponent();
+	}
 }

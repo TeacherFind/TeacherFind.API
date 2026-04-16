@@ -1,10 +1,9 @@
-﻿namespace TeacherFind.Mobile
+namespace TeacherFind.Mobile.Shell;
+
+public partial class AppShell : ResourceDictionary
 {
-    public partial class AppShell : Shell
-    {
-        public AppShell()
-        {
-            InitializeComponent();
-        }
-    }
+	public AppShell()
+	{
+		InitializeComponent();
+	}
 }
