@@ -7,11 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Common\" />
     <Folder Include="Auth\" />
-    <Folder Include="Listings\" />
     <Folder Include="LessonRequests\" />
-    <Folder Include="Messages\" />
     <Folder Include="Favorites\" />
     <Folder Include="Admin\" />
     <Folder Include="Enums\" />
@@ -21,6 +18,10 @@
     <Folder Include="Students\" />
     <Folder Include="Teachers\" />
     <Folder Include="Users\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TeacherFind.Domain\TeacherFind.Domain.csproj" />
   </ItemGroup>
 
 </Project>

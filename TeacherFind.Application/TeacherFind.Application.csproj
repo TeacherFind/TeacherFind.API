@@ -12,25 +12,18 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Abstractions\Identity\" />
     <Folder Include="Abstractions\Files\" />
     <Folder Include="Abstractions\Common\" />
     <Folder Include="Abstractions\Notifications\" />
-    <Folder Include="Abstractions\Services\" />
-    <Folder Include="Abstractions\Repositories\" />
-    <Folder Include="Features\Auth\" />
     <Folder Include="Features\LessonRequests\" />
     <Folder Include="Features\Listings\Commands\" />
     <Folder Include="Features\Listings\Handlers\" />
     <Folder Include="Features\Listings\Models\" />
     <Folder Include="Features\Listings\Mappers\" />
     <Folder Include="Features\Listings\Queries\" />
-    <Folder Include="Features\Messages\" />
-    <Folder Include="Features\Favorites\" />
     <Folder Include="Features\Admin\" />
     <Folder Include="Features\ReferenceData\" />
     <Folder Include="Features\Notifications\" />
-    <Folder Include="Features\Reviews\" />
     <Folder Include="Features\Parents\" />
     <Folder Include="Features\Students\" />
     <Folder Include="Features\Teachers\" />
