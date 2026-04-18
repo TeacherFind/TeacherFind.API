@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36930.0 d17.14
+VisualStudioVersion = 17.14.36930.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeacherFind.API", "TeacherFind.API\TeacherFind.API.csproj", "{9175E3D3-4477-40C4-BDEC-2B15643377F0}"
 EndProject
@@ -54,7 +54,6 @@ Global
 		{6801AFBC-A9EC-4B08-94C4-B90827FE4104}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6801AFBC-A9EC-4B08-94C4-B90827FE4104}.Release|Any CPU.Build.0 = Release|Any CPU
 		{5E8FF4C2-7D93-4D44-95AD-6FEDB33698F0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5E8FF4C2-7D93-4D44-95AD-6FEDB33698F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5E8FF4C2-7D93-4D44-95AD-6FEDB33698F0}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
 		{5E8FF4C2-7D93-4D44-95AD-6FEDB33698F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5E8FF4C2-7D93-4D44-95AD-6FEDB33698F0}.Release|Any CPU.Build.0 = Release|Any CPU
