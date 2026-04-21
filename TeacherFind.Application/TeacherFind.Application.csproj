@@ -23,7 +23,6 @@
     <Folder Include="Features\Listings\Queries\" />
     <Folder Include="Features\Admin\" />
     <Folder Include="Features\ReferenceData\" />
-    <Folder Include="Features\Notifications\" />
     <Folder Include="Features\Parents\" />
     <Folder Include="Features\Students\" />
     <Folder Include="Features\Teachers\" />

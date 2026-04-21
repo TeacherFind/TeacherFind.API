@@ -10,6 +10,7 @@ using TeacherFind.Application.Features.Auth;
 using TeacherFind.Application.Features.Chat;
 using TeacherFind.Application.Features.Favorites;
 using TeacherFind.Application.Features.Listings;
+using TeacherFind.Application.Features.Notifications;
 using TeacherFind.Application.Features.Reviews;
 using TeacherFind.Infrastructure.Identity;
 using TeacherFind.Infrastructure.Persistence;
@@ -78,6 +79,9 @@ builder.Services.AddScoped<IListingService, ListingService>();
 builder.Services.AddScoped<IFavoriteService, FavoriteService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IChatService, ChatService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+builder.Services.AddScoped<IVerificationRepository, VerificationRepository>();
 
 var app = builder.Build();
 

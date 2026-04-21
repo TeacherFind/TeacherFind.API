@@ -21,8 +21,24 @@ public class User : AuditableEntity
 
     public bool IsActive { get; set; } = true;
 
-    public string Role { get; set; } = "User";
+    public UserRole Role { get; set; } = UserRole.Student;
+
+    public bool IsEmailVerified { get; set; } = false;
+
+    public bool IsPhoneVerified { get; set; } = false;
+
+    public DateTime? LastLoginAt { get; set; }
+
+    public string? RefreshToken { get; set; }
+
+    public DateTime? RefreshTokenExpiryTime { get; set; }
 
     // Relations
     public TeacherProfile? TeacherProfile { get; set; }
+
+    public ICollection<Listing> Listings { get; set; } = new List<Listing>();
+
+    public ICollection<Message> SentMessages { get; set; } = new List<Message>();
+
+    public ICollection<Message> ReceivedMessages { get; set; } = new List<Message>();
 }
