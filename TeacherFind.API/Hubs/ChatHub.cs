@@ -10,10 +10,12 @@ namespace TeacherFind.API.Hubs;
 public class ChatHub : Hub
 {
     private readonly IChatService _chatService;
+    private readonly INotificationService _notificationService;
 
-    public ChatHub(IChatService chatService)
+    public ChatHub(IChatService chatService, INotificationService notificationService)
     {
         _chatService = chatService;
+        _notificationService = notificationService;
     }
 
     public override async Task OnConnectedAsync()
@@ -43,19 +45,36 @@ public class ChatHub : Hub
     public async Task SendMessage(SendMessageDto request)
     {
         var senderIdValue = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
         if (string.IsNullOrWhiteSpace(senderIdValue))
             throw new HubException("Kullanıcı doğrulanamadı.");
 
         var senderId = Guid.Parse(senderIdValue);
 
-        if (string.IsNullOrWhiteSpace(request.Content))
-            throw new HubException("Mesaj boş olamaz.");
-
+        //  mesajı kaydet
         var message = await _chatService.SendMessageAsync(senderId, request);
 
+        //  notification oluştur
+        await _notificationService.SendNotificationAsync(
+            message.ReceiverId,
+            "Yeni mesaj",
+            message.Content,
+            "Message"
+        );
+
+        //  karşı tarafa mesaj gönder
         await Clients.Group($"user-{message.ReceiverId}")
             .SendAsync("ReceiveMessage", message);
 
+        //  karşı tarafa notification gönder
+        await Clients.Group($"user-{message.ReceiverId}")
+            .SendAsync("ReceiveNotification", new
+            {
+                title = "Yeni mesaj",
+                message = message.Content
+            });
+
+        //  kendine de gönder
         await Clients.Group($"user-{message.SenderId}")
             .SendAsync("ReceiveMessage", message);
     }

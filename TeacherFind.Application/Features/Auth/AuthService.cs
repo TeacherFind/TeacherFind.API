@@ -10,15 +10,18 @@ public class AuthService : IAuthService
     private readonly IUserRepository _userRepository;
     private readonly IJwtProvider _jwtProvider;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly IVerificationRepository _verificationRepository;
 
     public AuthService(
         IUserRepository userRepository,
         IJwtProvider jwtProvider,
-        IPasswordHasher passwordHasher)
+        IPasswordHasher passwordHasher,
+        IVerificationRepository verificationRepository)
     {
         _userRepository = userRepository;
         _jwtProvider = jwtProvider;
         _passwordHasher = passwordHasher;
+        _verificationRepository = verificationRepository;
     }
 
     public async Task<User> RegisterAsync(string fullName, string email, string password)
@@ -34,11 +37,25 @@ public class AuthService : IAuthService
         {
             FullName = fullName,
             Email = email,
-            PasswordHash = hashedPassword // 🔥 HASHED
+            PasswordHash = hashedPassword
         };
 
         await _userRepository.AddAsync(user);
         await _userRepository.SaveChangesAsync();
+
+        // 🔥 Verification Code oluştur
+        var code = new VerificationCode
+        {
+            UserId = user.Id,
+            Code = new Random().Next(100000, 999999).ToString(),
+            Type = "Phone",
+            ExpireAt = DateTime.UtcNow.AddMinutes(5)
+        };
+
+        await _verificationRepository.AddAsync(code);
+        await _verificationRepository.SaveChangesAsync();
+
+        Console.WriteLine($"SMS CODE: {code.Code}");
 
         return user;
     }

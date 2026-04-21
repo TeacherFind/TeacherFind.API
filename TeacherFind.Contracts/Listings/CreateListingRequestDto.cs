@@ -20,6 +20,6 @@ public class CreateListingRequestDto
     public int LessonDuration { get; set; }
 
     public decimal Price { get; set; }
-
+    public int CityId { get; set; }
     public ServiceType ServiceType { get; set; }
 }

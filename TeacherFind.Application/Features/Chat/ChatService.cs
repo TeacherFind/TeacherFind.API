@@ -9,17 +9,34 @@ public class ChatService : IChatService
 {
     private readonly IConversationRepository _conversationRepository;
     private readonly IMessageRepository _messageRepository;
+    private readonly IUserRepository _userRepository;
 
     public ChatService(
         IConversationRepository conversationRepository,
-        IMessageRepository messageRepository)
+        IMessageRepository messageRepository,
+        IUserRepository userRepository)
     {
         _conversationRepository = conversationRepository;
         _messageRepository = messageRepository;
+        _userRepository = userRepository;
     }
 
     public async Task<MessageDto> SendMessageAsync(Guid senderId, SendMessageDto request)
     {
+        var sender = await _userRepository.GetByIdAsync(senderId);
+        if (sender == null)
+            throw new Exception("Gönderen kullanıcı bulunamadı");
+
+        var receiver = await _userRepository.GetByIdAsync(request.ReceiverId);
+        if (receiver == null)
+            throw new Exception("Alıcı kullanıcı bulunamadı");
+
+        if (senderId == request.ReceiverId)
+            throw new Exception("Kendine mesaj atamazsın");
+
+        if (string.IsNullOrWhiteSpace(request.Content))
+            throw new Exception("Mesaj boş olamaz");
+
         var conversation = await _conversationRepository
             .GetBetweenUsersAsync(senderId, request.ReceiverId);
 
