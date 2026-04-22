@@ -1,28 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using TeacherFind.Contracts.Common;
+﻿using TeacherFind.Contracts.Common;
 using TeacherFind.Contracts.Listings;
-using TeacherFind.Domain.Entities;
 
 namespace TeacherFind.Application.Abstractions.Services;
 
 public interface IListingService
 {
-    Task<List<ListingDto>> GetListingsAsync();
-
     Task<ListingDetailDto?> GetByIdAsync(Guid id);
 
-    Task CreateListingAsync(CreateListingRequestDto request);
+    Task CreateListingAsync(CreateListingRequestDto request, Guid userId);
 
-    Task<List<ListingDto>> FilterAsync(ListingFilterRequestDto filter);
+    Task<PagedResultDto<ListingDto>> FilterAsync(ListingFilterRequestDto request);
 
-    Task<bool> UpdateListingAsync(Guid id, UpdateListingRequestDto request);
-    Task<bool> DeleteListingAsync(Guid id);
+    Task<bool> UpdateListingAsync(Guid id, UpdateListingRequestDto request, Guid userId);
 
-    //  Yeni eklenen metod
-    Task<PagedResultDto<ListingDto>> GetPagedAsync(PagedRequestDto request);
-
+    Task<bool> DeleteListingAsync(Guid id, Guid userId);
 }
