@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using System.Text;
 using TeacherFind.API.Hubs;
 using TeacherFind.Application.Abstractions.Identity;
@@ -18,27 +19,31 @@ using TeacherFind.Infrastructure.Persistence.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
-//  DB
+// DB
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-//  JWT (TEK SEFER)
+// JWT Key kontrolü
+var jwtKey = builder.Configuration["Jwt:Key"]
+             ?? throw new InvalidOperationException("Jwt:Key bulunamadý.");
+
+var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
+
+// Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        var key = builder.Configuration["Jwt:Key"];
-
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = false,
             ValidateAudience = false,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(key!))
+            IssuerSigningKey = signingKey,
+            ClockSkew = TimeSpan.Zero
         };
 
-        //  SignalR JWT desteði
+        // SignalR JWT desteði
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
@@ -46,7 +51,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 var accessToken = context.Request.Query["access_token"];
                 var path = context.HttpContext.Request.Path;
 
-                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/chat"))
+                if (!string.IsNullOrWhiteSpace(accessToken) &&
+                    path.StartsWithSegments("/chat"))
                 {
                     context.Token = accessToken;
                 }
@@ -56,22 +62,81 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-//  SignalR (1 KEZ)
+// Authorization
+builder.Services.AddAuthorization();
+
+// CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Frontend", policy =>
+    {
+        policy
+            .WithOrigins(
+                "http://localhost:5173",
+                "https://localhost:5173",
+                "http://localhost:3000",
+                "https://localhost:3000"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
+
+// SignalR
 builder.Services.AddSignalR();
 
-//  Controllers
+// Controllers
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
-//  DI
+// Swagger + JWT
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "TeacherFind API",
+        Version = "v1",
+        Description = "TeacherFind backend API dokümantasyonu"
+    });
+
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "JWT token girin. Örnek: Bearer abc123..."
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
+
+// DI - Repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IListingRepository, ListingRepository>();
 builder.Services.AddScoped<IFavoriteRepository, FavoriteRepository>();
 builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
 builder.Services.AddScoped<IConversationRepository, ConversationRepository>();
 builder.Services.AddScoped<IMessageRepository, MessageRepository>();
+builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+builder.Services.AddScoped<IVerificationRepository, VerificationRepository>();
 
+// DI - Services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IJwtProvider, JwtProvider>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
@@ -80,12 +145,10 @@ builder.Services.AddScoped<IFavoriteService, FavoriteService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
-builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
-builder.Services.AddScoped<IVerificationRepository, VerificationRepository>();
 
 var app = builder.Build();
 
-//  Middleware
+// Development araçlarý
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -94,16 +157,18 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseCors("Frontend");
+
 app.UseAuthentication();
 app.UseAuthorization();
 
-//  SignalR endpoint
+// SignalR endpoint
 app.MapHub<ChatHub>("/chat");
 
-//  Controllers
+// Controllers
 app.MapControllers();
 
-//  DB Migration (TEK SEFER)
+// DB Migration
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -111,7 +176,7 @@ using (var scope = app.Services.CreateScope())
     try
     {
         db.Database.Migrate();
-        Console.WriteLine("Database migrated successfully");
+        Console.WriteLine("Database migrated successfully.");
     }
     catch (Exception ex)
     {
