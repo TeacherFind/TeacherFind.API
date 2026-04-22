@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using TeacherFind.Application.Abstractions.Services;
-using TeacherFind.Contracts.Common;
 using TeacherFind.Contracts.Listings;
 
 namespace TeacherFind.API.Controllers;
@@ -17,15 +17,15 @@ public class ListingsController : ControllerBase
         _listingService = listingService;
     }
 
-    //  TÜM İLANLAR
+    // TÜM İLANLAR + FİLTRE + PAGINATION
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll([FromQuery] ListingFilterRequestDto request)
     {
-        var listings = await _listingService.GetListingsAsync();
-        return Ok(listings);
+        var result = await _listingService.FilterAsync(request);
+        return Ok(result);
     }
 
-    //  TEK İLAN
+    // TEK İLAN
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id)
     {
@@ -37,7 +37,7 @@ public class ListingsController : ControllerBase
         return Ok(listing);
     }
 
-    //  İLAN OLUŞTUR
+    // İLAN OLUŞTUR
     [HttpPost]
     [Authorize]
     public async Task<IActionResult> Create([FromBody] CreateListingRequestDto request)
@@ -45,47 +45,55 @@ public class ListingsController : ControllerBase
         if (request == null)
             return BadRequest(new { message = "İstek boş olamaz" });
 
-        await _listingService.CreateListingAsync(request);
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                          ?? User.FindFirst("sub")?.Value;
+
+        if (string.IsNullOrWhiteSpace(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+            return Unauthorized(new { message = "Geçersiz kullanıcı bilgisi" });
+
+        await _listingService.CreateListingAsync(request, userId);
 
         return Ok(new { message = "İlan oluşturuldu" });
     }
 
-    //  FİLTRE
-    [HttpPost("filter")]
-    public async Task<IActionResult> Filter([FromBody] ListingFilterRequestDto filter)
-    {
-        var result = await _listingService.FilterAsync(filter);
-        return Ok(result);
-    }
-
     // İLAN GÜNCELLE
     [HttpPut("{id:guid}")]
+    [Authorize]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateListingRequestDto request)
     {
-        var result = await _listingService.UpdateListingAsync(id, request);
+        if (request == null)
+            return BadRequest(new { message = "İstek boş olamaz" });
+
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                          ?? User.FindFirst("sub")?.Value;
+
+        if (string.IsNullOrWhiteSpace(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+            return Unauthorized(new { message = "Geçersiz kullanıcı bilgisi" });
+
+        var result = await _listingService.UpdateListingAsync(id, request, userId);
 
         if (!result)
-            return NotFound(new { message = "İlan bulunamadı" });
+            return NotFound(new { message = "İlan bulunamadı veya işlem yetkiniz yok" });
 
         return Ok(new { message = "İlan güncellendi" });
     }
 
     // İLAN SİL
     [HttpDelete("{id:guid}")]
+    [Authorize]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var result = await _listingService.DeleteListingAsync(id);
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                          ?? User.FindFirst("sub")?.Value;
+
+        if (string.IsNullOrWhiteSpace(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+            return Unauthorized(new { message = "Geçersiz kullanıcı bilgisi" });
+
+        var result = await _listingService.DeleteListingAsync(id, userId);
 
         if (!result)
-            return NotFound(new { message = "İlan bulunamadı" });
+            return NotFound(new { message = "İlan bulunamadı veya işlem yetkiniz yok" });
 
         return Ok(new { message = "İlan silindi" });
-    }
-
-    [HttpGet("paged")]
-    public async Task<IActionResult> GetPaged([FromQuery] PagedRequestDto request)
-    {
-        var result = await _listingService.GetPagedAsync(request);
-        return Ok(result);
     }
 }

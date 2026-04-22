@@ -15,25 +15,6 @@ public class ListingService : IListingService
         _listingRepository = listingRepository;
     }
 
-    // 🔹 TÜM İLANLAR
-    public async Task<List<ListingDto>> GetListingsAsync()
-    {
-        var listings = await _listingRepository.GetAllAsync();
-
-        return listings.Select(x => new ListingDto
-        {
-            Id = x.Id,
-            TeacherProfileId = x.TeacherProfileId,
-            Title = x.Title,
-            Description = x.Description,
-            Price = x.Price,
-            IsActive = x.IsActive,
-            IsApproved = x.IsApproved,
-            ViewCount = x.ViewCount
-        }).ToList();
-    }
-
-    // 🔹 TEK İLAN + VIEW COUNT
     public async Task<ListingDetailDto?> GetByIdAsync(Guid id)
     {
         var listing = await _listingRepository.GetByIdWithDetailsAsync(id);
@@ -41,7 +22,6 @@ public class ListingService : IListingService
         if (listing == null)
             return null;
 
-        // 🔥 VIEW COUNT ARTIR
         listing.ViewCount += 1;
         await _listingRepository.SaveChangesAsync();
 
@@ -72,7 +52,8 @@ public class ListingService : IListingService
                     SertifikaAdi = c.Name,
                     VerenKurum = c.Organization,
                     Yil = c.Year
-                }).ToList(),
+                })
+                .ToList(),
 
             MusaitGunler = listing.TeacherProfile.Availabilities
                 .Select(a => new AvailabilityDto
@@ -80,7 +61,8 @@ public class ListingService : IListingService
                     Gun = a.Day,
                     Baslangic = a.Start,
                     Bitis = a.End
-                }).ToList(),
+                })
+                .ToList(),
 
             IlanDurumu = listing.Status,
             OlusturulmaTarihi = listing.CreatedAt,
@@ -88,12 +70,16 @@ public class ListingService : IListingService
         };
     }
 
-    // 🔹 İLAN OLUŞTUR
-    public async Task CreateListingAsync(CreateListingRequestDto request)
+    public async Task CreateListingAsync(CreateListingRequestDto request, Guid userId)
     {
+        var teacherProfile = await _listingRepository.GetTeacherProfileByUserIdAsync(userId);
+
+        if (teacherProfile == null)
+            throw new Exception("Öğretmen profili bulunamadı.");
+
         var listing = new TeacherListing
         {
-            TeacherProfileId = request.TeacherProfileId,
+            TeacherProfileId = teacherProfile.Id,
             Title = request.Title,
             Description = request.Description,
             Category = request.Category,
@@ -103,96 +89,59 @@ public class ListingService : IListingService
             ServiceType = request.ServiceType,
             Status = "Pending",
             ViewCount = 0,
-            IsActive = true
+            IsActive = true,
+            IsApproved = false
         };
 
         await _listingRepository.AddAsync(listing);
         await _listingRepository.SaveChangesAsync();
     }
 
-    // 🔹 FİLTRE
-    public async Task<List<ListingDto>> FilterAsync(ListingFilterRequestDto filter)
+    public async Task<PagedResultDto<ListingDto>> FilterAsync(ListingFilterRequestDto filter)
     {
         var listings = await _listingRepository.FilterAsync(filter);
+        var query = listings.AsQueryable();
 
-        return listings.Select(x => new ListingDto
+        if (!string.IsNullOrWhiteSpace(filter.SortBy))
         {
-            Id = x.Id,
-            TeacherProfileId = x.TeacherProfileId,
-            Title = x.Title,
-            Description = x.Description,
-            Price = x.Price,
-            IsActive = x.IsActive,
-            IsApproved = x.IsApproved,
-            ViewCount = x.ViewCount
-        }).ToList();
-    }
-
-    // 🔹 UPDATE
-    public async Task<bool> UpdateListingAsync(Guid id, UpdateListingRequestDto request)
-    {
-        var listing = await _listingRepository.GetByIdAsync(id);
-
-        if (listing == null)
-            return false;
-
-        listing.Title = request.Title;
-        listing.Description = request.Description;
-        listing.Price = request.Price;
-
-        await _listingRepository.SaveChangesAsync();
-
-        return true;
-    }
-
-    // 🔹 DELETE (SOFT DELETE)
-    public async Task<bool> DeleteListingAsync(Guid id)
-    {
-        var listing = await _listingRepository.GetByIdAsync(id);
-
-        if (listing == null)
-            return false;
-
-        listing.IsActive = false;
-
-        await _listingRepository.SaveChangesAsync();
-
-        return true;
-    }
-
-    public async Task<PagedResultDto<ListingDto>> GetPagedAsync(PagedRequestDto request)
-    {
-        var query = (await _listingRepository.GetAllAsync()).AsQueryable();
-
-        // 🔥 SORTING
-        if (!string.IsNullOrEmpty(request.SortBy))
-        {
-            if (request.SortBy.ToLower() == "price")
+            if (string.Equals(filter.SortBy, "price", StringComparison.OrdinalIgnoreCase))
             {
-                query = request.SortDirection == "desc"
+                query = string.Equals(filter.SortDirection, "desc", StringComparison.OrdinalIgnoreCase)
                     ? query.OrderByDescending(x => x.Price)
                     : query.OrderBy(x => x.Price);
             }
-            else if (request.SortBy.ToLower() == "viewcount")
+            else if (string.Equals(filter.SortBy, "viewcount", StringComparison.OrdinalIgnoreCase))
             {
-                query = request.SortDirection == "desc"
+                query = string.Equals(filter.SortDirection, "desc", StringComparison.OrdinalIgnoreCase)
                     ? query.OrderByDescending(x => x.ViewCount)
                     : query.OrderBy(x => x.ViewCount);
             }
+            else if (string.Equals(filter.SortBy, "createdat", StringComparison.OrdinalIgnoreCase))
+            {
+                query = string.Equals(filter.SortDirection, "desc", StringComparison.OrdinalIgnoreCase)
+                    ? query.OrderByDescending(x => x.CreatedAt)
+                    : query.OrderBy(x => x.CreatedAt);
+            }
+        }
+        else
+        {
+            query = query.OrderByDescending(x => x.CreatedAt);
         }
 
         var totalCount = query.Count();
 
-        // 🔥 PAGINATION
         var items = query
-            .Skip((request.Page - 1) * request.PageSize)
-            .Take(request.PageSize)
+            .Skip((filter.Page - 1) * filter.PageSize)
+            .Take(filter.PageSize)
             .Select(x => new ListingDto
             {
                 Id = x.Id,
+                TeacherProfileId = x.TeacherProfileId,
                 Title = x.Title,
                 Description = x.Description,
                 Price = x.Price,
+                IsActive = x.IsActive,
+                IsApproved = x.IsApproved,
                 ViewCount = x.ViewCount
             })
             .ToList();
@@ -201,8 +150,38 @@ public class ListingService : IListingService
         {
             Items = items,
             TotalCount = totalCount,
-            Page = request.Page,
-            PageSize = request.PageSize
+            Page = filter.Page,
+            PageSize = filter.PageSize
         };
+    }
+
+    public async Task<bool> UpdateListingAsync(Guid id, UpdateListingRequestDto request, Guid userId)
+    {
+        var listing = await _listingRepository.GetByIdForOwnerAsync(id, userId);
+
+        if (listing == null)
+            return false;
+
+        listing.Title = request.Title;
+        listing.Description = request.Description;
+        listing.Price = request.Price;
+        listing.UpdatedAt = DateTime.UtcNow;
+
+        await _listingRepository.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> DeleteListingAsync(Guid id, Guid userId)
+    {
+        var listing = await _listingRepository.GetByIdForOwnerAsync(id, userId);
+
+        if (listing == null)
+            return false;
+
+        listing.IsActive = false;
+        listing.UpdatedAt = DateTime.UtcNow;
+
+        await _listingRepository.SaveChangesAsync();
+        return true;
     }
 }

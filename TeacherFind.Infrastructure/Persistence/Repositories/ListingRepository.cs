@@ -1,9 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TeacherFind.Application.Abstractions.Repositories;
 using TeacherFind.Contracts.Listings;
 using TeacherFind.Domain.Entities;
@@ -19,6 +14,11 @@ public class ListingRepository : IListingRepository
         _context = context;
     }
 
+    public IQueryable<TeacherListing> Query()
+    {
+        return _context.TeacherListings.AsQueryable();
+    }
+
     public async Task<List<TeacherListing>> GetAllAsync()
     {
         return await _context.TeacherListings
@@ -32,16 +32,6 @@ public class ListingRepository : IListingRepository
             .FirstOrDefaultAsync(x => x.Id == id);
     }
 
-    public async Task AddAsync(TeacherListing listing)
-    {
-        await _context.TeacherListings.AddAsync(listing);
-    }
-
-    public async Task SaveChangesAsync()
-    {
-        await _context.SaveChangesAsync();
-    }
-
     public async Task<TeacherListing?> GetByIdWithDetailsAsync(Guid id)
     {
         return await _context.TeacherListings
@@ -52,18 +42,36 @@ public class ListingRepository : IListingRepository
             .FirstOrDefaultAsync(x => x.Id == id);
     }
 
+    public async Task<TeacherListing?> GetByIdForOwnerAsync(Guid id, Guid userId)
+    {
+        return await _context.TeacherListings
+            .Include(x => x.TeacherProfile)
+            .FirstOrDefaultAsync(x => x.Id == id && x.TeacherProfile.UserId == userId);
+    }
+
+    public async Task<TeacherProfile?> GetTeacherProfileByUserIdAsync(Guid userId)
+    {
+        return await _context.TeacherProfiles
+            .FirstOrDefaultAsync(x => x.UserId == userId);
+    }
+
+    public async Task AddAsync(TeacherListing listing)
+    {
+        await _context.TeacherListings.AddAsync(listing);
+    }
+
     public async Task<List<TeacherListing>> FilterAsync(ListingFilterRequestDto filter)
     {
         var query = _context.TeacherListings.AsQueryable();
 
-        if (!string.IsNullOrEmpty(filter.Search))
+        if (!string.IsNullOrWhiteSpace(filter.Search))
         {
             query = query.Where(x =>
                 x.Title.Contains(filter.Search) ||
                 x.Description.Contains(filter.Search));
         }
 
-        if (!string.IsNullOrEmpty(filter.Category))
+        if (!string.IsNullOrWhiteSpace(filter.Category))
         {
             query = query.Where(x => x.Category == filter.Category);
         }
@@ -89,5 +97,10 @@ public class ListingRepository : IListingRepository
         }
 
         return await query.ToListAsync();
+    }
+
+    public async Task SaveChangesAsync()
+    {
+        await _context.SaveChangesAsync();
     }
 }
