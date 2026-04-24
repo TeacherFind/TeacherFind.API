@@ -14,6 +14,12 @@ public class TeacherListing : AuditableEntity
     public Guid? CityId { get; set; }
     public City? City { get; set; }
 
+    public Guid? DistrictId { get; set; }
+    public District? District { get; set; }
+
+    public Guid? NeighborhoodId { get; set; }
+    public Neighborhood? Neighborhood { get; set; }
+
     public string Title { get; set; } = default!;
 
     public string Description { get; set; } = default!;
