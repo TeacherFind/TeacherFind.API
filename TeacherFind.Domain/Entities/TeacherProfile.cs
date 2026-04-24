@@ -9,13 +9,20 @@ public class TeacherProfile : AuditableEntity
 
     public string? Title { get; set; }
     public string? Bio { get; set; }
-
     public string? City { get; set; }
 
     public double Rating { get; set; }
     public int TotalReviews { get; set; }
 
-    public ICollection<TeacherCertificate> Certificates { get; set; } = new List<TeacherCertificate>();
+    public int? UniversityId { get; set; }
+    public University? University { get; set; }
 
+    public int? DepartmentId { get; set; }
+    public Department? DepartmentEntity { get; set; }
+
+    public string? EducationLevel { get; set; }
+    public bool? IsStudent { get; set; }
+
+    public ICollection<TeacherCertificate> Certificates { get; set; } = new List<TeacherCertificate>();
     public ICollection<TeacherAvailability> Availabilities { get; set; } = new List<TeacherAvailability>();
 }
