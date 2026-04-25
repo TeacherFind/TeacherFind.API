@@ -13,51 +13,244 @@ public class AppDbContext : DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<TeacherProfile> TeacherProfiles => Set<TeacherProfile>();
     public DbSet<TeacherListing> TeacherListings => Set<TeacherListing>();
-    public DbSet<Favorite> Favorites { get; set; }
-    public DbSet<Review> Reviews { get; set; }
-    public DbSet<Conversation> Conversations { get; set; }
-    public DbSet<Message> Messages { get; set; }
-    public DbSet<Notification> Notifications { get; set; }
-    public DbSet<VerificationCode> VerificationCodes { get; set; }
-    public DbSet<Subject> Subjects { get; set; }
-    public DbSet<City> Cities { get; set; }
+
+    public DbSet<Favorite> Favorites => Set<Favorite>();
+    public DbSet<Review> Reviews => Set<Review>();
+    public DbSet<Conversation> Conversations => Set<Conversation>();
+    public DbSet<Message> Messages => Set<Message>();
+    public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<VerificationCode> VerificationCodes => Set<VerificationCode>();
+
+    public DbSet<Subject> Subjects => Set<Subject>();
+    public DbSet<City> Cities => Set<City>();
+
+    public DbSet<University> Universities => Set<University>();
+    public DbSet<Department> Departments => Set<Department>();
+
+    public DbSet<District> Districts => Set<District>();
+    public DbSet<Neighborhood> Neighborhoods => Set<Neighborhood>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        //  Conversation ilişkisi
-        modelBuilder.Entity<Conversation>()
-            .HasMany(x => x.Messages)
-            .WithOne(x => x.Conversation)
-            .HasForeignKey(x => x.ConversationId)
-            .OnDelete(DeleteBehavior.Cascade);
+        ConfigureConversation(modelBuilder);
+        ConfigureMessage(modelBuilder);
+        ConfigureListing(modelBuilder);
 
-        //  Index (performans)
-        modelBuilder.Entity<Conversation>()
-            .HasIndex(x => new { x.User1Id, x.User2Id });
+        ConfigureUniversity(modelBuilder);
+        ConfigureDepartment(modelBuilder);
 
-        modelBuilder.Entity<Message>()
-            .HasIndex(x => x.ConversationId);
+        ConfigureDistrict(modelBuilder);
+        ConfigureNeighborhood(modelBuilder);
 
-        modelBuilder.Entity<Message>()
-            .HasIndex(x => new { x.ReceiverId, x.IsRead });
+        ConfigureTeacherProfileEducation(modelBuilder);
+    }
 
-        modelBuilder.Entity<Message>()
-            .HasIndex(x => x.SentAt);
+    private static void ConfigureConversation(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Conversation>(entity =>
+        {
+            entity.HasMany(x => x.Messages)
+                .WithOne(x => x.Conversation)
+                .HasForeignKey(x => x.ConversationId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-        modelBuilder.Entity<Listing>()
-            .HasOne(x => x.Subject)
-            .WithMany()
-            .HasForeignKey(x => x.SubjectId)
-            .OnDelete(DeleteBehavior.Restrict);
+            entity.HasIndex(x => new { x.User1Id, x.User2Id });
+        });
+    }
 
-        modelBuilder.Entity<Listing>()
-            .HasOne(x => x.City)
-            .WithMany()
-            .HasForeignKey(x => x.CityId)
-            .OnDelete(DeleteBehavior.Restrict);
-         
+    private static void ConfigureMessage(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Message>(entity =>
+        {
+            entity.HasIndex(x => x.ConversationId);
 
+            entity.HasIndex(x => new { x.ReceiverId, x.IsRead });
 
+            entity.HasIndex(x => x.SentAt);
+        });
+    }
+
+    private static void ConfigureListing(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<TeacherListing>(entity =>
+        {
+            entity.HasOne(x => x.Subject)
+                .WithMany()
+                .HasForeignKey(x => x.SubjectId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.City)
+                .WithMany()
+                .HasForeignKey(x => x.CityId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.District)
+                .WithMany()
+                .HasForeignKey(x => x.DistrictId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.Neighborhood)
+                .WithMany()
+                .HasForeignKey(x => x.NeighborhoodId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.Property(x => x.Title)
+                .IsRequired()
+                .HasMaxLength(150);
+
+            entity.Property(x => x.Description)
+                .IsRequired()
+                .HasMaxLength(2000);
+
+            entity.Property(x => x.Category)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(x => x.SubCategory)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(x => x.Price)
+                .HasColumnType("decimal(18,2)");
+
+            entity.Property(x => x.Status)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.HasIndex(x => x.SubjectId);
+            entity.HasIndex(x => x.CityId);
+            entity.HasIndex(x => x.DistrictId);
+            entity.HasIndex(x => x.NeighborhoodId);
+            entity.HasIndex(x => x.IsActive);
+            entity.HasIndex(x => x.IsApproved);
+        });
+    }
+
+    private static void ConfigureUniversity(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<University>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Code)
+                .IsRequired();
+
+            entity.Property(x => x.Name)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            entity.Property(x => x.CityPlateCode)
+                .IsRequired();
+
+            entity.Property(x => x.IsActive)
+                .IsRequired();
+
+            entity.HasIndex(x => x.Code)
+                .IsUnique();
+
+            entity.HasIndex(x => x.Name);
+        });
+    }
+
+    private static void ConfigureDepartment(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Department>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Code)
+                .IsRequired();
+
+            entity.Property(x => x.Name)
+                .IsRequired()
+                .HasMaxLength(250);
+
+            entity.Property(x => x.IsActive)
+                .IsRequired();
+
+            entity.HasOne(x => x.University)
+                .WithMany(x => x.Departments)
+                .HasForeignKey(x => x.UniversityId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(x => x.Code);
+
+            entity.HasIndex(x => new { x.UniversityId, x.Name })
+                .IsUnique();
+        });
+    }
+
+    private static void ConfigureDistrict(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<District>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Code)
+                .IsRequired();
+
+            entity.Property(x => x.Name)
+                .IsRequired()
+                .HasMaxLength(150);
+
+            entity.Property(x => x.IsActive)
+                .IsRequired();
+
+            entity.HasOne(x => x.City)
+                .WithMany(x => x.Districts)
+                .HasForeignKey(x => x.CityId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(x => x.Code);
+
+            entity.HasIndex(x => new { x.CityId, x.Name })
+                .IsUnique();
+        });
+    }
+
+    private static void ConfigureNeighborhood(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Neighborhood>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Code)
+                .IsRequired();
+
+            entity.Property(x => x.Name)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            entity.Property(x => x.IsActive)
+                .IsRequired();
+
+            entity.HasOne(x => x.District)
+                .WithMany(x => x.Neighborhoods)
+                .HasForeignKey(x => x.DistrictId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(x => x.Code);
+
+            entity.HasIndex(x => new { x.DistrictId, x.Name })
+                .IsUnique();
+        });
+    }
+
+    private static void ConfigureTeacherProfileEducation(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<TeacherProfile>(entity =>
+        {
+            entity.HasOne(x => x.University)
+                .WithMany()
+                .HasForeignKey(x => x.UniversityId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.DepartmentEntity)
+                .WithMany()
+                .HasForeignKey(x => x.DepartmentId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
     }
 }

@@ -22,7 +22,6 @@
     <Folder Include="Persistence\Configurations\" />
     <Folder Include="Persistence\Migrations\" />
     <Folder Include="Persistence\QueryHelpers\" />
-    <Folder Include="Persistence\Seed\" />
   </ItemGroup>
 
   <ItemGroup>
