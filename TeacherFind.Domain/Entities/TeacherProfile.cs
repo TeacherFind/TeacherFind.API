@@ -8,16 +8,18 @@ public class TeacherProfile : AuditableEntity
     public User User { get; set; } = default!;
 
     public string? Title { get; set; }
+    public string? Headline { get; set; }      // NEW
     public string? Bio { get; set; }
+    public string? TeachingStyle { get; set; }      // NEW
     public string? City { get; set; }
 
     public double Rating { get; set; }
     public int TotalReviews { get; set; }
 
-    public int? UniversityId { get; set; }
+    public Guid? UniversityId { get; set; }      // fixed: was int?
     public University? University { get; set; }
 
-    public int? DepartmentId { get; set; }
+    public Guid? DepartmentId { get; set; }  // fixed: was int?
     public Department? DepartmentEntity { get; set; }
 
     public string? EducationLevel { get; set; }

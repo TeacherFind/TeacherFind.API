@@ -19,17 +19,18 @@ public class JwtProvider : IJwtProvider
 
     public string GenerateToken(User user)
     {
-        var key = _configuration["Jwt:Key"];
+        var key = _configuration["Jwt:Key"]
+                  ?? throw new InvalidOperationException("Jwt:Key bulunamadı. appsettings kontrol edin.");
 
         var claims = new[]
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Email, user.Email),
-            new Claim(ClaimTypes.Name, user.FullName),
-            new Claim(ClaimTypes.Role, user.Role.ToString())};
+            new Claim(ClaimTypes.Email,           user.Email),
+            new Claim(ClaimTypes.Name,            user.FullName),
+            new Claim(ClaimTypes.Role,            user.Role.ToString())
+        };
 
         var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
-
         var credentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
@@ -37,8 +38,7 @@ public class JwtProvider : IJwtProvider
             audience: _configuration["Jwt:Audience"],
             claims: claims,
             expires: DateTime.UtcNow.AddMinutes(
-                int.Parse(_configuration["Jwt:ExpiryMinutes"]!)
-            ),
+                                   int.Parse(_configuration["Jwt:ExpiryMinutes"]!)),
             signingCredentials: credentials
         );
 

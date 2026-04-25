@@ -4,12 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TeacherFind.Domain.Entities
+namespace TeacherFind.Domain.Entities;
+
+public enum UserRole
 {
-    public enum UserRole
-    {
-        Student = 1,
-        Teacher = 2,
-        Admin = 3
-    }
+    Student = 1,
+    Tutor = 2,
+    Admin = 3,
+    SuperAdmin = 4
 }

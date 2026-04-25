@@ -16,6 +16,7 @@ using TeacherFind.Application.Features.Reviews;
 using TeacherFind.Infrastructure.Identity;
 using TeacherFind.Infrastructure.Persistence;
 using TeacherFind.Infrastructure.Persistence.Repositories;
+using TeacherFind.Application.Features.Tutors;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -145,6 +146,7 @@ builder.Services.AddScoped<IFavoriteService, FavoriteService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<ITutorService, TutorService>();
 
 var app = builder.Build();
 
@@ -172,7 +174,6 @@ app.MapControllers();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
     try
     {
         db.Database.Migrate();
