@@ -4,6 +4,7 @@ namespace TeacherFind.Application.Abstractions.Services;
 
 public interface IFavoriteService
 {
-    Task ToggleFavoriteAsync(Guid userId, Guid listingId);
+    /// <returns>true = added, false = removed</returns>
+    Task<bool> ToggleFavoriteAsync(Guid userId, Guid listingId);
     Task<List<ListingDto>> GetFavoritesAsync(Guid userId);
 }

@@ -42,7 +42,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // =====================================================
 
 var jwtKey = builder.Configuration["Jwt:Key"]
-    ?? throw new InvalidOperationException("Jwt:Key bulunamadý.");
+    ?? throw new InvalidOperationException("Jwt:Key bulunamadÄ±.");
 
 var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
 
@@ -60,7 +60,7 @@ builder.Services
             ClockSkew = TimeSpan.Zero
         };
 
-        // SignalR için JWT desteði
+        // SignalR iÃ§in JWT desteÄŸi
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
@@ -137,7 +137,7 @@ builder.Services.AddSwaggerGen(options =>
     {
         Title = "TeacherFind API",
         Version = "v1",
-        Description = "TeacherFind backend API dokümantasyonu"
+        Description = "TeacherFind backend API dokÃ¼mantasyonu"
     });
 
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -147,7 +147,7 @@ builder.Services.AddSwaggerGen(options =>
         Scheme = "bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "JWT token girin. Örnek: Bearer abc123..."
+        Description = "JWT token girin. Ã–rnek: Bearer abc123..."
     });
 
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -178,11 +178,6 @@ builder.Services.AddScoped<IConversationRepository, ConversationRepository>();
 builder.Services.AddScoped<IMessageRepository, MessageRepository>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<IVerificationRepository, VerificationRepository>();
-builder.Services.AddScoped<IAdminUserService, AdminUserService>();
-builder.Services.AddScoped<IAdminActionLogService, AdminActionLogService>();
-builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
-builder.Services.AddScoped<IAdminListingService, AdminListingService>();
-builder.Services.AddScoped<IAdminInvitationService, AdminInvitationService>();
 
 // =====================================================
 // Dependency Injection - Services
@@ -191,11 +186,18 @@ builder.Services.AddScoped<IAdminInvitationService, AdminInvitationService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IJwtProvider, JwtProvider>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
+
 builder.Services.AddScoped<IListingService, ListingService>();
 builder.Services.AddScoped<IFavoriteService, FavoriteService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+
+builder.Services.AddScoped<IAdminUserService, AdminUserService>();
+builder.Services.AddScoped<IAdminActionLogService, AdminActionLogService>();
+builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
+builder.Services.AddScoped<IAdminListingService, AdminListingService>();
+builder.Services.AddScoped<IAdminInvitationService, AdminInvitationService>();
 
 var app = builder.Build();
 
@@ -229,7 +231,7 @@ app.MapHub<ChatHub>("/chat");
 app.MapControllers();
 
 // =====================================================
-// Database Migration
+// Database Migration + Seed
 // =====================================================
 
 using (var scope = app.Services.CreateScope())
@@ -249,4 +251,5 @@ using (var scope = app.Services.CreateScope())
         Console.WriteLine($"Migration/Seed error: {ex.Message}");
     }
 }
+
 app.Run();

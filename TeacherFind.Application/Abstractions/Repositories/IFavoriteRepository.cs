@@ -11,10 +11,8 @@ public interface IFavoriteRepository
 {
     Task AddAsync(Favorite favorite);
     Task RemoveAsync(Favorite favorite);
-
     Task<Favorite?> GetAsync(Guid userId, Guid listingId);
-
     Task<List<Favorite>> GetUserFavoritesAsync(Guid userId);
-
+    Task<List<Favorite>> GetUserFavoritesWithListingsAsync(Guid userId);   // NEW
     Task SaveChangesAsync();
 }

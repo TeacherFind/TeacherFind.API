@@ -11,6 +11,7 @@ public interface IChatService
 {
     Task<MessageDto> SendMessageAsync(Guid senderId, SendMessageDto request);
     Task<List<MessageDto>> GetMessagesAsync(Guid conversationId, Guid currentUserId);
+    Task<List<MessageDto>> GetMessagesByUserIdAsync(Guid currentUserId, Guid otherUserId); // NEW
     Task<List<ConversationDto>> GetMyConversationsAsync(Guid currentUserId);
     Task MarkAsReadAsync(Guid conversationId, Guid currentUserId);
 }

@@ -4,11 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TeacherFind.Domain.Entities;
+namespace TeacherFind.Contracts.Locations;
 
-public class Subject
+public class NeighborhoodDto
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid Id { get; set; }
+    public int Code { get; set; }
     public string Name { get; set; } = default!;
-    public string Category { get; set; } = default!;
 }
