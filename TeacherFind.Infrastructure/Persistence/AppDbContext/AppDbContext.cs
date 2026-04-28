@@ -23,12 +23,13 @@ public class AppDbContext : DbContext
 
     public DbSet<Subject> Subjects => Set<Subject>();
     public DbSet<City> Cities => Set<City>();
-
     public DbSet<University> Universities => Set<University>();
     public DbSet<Department> Departments => Set<Department>();
-
     public DbSet<District> Districts => Set<District>();
     public DbSet<Neighborhood> Neighborhoods => Set<Neighborhood>();
+
+    public DbSet<AdminInvitation> AdminInvitations => Set<AdminInvitation>();
+    public DbSet<AdminActionLog> AdminActionLogs => Set<AdminActionLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -45,6 +46,9 @@ public class AppDbContext : DbContext
         ConfigureNeighborhood(modelBuilder);
 
         ConfigureTeacherProfileEducation(modelBuilder);
+
+        ConfigureAdminInvitation(modelBuilder);
+        ConfigureAdminActionLog(modelBuilder);
     }
 
     private static void ConfigureConversation(ModelBuilder modelBuilder)
@@ -251,6 +255,78 @@ public class AppDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(x => x.DepartmentId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    private static void ConfigureAdminInvitation(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<AdminInvitation>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Email)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            entity.Property(x => x.Role)
+                .IsRequired()
+                .HasConversion<string>()
+                .HasMaxLength(50);
+
+            entity.Property(x => x.TokenHash)
+                .IsRequired()
+                .HasMaxLength(500);
+
+            entity.Property(x => x.ExpiresAt)
+                .IsRequired();
+
+            entity.Property(x => x.IsUsed)
+                .IsRequired();
+
+            entity.HasOne(x => x.InvitedByUser)
+                .WithMany()
+                .HasForeignKey(x => x.InvitedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(x => x.Email);
+            entity.HasIndex(x => x.TokenHash);
+            entity.HasIndex(x => x.IsUsed);
+            entity.HasIndex(x => x.ExpiresAt);
+        });
+    }
+
+    private static void ConfigureAdminActionLog(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<AdminActionLog>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Action)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(x => x.EntityName)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(x => x.Description)
+                .HasMaxLength(1000);
+
+            entity.Property(x => x.IpAddress)
+                .HasMaxLength(100);
+
+            entity.Property(x => x.UserAgent)
+                .HasMaxLength(500);
+
+            entity.HasOne(x => x.AdminUser)
+                .WithMany()
+                .HasForeignKey(x => x.AdminUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(x => x.AdminUserId);
+            entity.HasIndex(x => x.Action);
+            entity.HasIndex(x => x.EntityName);
+            entity.HasIndex(x => x.CreatedAt);
         });
     }
 }
