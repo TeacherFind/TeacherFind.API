@@ -12,4 +12,5 @@ public enum UserRole
     Tutor = 2,
     Admin = 3,
     SuperAdmin = 4
+
 }
