@@ -1,7 +1,9 @@
-﻿using TeacherFind.Application.Abstractions.Repositories;
+﻿using TeacherFind.Application.Abstractions.Identity;
+using TeacherFind.Application.Abstractions.Repositories;
 using TeacherFind.Application.Abstractions.Services;
-using TeacherFind.Application.Abstractions.Identity;
+using TeacherFind.Contracts.Auth;
 using TeacherFind.Domain.Entities;
+using TeacherFind.Domain.Enums;
 
 namespace TeacherFind.Application.Features.Auth;
 
@@ -24,26 +26,35 @@ public class AuthService : IAuthService
         _verificationRepository = verificationRepository;
     }
 
-    public async Task<User> RegisterAsync(string fullName, string email, string password)
+    public async Task<User> RegisterAsync(RegisterRequest request)
     {
-        var existing = await _userRepository.GetByEmailAsync(email);
+        var existing = await _userRepository.GetByEmailAsync(request.Email);
 
         if (existing != null)
             throw new Exception("User already exists");
 
-        var hashedPassword = _passwordHasher.Hash(password);
+        // Güvenlik:
+        // Dışarıdan Admin veya SuperAdmin gönderilse bile kabul etmiyoruz.
+        // Sadece Tutor gönderilmişse Tutor olur, diğer her durumda Student olur.
+        var role = request.Role == UserRole.Tutor
+            ? UserRole.Tutor
+            : UserRole.Student;
+
+        var hashedPassword = _passwordHasher.Hash(request.Password);
 
         var user = new User
         {
-            FullName = fullName,
-            Email = email,
-            PasswordHash = hashedPassword
+            FullName = request.FullName,
+            Email = request.Email,
+            PasswordHash = hashedPassword,
+            Role = role,
+            IsActive = true,
+            IsEmailVerified = false
         };
 
         await _userRepository.AddAsync(user);
         await _userRepository.SaveChangesAsync();
 
-        // 🔥 Verification Code oluştur
         var code = new VerificationCode
         {
             UserId = user.Id,
@@ -60,11 +71,14 @@ public class AuthService : IAuthService
         return user;
     }
 
-    public async Task<string?> LoginAsync(string email, string password)
+    public async Task<LoginResponse?> LoginAsync(string email, string password)
     {
         var user = await _userRepository.GetByEmailAsync(email);
 
         if (user == null)
+            return null;
+
+        if (!user.IsActive)
             return null;
 
         var isValid = _passwordHasher.Verify(password, user.PasswordHash);
@@ -74,6 +88,13 @@ public class AuthService : IAuthService
 
         var token = _jwtProvider.GenerateToken(user);
 
-        return token;
+        return new LoginResponse
+        {
+            Token = token,
+            UserId = user.Id,
+            FullName = user.FullName,
+            Email = user.Email,
+            Role = user.Role.ToString()
+        };
     }
 }

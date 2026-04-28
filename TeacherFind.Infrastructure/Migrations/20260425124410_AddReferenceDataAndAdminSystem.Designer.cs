@@ -12,8 +12,8 @@ using TeacherFind.Infrastructure.Persistence;
 namespace TeacherFind.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260424102433_AddSubjectAndCityToTeacherListing")]
-    partial class AddSubjectAndCityToTeacherListing
+    [Migration("20260425124410_AddReferenceDataAndAdminSystem")]
+    partial class AddReferenceDataAndAdminSystem
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -27,15 +27,19 @@ namespace TeacherFind.Infrastructure.Migrations
 
             modelBuilder.Entity("TeacherFind.Domain.Entities.City", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("uniqueidentifier");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("PlateCode")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -66,24 +70,62 @@ namespace TeacherFind.Infrastructure.Migrations
 
             modelBuilder.Entity("TeacherFind.Domain.Entities.Department", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Code")
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
 
-                    b.Property<int>("UniversityId")
-                        .HasColumnType("int");
+                    b.Property<Guid>("UniversityId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UniversityId");
+                    b.HasIndex("Code");
+
+                    b.HasIndex("UniversityId", "Name")
+                        .IsUnique();
 
                     b.ToTable("Departments");
+                });
+
+            modelBuilder.Entity("TeacherFind.Domain.Entities.District", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CityId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Code")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code");
+
+                    b.HasIndex("CityId", "Name")
+                        .IsUnique();
+
+                    b.ToTable("Districts");
                 });
 
             modelBuilder.Entity("TeacherFind.Domain.Entities.Favorite", b =>
@@ -115,6 +157,9 @@ namespace TeacherFind.Infrastructure.Migrations
                     b.Property<int>("CityId")
                         .HasColumnType("int");
 
+                    b.Property<Guid>("CityId1")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -140,7 +185,7 @@ namespace TeacherFind.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CityId");
+                    b.HasIndex("CityId1");
 
                     b.HasIndex("SubjectId");
 
@@ -193,6 +238,36 @@ namespace TeacherFind.Infrastructure.Migrations
                     b.HasIndex("ReceiverId", "IsRead");
 
                     b.ToTable("Messages");
+                });
+
+            modelBuilder.Entity("TeacherFind.Domain.Entities.Neighborhood", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Code")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("DistrictId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code");
+
+                    b.HasIndex("DistrictId", "Name")
+                        .IsUnique();
+
+                    b.ToTable("Neighborhoods");
                 });
 
             modelBuilder.Entity("TeacherFind.Domain.Entities.Notification", b =>
@@ -334,14 +409,22 @@ namespace TeacherFind.Infrastructure.Migrations
 
                     b.Property<string>("Category")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid?>("CityId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<Guid?>("DistrictId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
@@ -355,6 +438,9 @@ namespace TeacherFind.Infrastructure.Migrations
                     b.Property<int>("LessonDuration")
                         .HasColumnType("int");
 
+                    b.Property<Guid?>("NeighborhoodId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(18,2)");
 
@@ -363,18 +449,24 @@ namespace TeacherFind.Infrastructure.Migrations
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("SubCategory")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int?>("SubjectId")
+                        .HasColumnType("int");
 
                     b.Property<Guid>("TeacherProfileId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -383,6 +475,18 @@ namespace TeacherFind.Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CityId");
+
+                    b.HasIndex("DistrictId");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("IsApproved");
+
+                    b.HasIndex("NeighborhoodId");
+
+                    b.HasIndex("SubjectId");
 
                     b.HasIndex("TeacherProfileId");
 
@@ -404,8 +508,8 @@ namespace TeacherFind.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int?>("DepartmentId")
-                        .HasColumnType("int");
+                    b.Property<Guid?>("DepartmentId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("EducationLevel")
                         .HasColumnType("nvarchar(max)");
@@ -425,8 +529,8 @@ namespace TeacherFind.Infrastructure.Migrations
                     b.Property<int>("TotalReviews")
                         .HasColumnType("int");
 
-                    b.Property<int?>("UniversityId")
-                        .HasColumnType("int");
+                    b.Property<Guid?>("UniversityId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -448,17 +552,30 @@ namespace TeacherFind.Infrastructure.Migrations
 
             modelBuilder.Entity("TeacherFind.Domain.Entities.University", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("CityPlateCode")
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    b.Property<int>("Code")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("Name");
 
                     b.ToTable("Universities");
                 });
@@ -561,26 +678,37 @@ namespace TeacherFind.Infrastructure.Migrations
             modelBuilder.Entity("TeacherFind.Domain.Entities.Department", b =>
                 {
                     b.HasOne("TeacherFind.Domain.Entities.University", "University")
-                        .WithMany()
+                        .WithMany("Departments")
                         .HasForeignKey("UniversityId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("University");
+                });
+
+            modelBuilder.Entity("TeacherFind.Domain.Entities.District", b =>
+                {
+                    b.HasOne("TeacherFind.Domain.Entities.City", "City")
+                        .WithMany("Districts")
+                        .HasForeignKey("CityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("City");
                 });
 
             modelBuilder.Entity("TeacherFind.Domain.Entities.Listing", b =>
                 {
                     b.HasOne("TeacherFind.Domain.Entities.City", "City")
                         .WithMany()
-                        .HasForeignKey("CityId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasForeignKey("CityId1")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("TeacherFind.Domain.Entities.Subject", "Subject")
                         .WithMany()
                         .HasForeignKey("SubjectId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("TeacherFind.Domain.Entities.User", "User")
@@ -615,6 +743,17 @@ namespace TeacherFind.Infrastructure.Migrations
                     b.Navigation("Conversation");
                 });
 
+            modelBuilder.Entity("TeacherFind.Domain.Entities.Neighborhood", b =>
+                {
+                    b.HasOne("TeacherFind.Domain.Entities.District", "District")
+                        .WithMany("Neighborhoods")
+                        .HasForeignKey("DistrictId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("District");
+                });
+
             modelBuilder.Entity("TeacherFind.Domain.Entities.TeacherAvailability", b =>
                 {
                     b.HasOne("TeacherFind.Domain.Entities.TeacherProfile", null)
@@ -635,11 +774,39 @@ namespace TeacherFind.Infrastructure.Migrations
 
             modelBuilder.Entity("TeacherFind.Domain.Entities.TeacherListing", b =>
                 {
+                    b.HasOne("TeacherFind.Domain.Entities.City", "City")
+                        .WithMany()
+                        .HasForeignKey("CityId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("TeacherFind.Domain.Entities.District", "District")
+                        .WithMany()
+                        .HasForeignKey("DistrictId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("TeacherFind.Domain.Entities.Neighborhood", "Neighborhood")
+                        .WithMany()
+                        .HasForeignKey("NeighborhoodId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("TeacherFind.Domain.Entities.Subject", "Subject")
+                        .WithMany()
+                        .HasForeignKey("SubjectId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("TeacherFind.Domain.Entities.TeacherProfile", "TeacherProfile")
                         .WithMany()
                         .HasForeignKey("TeacherProfileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("City");
+
+                    b.Navigation("District");
+
+                    b.Navigation("Neighborhood");
+
+                    b.Navigation("Subject");
 
                     b.Navigation("TeacherProfile");
                 });
@@ -648,11 +815,13 @@ namespace TeacherFind.Infrastructure.Migrations
                 {
                     b.HasOne("TeacherFind.Domain.Entities.Department", "DepartmentEntity")
                         .WithMany()
-                        .HasForeignKey("DepartmentId");
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("TeacherFind.Domain.Entities.University", "University")
                         .WithMany()
-                        .HasForeignKey("UniversityId");
+                        .HasForeignKey("UniversityId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("TeacherFind.Domain.Entities.User", "User")
                         .WithOne("TeacherProfile")
@@ -678,9 +847,19 @@ namespace TeacherFind.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("TeacherFind.Domain.Entities.City", b =>
+                {
+                    b.Navigation("Districts");
+                });
+
             modelBuilder.Entity("TeacherFind.Domain.Entities.Conversation", b =>
                 {
                     b.Navigation("Messages");
+                });
+
+            modelBuilder.Entity("TeacherFind.Domain.Entities.District", b =>
+                {
+                    b.Navigation("Neighborhoods");
                 });
 
             modelBuilder.Entity("TeacherFind.Domain.Entities.TeacherProfile", b =>
@@ -688,6 +867,11 @@ namespace TeacherFind.Infrastructure.Migrations
                     b.Navigation("Availabilities");
 
                     b.Navigation("Certificates");
+                });
+
+            modelBuilder.Entity("TeacherFind.Domain.Entities.University", b =>
+                {
+                    b.Navigation("Departments");
                 });
 
             modelBuilder.Entity("TeacherFind.Domain.Entities.User", b =>

@@ -15,13 +15,13 @@
     <Folder Include="Abstractions\Files\" />
     <Folder Include="Abstractions\Common\" />
     <Folder Include="Abstractions\Notifications\" />
+    <Folder Include="Features\Admin\" />
     <Folder Include="Features\LessonRequests\" />
     <Folder Include="Features\Listings\Commands\" />
     <Folder Include="Features\Listings\Handlers\" />
     <Folder Include="Features\Listings\Models\" />
     <Folder Include="Features\Listings\Mappers\" />
     <Folder Include="Features\Listings\Queries\" />
-    <Folder Include="Features\Admin\" />
     <Folder Include="Features\ReferenceData\" />
     <Folder Include="Features\Parents\" />
     <Folder Include="Features\Students\" />
