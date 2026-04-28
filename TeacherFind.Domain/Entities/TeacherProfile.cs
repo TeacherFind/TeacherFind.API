@@ -14,10 +14,10 @@ public class TeacherProfile : AuditableEntity
     public double Rating { get; set; }
     public int TotalReviews { get; set; }
 
-    public int? UniversityId { get; set; }
+    public Guid? UniversityId { get; set; }
     public University? University { get; set; }
 
-    public int? DepartmentId { get; set; }
+    public Guid? DepartmentId { get; set; }
     public Department? DepartmentEntity { get; set; }
 
     public string? EducationLevel { get; set; }

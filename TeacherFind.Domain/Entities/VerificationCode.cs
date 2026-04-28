@@ -13,9 +13,9 @@ namespace TeacherFind.Domain.Entities
         public Guid UserId { get; set; }
         public User User { get; set; } = default!;
 
-        public string Code { get; set; }
+        public string Code { get; set; } = default!;
 
-        public string Type { get; set; } // "Phone" | "Email"
+        public string Type { get; set; } = default!; // "Phone" | "Email"
 
         public DateTime ExpireAt { get; set; }
 

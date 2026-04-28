@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using TeacherFind.Application.Abstractions.Services;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using TeacherFind.Application.Abstractions.Repositories;
+using TeacherFind.Application.Abstractions.Services;
 using TeacherFind.Contracts.Auth;
 
 namespace TeacherFind.API.Controllers;
@@ -24,21 +26,54 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
-    public async Task<IActionResult> Register(string fullName, string email, string password)
+    public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
-        var user = await _authService.RegisterAsync(fullName, email, password);
-        return Ok(user);
+        var user = await _authService.RegisterAsync(request);
+
+        return Ok(new
+        {
+            user.Id,
+            user.FullName,
+            user.Email,
+            Role = user.Role.ToString(),
+            user.IsPhoneVerified,
+            user.IsEmailVerified
+        });
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login(string email, string password)
+    public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
-        var token = await _authService.LoginAsync(email, password);
+        var result = await _authService.LoginAsync(request.Email, request.Password);
 
-        if (token == null)
-            return Unauthorized();
+        if (result == null)
+            return Unauthorized(new { message = "Email veya şifre hatalı" });
 
-        return Ok(new { token });
+        return Ok(result);
+    }
+
+    [Authorize]
+    [HttpGet("me")]
+    public async Task<IActionResult> Me()
+    {
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (!Guid.TryParse(userIdValue, out var userId))
+            return Unauthorized(new { message = "Geçersiz token" });
+
+        var user = await _userRepository.GetByIdAsync(userId);
+
+        if (user == null)
+            return Unauthorized(new { message = "Kullanıcı bulunamadı" });
+
+        return Ok(new MeResponse
+        {
+            UserId = user.Id,
+            FullName = user.FullName,
+            Email = user.Email,
+            Role = user.Role.ToString(),
+            AvatarUrl = user.ProfileImageUrl
+        });
     }
 
     [HttpPost("verify-phone")]
@@ -47,17 +82,17 @@ public class AuthController : ControllerBase
         var code = await _verificationRepository.GetValidCode(dto.UserId, dto.Code);
 
         if (code == null)
-            return BadRequest("Kod yanlış");
+            return BadRequest(new { message = "Kod yanlış" });
 
         var user = await _userRepository.GetByIdAsync(dto.UserId);
 
         if (user == null)
-            return NotFound("Kullanıcı bulunamadı");
+            return NotFound(new { message = "Kullanıcı bulunamadı" });
 
         user.IsPhoneVerified = true;
 
         await _userRepository.SaveChangesAsync();
 
-        return Ok("Telefon doğrulandı");
+        return Ok(new { message = "Telefon doğrulandı" });
     }
 }
