@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TeacherFind.Application.Abstractions.Repositories;
 using TeacherFind.Contracts.Listings;
+using TeacherFind.Contracts.Tutors;
 using TeacherFind.Domain.Entities;
 
 namespace TeacherFind.Infrastructure.Persistence.Repositories;
@@ -9,98 +10,113 @@ public class ListingRepository : IListingRepository
 {
     private readonly AppDbContext _context;
 
-    public ListingRepository(AppDbContext context)
-    {
-        _context = context;
-    }
+    public ListingRepository(AppDbContext context) => _context = context;
 
-    public IQueryable<TeacherListing> Query()
-    {
-        return _context.TeacherListings.AsQueryable();
-    }
+    public IQueryable<TeacherListing> Query() => _context.TeacherListings.AsQueryable();
 
     public async Task<List<TeacherListing>> GetAllAsync()
-    {
-        return await _context.TeacherListings
-            .AsNoTracking()
-            .ToListAsync();
-    }
+        => await _context.TeacherListings.AsNoTracking().ToListAsync();
 
     public async Task<TeacherListing?> GetByIdAsync(Guid id)
-    {
-        return await _context.TeacherListings
-            .FirstOrDefaultAsync(x => x.Id == id);
-    }
+        => await _context.TeacherListings.FirstOrDefaultAsync(x => x.Id == id);
 
     public async Task<TeacherListing?> GetByIdWithDetailsAsync(Guid id)
-    {
-        return await _context.TeacherListings
-            .Include(x => x.TeacherProfile)
-                .ThenInclude(tp => tp.User)
-            .Include(x => x.TeacherProfile.Certificates)
-            .Include(x => x.TeacherProfile.Availabilities)
+        => await _context.TeacherListings
+            .Include(x => x.TeacherProfile).ThenInclude(tp => tp.User)
+            .Include(x => x.TeacherProfile).ThenInclude(tp => tp.Certificates)
+            .Include(x => x.TeacherProfile).ThenInclude(tp => tp.Availabilities)
             .FirstOrDefaultAsync(x => x.Id == id);
-    }
+
+    // Task 6 — full detail, single query
+    public async Task<TeacherListing?> GetByIdWithFullDetailsAsync(Guid id)
+        => await _context.TeacherListings
+            .Include(x => x.TeacherProfile).ThenInclude(p => p.User)
+            .Include(x => x.TeacherProfile).ThenInclude(p => p.University)
+            .Include(x => x.TeacherProfile).ThenInclude(p => p.DepartmentEntity)
+            .Include(x => x.TeacherProfile).ThenInclude(p => p.Certificates)
+            .Include(x => x.TeacherProfile).ThenInclude(p => p.Availabilities)
+            .Include(x => x.Subject)
+            .Include(x => x.City)
+            .Include(x => x.District)
+            .Include(x => x.Neighborhood)
+            .FirstOrDefaultAsync(x => x.Id == id && x.IsActive && x.IsApproved);
 
     public async Task<TeacherListing?> GetByIdForOwnerAsync(Guid id, Guid userId)
-    {
-        return await _context.TeacherListings
+        => await _context.TeacherListings
             .Include(x => x.TeacherProfile)
             .FirstOrDefaultAsync(x => x.Id == id && x.TeacherProfile.UserId == userId);
-    }
 
     public async Task<TeacherProfile?> GetTeacherProfileByUserIdAsync(Guid userId)
-    {
-        return await _context.TeacherProfiles
-            .FirstOrDefaultAsync(x => x.UserId == userId);
-    }
+        => await _context.TeacherProfiles.FirstOrDefaultAsync(x => x.UserId == userId);
 
     public async Task AddAsync(TeacherListing listing)
-    {
-        await _context.TeacherListings.AddAsync(listing);
-    }
+        => await _context.TeacherListings.AddAsync(listing);
 
+    // Legacy — used by ListingsController
     public async Task<List<TeacherListing>> FilterAsync(ListingFilterRequestDto filter)
     {
         var query = _context.TeacherListings.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(filter.Search))
-        {
-            query = query.Where(x =>
-                x.Title.Contains(filter.Search) ||
-                x.Description.Contains(filter.Search));
-        }
+            query = query.Where(x => x.Title.Contains(filter.Search) || x.Description.Contains(filter.Search));
 
         if (!string.IsNullOrWhiteSpace(filter.Category))
-        {
             query = query.Where(x => x.Category == filter.Category);
-        }
 
-        if (filter.MinPrice.HasValue)
-        {
-            query = query.Where(x => x.Price >= filter.MinPrice.Value);
-        }
-
-        if (filter.MaxPrice.HasValue)
-        {
-            query = query.Where(x => x.Price <= filter.MaxPrice.Value);
-        }
-
-        if (filter.ServiceType.HasValue)
-        {
-            query = query.Where(x => x.ServiceType == filter.ServiceType.Value);
-        }
-
-        if (filter.OnlyApproved == true)
-        {
-            query = query.Where(x => x.IsApproved);
-        }
+        if (filter.MinPrice.HasValue) query = query.Where(x => x.Price >= filter.MinPrice.Value);
+        if (filter.MaxPrice.HasValue) query = query.Where(x => x.Price <= filter.MaxPrice.Value);
+        if (filter.ServiceType.HasValue) query = query.Where(x => x.ServiceType == filter.ServiceType.Value);
+        if (filter.OnlyApproved == true) query = query.Where(x => x.IsApproved);
 
         return await query.ToListAsync();
     }
 
-    public async Task SaveChangesAsync()
+    // Task 5 — all filtering, sorting, pagination in DB — no memory operations
+    public async Task<(List<TeacherListing> Items, int TotalCount)> FilterTutorsAsync(TutorFilterRequestDto filter)
     {
-        await _context.SaveChangesAsync();
+        var query = _context.TeacherListings
+            .Where(x => x.IsActive && x.IsApproved)
+            .Include(x => x.TeacherProfile).ThenInclude(p => p.User)
+            .Include(x => x.Subject)
+            .Include(x => x.City)
+            .Include(x => x.District)
+            .Include(x => x.Neighborhood)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(filter.Search))
+            query = query.Where(x =>
+                x.Title.Contains(filter.Search) ||
+                x.Description.Contains(filter.Search) ||
+                x.TeacherProfile.User.FullName.Contains(filter.Search));
+
+        if (!string.IsNullOrWhiteSpace(filter.Category))
+            query = query.Where(x => x.Category == filter.Category);
+
+        if (filter.SubjectId.HasValue) query = query.Where(x => x.SubjectId == filter.SubjectId.Value);
+        if (filter.CityId.HasValue) query = query.Where(x => x.CityId == filter.CityId.Value);
+        if (filter.DistrictId.HasValue) query = query.Where(x => x.DistrictId == filter.DistrictId.Value);
+        if (filter.NeighborhoodId.HasValue) query = query.Where(x => x.NeighborhoodId == filter.NeighborhoodId.Value);
+        if (filter.MinPrice.HasValue) query = query.Where(x => x.Price >= filter.MinPrice.Value);
+        if (filter.MaxPrice.HasValue) query = query.Where(x => x.Price <= filter.MaxPrice.Value);
+        if (filter.ServiceType.HasValue) query = query.Where(x => x.ServiceType == filter.ServiceType.Value);
+
+        query = filter.Sort switch
+        {
+            "price_asc" => query.OrderBy(x => x.Price),
+            "price_desc" => query.OrderByDescending(x => x.Price),
+            "rating" => query.OrderByDescending(x => x.TeacherProfile.Rating),
+            _ => query.OrderByDescending(x => x.CreatedAt)
+        };
+
+        var totalCount = await query.CountAsync();
+
+        var items = await query
+            .Skip((filter.Page - 1) * filter.PageSize)
+            .Take(filter.PageSize)
+            .ToListAsync();
+
+        return (items, totalCount);
     }
+
+    public async Task SaveChangesAsync() => await _context.SaveChangesAsync();
 }

@@ -4,11 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TeacherFind.Domain.Entities;
+namespace TeacherFind.Contracts.Tutors;
 
-public class Subject
+public class TutorCertificateDto
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
     public string Name { get; set; } = default!;
-    public string Category { get; set; } = default!;
+    public string Organization { get; set; } = default!;
+    public int Year { get; set; }
 }

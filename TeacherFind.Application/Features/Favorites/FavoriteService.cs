@@ -3,70 +3,50 @@ using TeacherFind.Application.Abstractions.Services;
 using TeacherFind.Contracts.Listings;
 using TeacherFind.Domain.Entities;
 
-
 namespace TeacherFind.Application.Features.Favorites;
 
 public class FavoriteService : IFavoriteService
 {
     private readonly IFavoriteRepository _favoriteRepository;
-    private readonly IListingRepository _listingRepository;
 
-    public FavoriteService(IFavoriteRepository favoriteRepository,
-                           IListingRepository listingRepository)
-    {
-        _favoriteRepository = favoriteRepository;
-        _listingRepository = listingRepository;
-    }
+    public FavoriteService(IFavoriteRepository favoriteRepository)
+        => _favoriteRepository = favoriteRepository;
 
-    // ❤️ EKLE / ❌ ÇIKAR (TOGGLE)
-    public async Task ToggleFavoriteAsync(Guid userId, Guid listingId)
+    /// <returns>true = added, false = removed</returns>
+    public async Task<bool> ToggleFavoriteAsync(Guid userId, Guid listingId)
     {
         var existing = await _favoriteRepository.GetAsync(userId, listingId);
 
         if (existing != null)
         {
-            // ❌ Favoriden çıkar
             await _favoriteRepository.RemoveAsync(existing);
-        }
-        else
-        {
-            // ❤️ Favoriye ekle
-            var favorite = new Favorite
-            {
-                UserId = userId,
-                ListingId = listingId
-            };
-
-            await _favoriteRepository.AddAsync(favorite);
+            await _favoriteRepository.SaveChangesAsync();
+            return false;
         }
 
+        await _favoriteRepository.AddAsync(new Favorite { UserId = userId, ListingId = listingId });
         await _favoriteRepository.SaveChangesAsync();
+        return true;
     }
 
-    // 📄 FAVORİ LİSTESİ
     public async Task<List<ListingDto>> GetFavoritesAsync(Guid userId)
     {
-        var favorites = await _favoriteRepository.GetUserFavoritesAsync(userId);
+        // Single JOIN query — N+1 fixed
+        var favorites = await _favoriteRepository.GetUserFavoritesWithListingsAsync(userId);
 
-        var result = new List<ListingDto>();
-
-        foreach (var fav in favorites)
-        {
-            var listing = await _listingRepository.GetByIdAsync(fav.ListingId);
-
-            if (listing != null)
+        return favorites
+            .Where(f => f.Listing is { IsActive: true })
+            .Select(f => new ListingDto
             {
-                result.Add(new ListingDto
-                {
-                    Id = listing.Id,
-                    Title = listing.Title,
-                    Description = listing.Description,
-                    Price = listing.Price,
-                    ViewCount = listing.ViewCount
-                });
-            }
-        }
-
-        return result;
+                Id = f.Listing!.Id,
+                TeacherProfileId = f.Listing.TeacherProfileId,
+                Title = f.Listing.Title,
+                Description = f.Listing.Description,
+                Price = f.Listing.Price,
+                IsActive = f.Listing.IsActive,
+                IsApproved = f.Listing.IsApproved,
+                ViewCount = f.Listing.ViewCount
+            })
+            .ToList();
     }
 }

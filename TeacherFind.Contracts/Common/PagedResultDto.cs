@@ -4,13 +4,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TeacherFind.Contracts.Common
+namespace TeacherFind.Contracts.Common;
+
+public class PagedResultDto<T>
 {
-    public class PagedResultDto<T>
-    {
-        public List<T> Items { get; set; } = new();
-        public int TotalCount { get; set; }
-        public int Page { get; set; }
-        public int PageSize { get; set; }
-    }
+    public List<T> Items { get; set; } = new();
+    public int TotalCount { get; set; }
+    public int Page { get; set; }
+    public int PageSize { get; set; }
+    public int TotalPages => PageSize > 0
+                                 ? (int)Math.Ceiling((double)TotalCount / PageSize)
+                                 : 0;
 }
