@@ -8,7 +8,7 @@ public class TeacherListing : AuditableEntity
     public Guid TeacherProfileId { get; set; }
     public TeacherProfile TeacherProfile { get; set; } = default!;
 
-    public int? SubjectId { get; set; }
+    public Guid? SubjectId { get; set; }
     public Subject? Subject { get; set; }
 
     public Guid? CityId { get; set; }
