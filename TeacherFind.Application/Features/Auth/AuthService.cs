@@ -1,7 +1,9 @@
 ﻿using TeacherFind.Application.Abstractions.Identity;
 using TeacherFind.Application.Abstractions.Repositories;
 using TeacherFind.Application.Abstractions.Services;
+using TeacherFind.Contracts.Auth;
 using TeacherFind.Domain.Entities;
+using TeacherFind.Domain.Enums;
 
 namespace TeacherFind.Application.Features.Auth;
 
@@ -24,21 +26,30 @@ public class AuthService : IAuthService
         _verificationRepository = verificationRepository;
     }
 
-    public async Task<User> RegisterAsync(string fullName, string email, string password, UserRole role)
+    public async Task<User> RegisterAsync(RegisterRequest request)
     {
-        var existing = await _userRepository.GetByEmailAsync(email);
-        if (existing != null)
-            throw new Exception("Bu e-posta adresi zaten kullanılıyor.");
+        var existing = await _userRepository.GetByEmailAsync(request.Email);
 
-        if (role != UserRole.Student && role != UserRole.Tutor)
-            throw new Exception("Geçersiz rol. Sadece Student veya Tutor seçilebilir.");
+        if (existing != null)
+            throw new Exception("User already exists");
+
+        // Güvenlik:
+        // Dışarıdan Admin veya SuperAdmin gönderilse bile kabul etmiyoruz.
+        // Sadece Tutor gönderilmişse Tutor olur, diğer her durumda Student olur.
+        var role = request.Role == UserRole.Tutor
+            ? UserRole.Tutor
+            : UserRole.Student;
+
+        var hashedPassword = _passwordHasher.Hash(request.Password);
 
         var user = new User
         {
-            FullName = fullName,
-            Email = email,
-            PasswordHash = _passwordHasher.Hash(password),
-            Role = role
+            FullName = request.FullName,
+            Email = request.Email,
+            PasswordHash = hashedPassword,
+            Role = role,
+            IsActive = true,
+            IsEmailVerified = false
         };
 
         await _userRepository.AddAsync(user);
@@ -48,29 +59,42 @@ public class AuthService : IAuthService
         {
             UserId = user.Id,
             Code = new Random().Next(100000, 999999).ToString(),
-            Type = "Email",
+            Type = "Phone",
             ExpireAt = DateTime.UtcNow.AddMinutes(5)
         };
+
         await _verificationRepository.AddAsync(code);
         await _verificationRepository.SaveChangesAsync();
 
-        Console.WriteLine($"[VERIFICATION CODE] {user.Email} -> {code.Code}");
+        Console.WriteLine($"SMS CODE: {code.Code}");
 
         return user;
     }
 
-    public async Task<string?> LoginAsync(string email, string password)
+    public async Task<LoginResponse?> LoginAsync(string email, string password)
     {
         var user = await _userRepository.GetByEmailAsync(email);
-        if (user == null || !user.IsActive)
+
+        if (user == null)
             return null;
 
-        if (!_passwordHasher.Verify(password, user.PasswordHash))
+        if (!user.IsActive)
             return null;
 
-        user.LastLoginAt = DateTime.UtcNow;
-        await _userRepository.SaveChangesAsync();
+        var isValid = _passwordHasher.Verify(password, user.PasswordHash);
 
-        return _jwtProvider.GenerateToken(user);
+        if (!isValid)
+            return null;
+
+        var token = _jwtProvider.GenerateToken(user);
+
+        return new LoginResponse
+        {
+            Token = token,
+            UserId = user.Id,
+            FullName = user.FullName,
+            Email = user.Email,
+            Role = user.Role.ToString()
+        };
     }
 }

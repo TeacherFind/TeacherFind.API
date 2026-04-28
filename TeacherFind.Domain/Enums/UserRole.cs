@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TeacherFind.Domain.Entities;
+namespace TeacherFind.Domain.Enums;
 
 public enum UserRole
 {

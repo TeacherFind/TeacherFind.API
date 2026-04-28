@@ -16,22 +16,38 @@ using TeacherFind.Application.Features.Reviews;
 using TeacherFind.Infrastructure.Identity;
 using TeacherFind.Infrastructure.Persistence;
 using TeacherFind.Infrastructure.Persistence.Repositories;
-using TeacherFind.Application.Features.Tutors;
+using TeacherFind.Infrastructure.Seeds;
+using TeacherFind.Infrastructure.Services.Admin;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// DB
+// =====================================================
+// Configuration
+// =====================================================
+
+builder.Configuration.AddJsonFile(
+    "appsettings.Local.json",
+    optional: true,
+    reloadOnChange: true);
+
+// =====================================================
+// Database
+// =====================================================
+
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// JWT Key kontrolü
+// =====================================================
+// JWT Authentication
+// =====================================================
+
 var jwtKey = builder.Configuration["Jwt:Key"]
-             ?? throw new InvalidOperationException("Jwt:Key bulunamadý.");
+    ?? throw new InvalidOperationException("Jwt:Key bulunamad?.");
 
 var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
 
-// Authentication
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
@@ -44,7 +60,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ClockSkew = TimeSpan.Zero
         };
 
-        // SignalR JWT desteði
+        // SignalR için JWT deste?i
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
@@ -63,10 +79,29 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// Authorization
-builder.Services.AddAuthorization();
+// =====================================================
+// Authorization Policies
+// =====================================================
 
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("StudentOnly", policy =>
+        policy.RequireRole("Student"));
+
+    options.AddPolicy("TutorOnly", policy =>
+        policy.RequireRole("Tutor"));
+
+    options.AddPolicy("AdminOnly", policy =>
+        policy.RequireRole("Admin", "SuperAdmin"));
+
+    options.AddPolicy("SuperAdminOnly", policy =>
+        policy.RequireRole("SuperAdmin"));
+});
+
+// =====================================================
 // CORS
+// =====================================================
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Frontend", policy =>
@@ -84,14 +119,18 @@ builder.Services.AddCors(options =>
     });
 });
 
-// SignalR
-builder.Services.AddSignalR();
+// =====================================================
+// Framework Services
+// =====================================================
 
-// Controllers
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSignalR();
 
+// =====================================================
 // Swagger + JWT
+// =====================================================
+
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo
@@ -108,7 +147,7 @@ builder.Services.AddSwaggerGen(options =>
         Scheme = "bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "JWT token girin. Örnek: Bearer abc123..."
+        Description = "JWT token girin. ?rnek: Bearer abc123..."
     });
 
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -127,7 +166,10 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// DI - Repositories
+// =====================================================
+// Dependency Injection - Repositories
+// =====================================================
+
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IListingRepository, ListingRepository>();
 builder.Services.AddScoped<IFavoriteRepository, FavoriteRepository>();
@@ -136,8 +178,16 @@ builder.Services.AddScoped<IConversationRepository, ConversationRepository>();
 builder.Services.AddScoped<IMessageRepository, MessageRepository>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<IVerificationRepository, VerificationRepository>();
+builder.Services.AddScoped<IAdminUserService, AdminUserService>();
+builder.Services.AddScoped<IAdminActionLogService, AdminActionLogService>();
+builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
+builder.Services.AddScoped<IAdminListingService, AdminListingService>();
+builder.Services.AddScoped<IAdminInvitationService, AdminInvitationService>();
 
-// DI - Services
+// =====================================================
+// Dependency Injection - Services
+// =====================================================
+
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IJwtProvider, JwtProvider>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
@@ -146,16 +196,22 @@ builder.Services.AddScoped<IFavoriteService, FavoriteService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
-builder.Services.AddScoped<ITutorService, TutorService>();
 
 var app = builder.Build();
 
-// Development araçlarý
+// =====================================================
+// Development Tools
+// =====================================================
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+// =====================================================
+// Middleware Pipeline
+// =====================================================
 
 app.UseHttpsRedirection();
 
@@ -164,25 +220,33 @@ app.UseCors("Frontend");
 app.UseAuthentication();
 app.UseAuthorization();
 
-// SignalR endpoint
+// =====================================================
+// Endpoints
+// =====================================================
+
 app.MapHub<ChatHub>("/chat");
 
-// Controllers
 app.MapControllers();
 
-// DB Migration
+// =====================================================
+// Database Migration
+// =====================================================
+
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
     try
     {
         db.Database.Migrate();
-        Console.WriteLine("Database migrated successfully.");
+
+        await SuperAdminSeed.SeedAsync(db, builder.Configuration);
+
+        Console.WriteLine("Database migrated and seeded successfully.");
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Migration error: {ex.Message}");
+        Console.WriteLine($"Migration/Seed error: {ex.Message}");
     }
 }
-
 app.Run();
