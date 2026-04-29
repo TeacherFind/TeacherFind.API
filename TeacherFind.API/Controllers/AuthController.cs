@@ -187,5 +187,4 @@ public class AuthController : ControllerBase
         return Ok(new { message = "Şifre başarıyla değiştirildi." });
     }
 
-
 }
