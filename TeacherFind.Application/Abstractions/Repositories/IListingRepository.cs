@@ -18,6 +18,13 @@ public interface IListingRepository
 
     IQueryable<TeacherListing> Query();
 
+    Task<bool> ExistsForTeacherBranchAsync(
+    Guid teacherUserId,
+    Guid? subjectId,
+    string category,
+    string subCategory,
+    Guid? excludeListingId = null);
+
     Task AddAsync(TeacherListing listing);
     Task<List<TeacherListing>> FilterAsync(ListingFilterRequestDto filter);
     Task<(List<TeacherListing> Items, int TotalCount)> FilterTutorsAsync(TutorFilterRequestDto filter); // NEW — Task 5

@@ -147,5 +147,40 @@ public class ListingRepository : IListingRepository
             .FirstOrDefaultAsync(x =>
                 x.Id == listingId &&
                 x.TeacherProfile.UserId == userId);
+
+
+    }
+
+    public async Task<bool> ExistsForTeacherBranchAsync(
+    Guid teacherUserId,
+    Guid? subjectId,
+    string category,
+    string subCategory,
+    Guid? excludeListingId = null)
+    {
+        var query = _context.TeacherListings
+            .Include(x => x.TeacherProfile)
+            .Where(x => x.TeacherProfile.UserId == teacherUserId);
+
+        if (excludeListingId.HasValue)
+        {
+            query = query.Where(x => x.Id != excludeListingId.Value);
+        }
+
+        if (subjectId.HasValue)
+        {
+            query = query.Where(x => x.SubjectId == subjectId.Value);
+        }
+        else
+        {
+            var normalizedCategory = category.Trim();
+            var normalizedSubCategory = subCategory.Trim();
+
+            query = query.Where(x =>
+                x.Category == normalizedCategory &&
+                x.SubCategory == normalizedSubCategory);
+        }
+
+        return await query.AnyAsync();
     }
 }

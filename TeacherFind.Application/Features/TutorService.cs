@@ -25,14 +25,13 @@ public class TutorService : ITutorService
         _teacherRepository = teacherRepository;
     }
 
-    // Task 5
     public async Task<PagedResultDto<TutorListItemDto>> GetTutorsAsync(
         TutorFilterRequestDto filter,
         Guid? currentUserId)
     {
         var (items, totalCount) = await _listingRepository.FilterTutorsAsync(filter);
 
-        HashSet<Guid> favoriteIds = new();
+        var favoriteIds = new HashSet<Guid>();
 
         if (currentUserId.HasValue)
         {
@@ -67,7 +66,6 @@ public class TutorService : ITutorService
         };
     }
 
-    // Task 6
     public async Task<TutorDetailDto?> GetTutorByIdAsync(
         Guid listingId,
         Guid? currentUserId)
@@ -81,6 +79,7 @@ public class TutorService : ITutorService
         await _listingRepository.SaveChangesAsync();
 
         var reviews = await _reviewRepository.GetByListingIdWithReviewerAsync(listingId);
+
         var averageRating = reviews.Count > 0
             ? reviews.Average(x => x.Rating)
             : 0;
@@ -173,48 +172,26 @@ public class TutorService : ITutorService
     {
         var listings = await _listingRepository.GetByTeacherUserIdAsync(currentUserId);
 
-        return listings.Select(x => new MyTutorListingDto
-        {
-            Id = x.Id,
-            TeacherProfileId = x.TeacherProfileId,
-
-            SubjectId = x.SubjectId,
-            SubjectName = x.Subject?.Name,
-
-            CityId = x.CityId,
-            CityName = x.City?.Name,
-
-            DistrictId = x.DistrictId,
-            DistrictName = x.District?.Name,
-
-            NeighborhoodId = x.NeighborhoodId,
-            NeighborhoodName = x.Neighborhood?.Name,
-
-            Headline = x.Headline,
-            Title = x.Title,
-            Description = x.Description,
-            Category = x.Category,
-            SubCategory = x.SubCategory,
-            ServiceType = x.ServiceType.ToString(),
-            LessonDuration = x.LessonDuration,
-            Price = x.Price,
-            Status = x.Status,
-            IsActive = x.IsActive,
-            IsApproved = x.IsApproved,
-            ViewCount = x.ViewCount,
-            CreatedAt = x.CreatedAt,
-            UpdatedAt = x.UpdatedAt
-        }).ToList();
+        return listings.Select(MapToMyTutorListingDto).ToList();
     }
 
     public async Task<MyTutorListingDto> CreateMyListingAsync(
-    Guid currentUserId,
-    CreateMyTutorListingDto request)
+        Guid currentUserId,
+        CreateMyTutorListingDto request)
     {
         var profile = await _teacherRepository.GetByUserIdAsync(currentUserId);
 
         if (profile is null)
             throw new InvalidOperationException("Öğretmen profili bulunamadı.");
+
+        var branchAlreadyExists = await _listingRepository.ExistsForTeacherBranchAsync(
+            currentUserId,
+            request.SubjectId,
+            request.Category,
+            request.SubCategory);
+
+        if (branchAlreadyExists)
+            throw new InvalidOperationException("Bu branş için zaten bir ilanınız var.");
 
         var listing = new TeacherListing
         {
@@ -240,37 +217,13 @@ public class TutorService : ITutorService
         await _listingRepository.AddAsync(listing);
         await _listingRepository.SaveChangesAsync();
 
-        return new MyTutorListingDto
-        {
-            Id = listing.Id,
-            TeacherProfileId = listing.TeacherProfileId,
-
-            SubjectId = listing.SubjectId,
-            CityId = listing.CityId,
-            DistrictId = listing.DistrictId,
-            NeighborhoodId = listing.NeighborhoodId,
-
-            Headline = listing.Headline,
-            Title = listing.Title,
-            Description = listing.Description,
-            Category = listing.Category,
-            SubCategory = listing.SubCategory,
-            ServiceType = listing.ServiceType.ToString(),
-            LessonDuration = listing.LessonDuration,
-            Price = listing.Price,
-            Status = listing.Status,
-            IsActive = listing.IsActive,
-            IsApproved = listing.IsApproved,
-            ViewCount = listing.ViewCount,
-            CreatedAt = listing.CreatedAt,
-            UpdatedAt = listing.UpdatedAt
-        };
+        return MapToMyTutorListingDto(listing);
     }
 
     public async Task<MyTutorListingDto?> UpdateMyListingAsync(
-    Guid currentUserId,
-    Guid listingId,
-    UpdateMyTutorListingDto request)
+        Guid currentUserId,
+        Guid listingId,
+        UpdateMyTutorListingDto request)
     {
         var listing = await _listingRepository.GetByIdForTeacherUserAsync(
             listingId,
@@ -278,6 +231,16 @@ public class TutorService : ITutorService
 
         if (listing is null)
             return null;
+
+        var branchAlreadyExists = await _listingRepository.ExistsForTeacherBranchAsync(
+            currentUserId,
+            request.SubjectId,
+            request.Category,
+            request.SubCategory,
+            listing.Id);
+
+        if (branchAlreadyExists)
+            throw new InvalidOperationException("Bu branş için zaten başka bir ilanınız var.");
 
         listing.SubjectId = request.SubjectId;
         listing.CityId = request.CityId;
@@ -294,12 +257,17 @@ public class TutorService : ITutorService
         listing.IsActive = request.IsActive;
         listing.UpdatedAt = DateTime.UtcNow;
 
-        // İlan değişince tekrar admin onayına düşsün.
+        // İlan değişince tekrar admin onayına düşer.
         listing.IsApproved = false;
         listing.Status = "Pending";
 
         await _listingRepository.SaveChangesAsync();
 
+        return MapToMyTutorListingDto(listing);
+    }
+
+    private static MyTutorListingDto MapToMyTutorListingDto(TeacherListing listing)
+    {
         return new MyTutorListingDto
         {
             Id = listing.Id,
