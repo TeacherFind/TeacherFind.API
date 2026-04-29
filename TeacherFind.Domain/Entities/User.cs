@@ -36,8 +36,7 @@ public class User : AuditableEntity
     // Relations
     public TeacherProfile? TeacherProfile { get; set; }
 
-    public ICollection<Listing> Listings { get; set; } = new List<Listing>();
-
+    public ICollection<TeacherListing> TeacherListings { get; set; } = new List<TeacherListing>();
     public ICollection<Message> SentMessages { get; set; } = new List<Message>();
 
     public ICollection<Message> ReceivedMessages { get; set; } = new List<Message>();
