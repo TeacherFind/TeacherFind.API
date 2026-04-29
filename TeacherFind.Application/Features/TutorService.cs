@@ -2,6 +2,7 @@
 using TeacherFind.Application.Abstractions.Services;
 using TeacherFind.Contracts.Common;
 using TeacherFind.Contracts.Tutors;
+using TeacherFind.Domain.Entities;
 
 namespace TeacherFind.Application.Features.Tutors;
 
@@ -10,32 +11,36 @@ public class TutorService : ITutorService
     private readonly IListingRepository _listingRepository;
     private readonly IFavoriteRepository _favoriteRepository;
     private readonly IReviewRepository _reviewRepository;
+    private readonly ITeacherRepository _teacherRepository;
 
     public TutorService(
         IListingRepository listingRepository,
         IFavoriteRepository favoriteRepository,
-        IReviewRepository reviewRepository)
+        IReviewRepository reviewRepository,
+        ITeacherRepository teacherRepository)
     {
         _listingRepository = listingRepository;
         _favoriteRepository = favoriteRepository;
         _reviewRepository = reviewRepository;
+        _teacherRepository = teacherRepository;
     }
 
     // Task 5
     public async Task<PagedResultDto<TutorListItemDto>> GetTutorsAsync(
-        TutorFilterRequestDto filter, Guid? currentUserId)
+        TutorFilterRequestDto filter,
+        Guid? currentUserId)
     {
         var (items, totalCount) = await _listingRepository.FilterTutorsAsync(filter);
 
-        // Load all favorites in one query — no N+1
         HashSet<Guid> favoriteIds = new();
+
         if (currentUserId.HasValue)
         {
-            var favs = await _favoriteRepository.GetUserFavoritesAsync(currentUserId.Value);
-            favoriteIds = favs.Select(f => f.ListingId).ToHashSet();
+            var favorites = await _favoriteRepository.GetUserFavoritesAsync(currentUserId.Value);
+            favoriteIds = favorites.Select(x => x.ListingId).ToHashSet();
         }
 
-        var dtos = items.Select(x => new TutorListItemDto
+        var tutors = items.Select(x => new TutorListItemDto
         {
             Id = x.Id,
             TeacherProfileId = x.TeacherProfileId,
@@ -55,7 +60,7 @@ public class TutorService : ITutorService
 
         return new PagedResultDto<TutorListItemDto>
         {
-            Items = dtos,
+            Items = tutors,
             TotalCount = totalCount,
             Page = filter.Page,
             PageSize = filter.PageSize
@@ -63,16 +68,22 @@ public class TutorService : ITutorService
     }
 
     // Task 6
-    public async Task<TutorDetailDto?> GetTutorByIdAsync(Guid listingId, Guid? currentUserId)
+    public async Task<TutorDetailDto?> GetTutorByIdAsync(
+        Guid listingId,
+        Guid? currentUserId)
     {
         var listing = await _listingRepository.GetByIdWithFullDetailsAsync(listingId);
-        if (listing is null) return null;
+
+        if (listing is null)
+            return null;
 
         listing.ViewCount += 1;
         await _listingRepository.SaveChangesAsync();
 
         var reviews = await _reviewRepository.GetByListingIdWithReviewerAsync(listingId);
-        var avgRating = reviews.Count > 0 ? reviews.Average(r => r.Rating) : 0;
+        var averageRating = reviews.Count > 0
+            ? reviews.Average(x => x.Rating)
+            : 0;
 
         var profile = listing.TeacherProfile;
 
@@ -96,33 +107,65 @@ public class TutorService : ITutorService
             Neighborhood = listing.Neighborhood?.Name,
             University = profile.University?.Name,
             Department = profile.DepartmentEntity?.Name,
-            Rating = Math.Round(avgRating, 1),
+            Rating = Math.Round(averageRating, 1),
             ReviewCount = reviews.Count,
             ViewCount = listing.ViewCount,
             Status = listing.Status,
             CreatedAt = listing.CreatedAt,
             UpdatedAt = listing.UpdatedAt,
-            Reviews = reviews.Select(r => new TutorReviewDto
+            Reviews = reviews.Select(x => new TutorReviewDto
             {
-                Id = r.Id,
-                UserId = r.UserId,
-                ReviewerName = r.Reviewer?.FullName ?? "Anonim",
-                Rating = r.Rating,
-                Comment = r.Comment,
-                CreatedAt = r.CreatedAt
+                Id = x.Id,
+                UserId = x.UserId,
+                ReviewerName = x.Reviewer?.FullName ?? "Anonim",
+                Rating = x.Rating,
+                Comment = x.Comment,
+                CreatedAt = x.CreatedAt
             }).ToList(),
-            Availability = profile.Availabilities.Select(a => new TutorAvailabilityDto
+            Availability = profile.Availabilities.Select(x => new TutorAvailabilityDto
             {
-                Day = a.Day,
-                Start = a.Start,
-                End = a.End
+                Day = x.Day,
+                Start = x.Start,
+                End = x.End
             }).ToList(),
-            Documents = profile.Certificates.Select(c => new TutorCertificateDto
+            Documents = profile.Certificates.Select(x => new TutorCertificateDto
             {
-                Name = c.Name,
-                Organization = c.Organization,
-                Year = c.Year
+                Name = x.Name,
+                Organization = x.Organization,
+                Year = x.Year
             }).ToList()
         };
+    }
+
+    public async Task<bool> UpdateMyProfileAsync(
+        Guid currentUserId,
+        UpdateTutorProfileDto request)
+    {
+        var profile = await _teacherRepository.GetByUserIdAsync(currentUserId);
+
+        if (profile is null)
+        {
+            profile = new TeacherProfile
+            {
+                UserId = currentUserId,
+                Rating = 0,
+                TotalReviews = 0,
+                IsStudent = false
+            };
+
+            await _teacherRepository.AddAsync(profile);
+        }
+
+        profile.Headline = request.Headline?.Trim();
+        profile.Bio = request.Bio?.Trim();
+        profile.TeachingStyle = request.TeachingStyle?.Trim();
+        profile.City = request.City?.Trim();
+        profile.UniversityId = request.UniversityId;
+        profile.DepartmentId = request.DepartmentId;
+        profile.UpdatedAt = DateTime.UtcNow;
+
+        await _teacherRepository.SaveChangesAsync();
+
+        return true;
     }
 }

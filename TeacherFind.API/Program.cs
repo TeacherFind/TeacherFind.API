@@ -12,14 +12,15 @@ using TeacherFind.Application.Features.Chat;
 using TeacherFind.Application.Features.Favorites;
 using TeacherFind.Application.Features.Listings;
 using TeacherFind.Application.Features.Notifications;
+using TeacherFind.Application.Features.Reports;
 using TeacherFind.Application.Features.Reviews;
+using TeacherFind.Application.Features.Tutors;
 using TeacherFind.Infrastructure.Identity;
 using TeacherFind.Infrastructure.Persistence;
 using TeacherFind.Infrastructure.Persistence.Repositories;
 using TeacherFind.Infrastructure.Seeds;
-using TeacherFind.Infrastructure.Services.Admin;
-using TeacherFind.Application.Features.Reports;
 using TeacherFind.Infrastructure.Services;
+using TeacherFind.Infrastructure.Services.Admin;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -113,8 +114,7 @@ builder.Services.AddCors(options =>
                 "http://localhost:5173",
                 "https://localhost:5173",
                 "http://localhost:3000",
-                "https://localhost:3000"
-            )
+                "https://localhost:3000")
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
@@ -173,6 +173,7 @@ builder.Services.AddSwaggerGen(options =>
 // =====================================================
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<ITeacherRepository, TeacherRepository>();
 builder.Services.AddScoped<IListingRepository, ListingRepository>();
 builder.Services.AddScoped<IFavoriteRepository, FavoriteRepository>();
 builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
@@ -183,7 +184,7 @@ builder.Services.AddScoped<IVerificationRepository, VerificationRepository>();
 builder.Services.AddScoped<IReportRepository, ReportRepository>();
 
 // =====================================================
-// Dependency Injection - Services
+// Dependency Injection - Application Services
 // =====================================================
 
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -191,17 +192,22 @@ builder.Services.AddScoped<IJwtProvider, JwtProvider>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 
 builder.Services.AddScoped<IListingService, ListingService>();
+builder.Services.AddScoped<ITutorService, TutorService>();
 builder.Services.AddScoped<IFavoriteService, FavoriteService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IReportService, ReportService>();
+
+// =====================================================
+// Dependency Injection - Admin Services
+// =====================================================
 
 builder.Services.AddScoped<IAdminUserService, AdminUserService>();
 builder.Services.AddScoped<IAdminActionLogService, AdminActionLogService>();
 builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
 builder.Services.AddScoped<IAdminListingService, AdminListingService>();
 builder.Services.AddScoped<IAdminInvitationService, AdminInvitationService>();
-builder.Services.AddScoped<IReportService, ReportService>();
 
 var app = builder.Build();
 

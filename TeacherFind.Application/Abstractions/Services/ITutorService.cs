@@ -5,6 +5,15 @@ namespace TeacherFind.Application.Abstractions.Services;
 
 public interface ITutorService
 {
-    Task<PagedResultDto<TutorListItemDto>> GetTutorsAsync(TutorFilterRequestDto filter, Guid? currentUserId);
-    Task<TutorDetailDto?> GetTutorByIdAsync(Guid listingId, Guid? currentUserId);
+    Task<PagedResultDto<TutorListItemDto>> GetTutorsAsync(
+        TutorFilterRequestDto filter,
+        Guid? currentUserId);
+
+    Task<TutorDetailDto?> GetTutorByIdAsync(
+        Guid listingId,
+        Guid? currentUserId);
+
+    Task<bool> UpdateMyProfileAsync(
+        Guid currentUserId,
+        UpdateTutorProfileDto request);
 }
