@@ -30,6 +30,7 @@ public class AppDbContext : DbContext
 
     public DbSet<AdminInvitation> AdminInvitations => Set<AdminInvitation>();
     public DbSet<AdminActionLog> AdminActionLogs => Set<AdminActionLog>();
+    public DbSet<Report> Reports => Set<Report>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -49,6 +50,7 @@ public class AppDbContext : DbContext
 
         ConfigureAdminInvitation(modelBuilder);
         ConfigureAdminActionLog(modelBuilder);
+        ConfigureReport(modelBuilder);
     }
 
     private static void ConfigureConversation(ModelBuilder modelBuilder)
@@ -327,6 +329,35 @@ public class AppDbContext : DbContext
             entity.HasIndex(x => x.Action);
             entity.HasIndex(x => x.EntityName);
             entity.HasIndex(x => x.CreatedAt);
+        });
+    }
+    private static void ConfigureReport(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Report>(entity =>
+        {
+            // Reporter FK
+            entity.HasOne(x => x.Reporter)
+                .WithMany()
+                .HasForeignKey(x => x.ReporterId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // TargetUser FK — NoAction çünkü aynı tabloya iki FK cascade olamaz
+            entity.HasOne(x => x.TargetUser)
+                .WithMany()
+                .HasForeignKey(x => x.TargetUserId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            // TargetListing FK
+            entity.HasOne(x => x.TargetListing)
+                .WithMany()
+                .HasForeignKey(x => x.TargetListingId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.Property(x => x.Reason).IsRequired().HasMaxLength(200);
+            entity.Property(x => x.Status).IsRequired().HasMaxLength(50);
+
+            entity.HasIndex(x => x.Status);
+            entity.HasIndex(x => x.ReporterId);
         });
     }
 }

@@ -26,4 +26,5 @@ public interface IAdminUserService
         Guid adminUserId,
         string? ipAddress,
         string? userAgent);
+
 }

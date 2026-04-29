@@ -1,44 +1,49 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using TeacherFind.Application.Abstractions.Identity;
 using TeacherFind.Application.Abstractions.Repositories;
 using TeacherFind.Application.Abstractions.Services;
 using TeacherFind.Contracts.Auth;
+using TeacherFind.Domain.Entities;
 
 namespace TeacherFind.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/auth")]
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
     private readonly IUserRepository _userRepository;
     private readonly IVerificationRepository _verificationRepository;
+    private readonly IPasswordHasher _passwordHasher;
 
     public AuthController(
         IAuthService authService,
         IUserRepository userRepository,
-        IVerificationRepository verificationRepository)
+        IVerificationRepository verificationRepository,
+        IPasswordHasher passwordHasher)
     {
         _authService = authService;
         _userRepository = userRepository;
         _verificationRepository = verificationRepository;
+        _passwordHasher = passwordHasher;
     }
 
+    // Register — now returns token so frontend redirects to dashboard immediately
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
-        var user = await _authService.RegisterAsync(request);
-
-        return Ok(new
+        try
         {
-            user.Id,
-            user.FullName,
-            user.Email,
-            Role = user.Role.ToString(),
-            user.IsPhoneVerified,
-            user.IsEmailVerified
-        });
+            await _authService.RegisterAsync(request);
+            var loginResult = await _authService.LoginAsync(request.Email, request.Password);
+            return Ok(loginResult);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpPost("login")]
@@ -82,17 +87,69 @@ public class AuthController : ControllerBase
         var code = await _verificationRepository.GetValidCode(dto.UserId, dto.Code);
 
         if (code == null)
-            return BadRequest(new { message = "Kod yanlış" });
+            return BadRequest(new { message = "Kod hatalı veya süresi dolmuş." });
 
         var user = await _userRepository.GetByIdAsync(dto.UserId);
 
         if (user == null)
             return NotFound(new { message = "Kullanıcı bulunamadı" });
 
+        code.IsUsed = true;
         user.IsPhoneVerified = true;
-
         await _userRepository.SaveChangesAsync();
 
         return Ok(new { message = "Telefon doğrulandı" });
+    }
+
+    // POST /api/auth/forgot-password
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
+    {
+        var user = await _userRepository.GetByEmailAsync(dto.Email);
+
+        // Always 200 — don't expose whether the email exists
+        if (user == null)
+            return Ok(new { message = "Eğer bu e-posta kayıtlıysa sıfırlama kodu gönderildi." });
+
+        var code = new VerificationCode
+        {
+            UserId = user.Id,
+            Code = new Random().Next(100000, 999999).ToString(),
+            Type = "PasswordReset",
+            ExpireAt = DateTime.UtcNow.AddMinutes(15)
+        };
+
+        await _verificationRepository.AddAsync(code);
+        await _verificationRepository.SaveChangesAsync();
+
+        // TODO: replace with real email service
+        Console.WriteLine($"[PASSWORD RESET CODE] {user.Email} -> {code.Code}");
+
+        return Ok(new { message = "Sıfırlama kodu e-posta adresinize gönderildi." });
+    }
+
+    // POST /api/auth/reset-password
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
+    {
+        var user = await _userRepository.GetByEmailAsync(dto.Email);
+
+        if (user == null)
+            return BadRequest(new { message = "Geçersiz istek." });
+
+        var code = await _verificationRepository.GetValidCode(user.Id, dto.Code);
+
+        if (code == null)
+            return BadRequest(new { message = "Kod hatalı veya süresi dolmuş." });
+
+        if (string.IsNullOrWhiteSpace(dto.NewPassword) || dto.NewPassword.Length < 6)
+            return BadRequest(new { message = "Şifre en az 6 karakter olmalıdır." });
+
+        user.PasswordHash = _passwordHasher.Hash(dto.NewPassword);
+        code.IsUsed = true;
+
+        await _userRepository.SaveChangesAsync();
+
+        return Ok(new { message = "Şifreniz başarıyla değiştirildi." });
     }
 }

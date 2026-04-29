@@ -27,4 +27,5 @@ public interface IAdminListingService
         Guid adminUserId,
         string? ipAddress,
         string? userAgent);
+
 }
