@@ -70,4 +70,55 @@ public class TutorsController : ControllerBase
 
         return userId;
     }
+
+    // GET /api/tutors/my-listings
+    [Authorize(Policy = "TutorOnly")]
+    [HttpGet("my-listings")]
+    public async Task<IActionResult> GetMyListings()
+    {
+        var currentUserId = GetRequiredCurrentUserId();
+
+        var result = await _tutorService.GetMyListingsAsync(currentUserId);
+
+        return Ok(result);
+    }
+
+    // POST /api/tutors/my-listings
+    [Authorize(Policy = "TutorOnly")]
+    [HttpPost("my-listings")]
+    public async Task<IActionResult> CreateMyListing([FromBody] CreateMyTutorListingDto request)
+    {
+        var currentUserId = GetRequiredCurrentUserId();
+
+        try
+        {
+            var result = await _tutorService.CreateMyListingAsync(currentUserId, request);
+
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    // PUT /api/tutors/my-listings/{id}
+    [Authorize(Policy = "TutorOnly")]
+    [HttpPut("my-listings/{id:guid}")]
+    public async Task<IActionResult> UpdateMyListing(
+        Guid id,
+        [FromBody] UpdateMyTutorListingDto request)
+    {
+        var currentUserId = GetRequiredCurrentUserId();
+
+        var result = await _tutorService.UpdateMyListingAsync(
+            currentUserId,
+            id,
+            request);
+
+        if (result is null)
+            return NotFound(new { message = "İlan bulunamadı veya bu ilana erişim yetkiniz yok." });
+
+        return Ok(result);
+    }
 }

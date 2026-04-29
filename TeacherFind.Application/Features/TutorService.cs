@@ -168,4 +168,169 @@ public class TutorService : ITutorService
 
         return true;
     }
+
+    public async Task<List<MyTutorListingDto>> GetMyListingsAsync(Guid currentUserId)
+    {
+        var listings = await _listingRepository.GetByTeacherUserIdAsync(currentUserId);
+
+        return listings.Select(x => new MyTutorListingDto
+        {
+            Id = x.Id,
+            TeacherProfileId = x.TeacherProfileId,
+
+            SubjectId = x.SubjectId,
+            SubjectName = x.Subject?.Name,
+
+            CityId = x.CityId,
+            CityName = x.City?.Name,
+
+            DistrictId = x.DistrictId,
+            DistrictName = x.District?.Name,
+
+            NeighborhoodId = x.NeighborhoodId,
+            NeighborhoodName = x.Neighborhood?.Name,
+
+            Headline = x.Headline,
+            Title = x.Title,
+            Description = x.Description,
+            Category = x.Category,
+            SubCategory = x.SubCategory,
+            ServiceType = x.ServiceType.ToString(),
+            LessonDuration = x.LessonDuration,
+            Price = x.Price,
+            Status = x.Status,
+            IsActive = x.IsActive,
+            IsApproved = x.IsApproved,
+            ViewCount = x.ViewCount,
+            CreatedAt = x.CreatedAt,
+            UpdatedAt = x.UpdatedAt
+        }).ToList();
+    }
+
+    public async Task<MyTutorListingDto> CreateMyListingAsync(
+    Guid currentUserId,
+    CreateMyTutorListingDto request)
+    {
+        var profile = await _teacherRepository.GetByUserIdAsync(currentUserId);
+
+        if (profile is null)
+            throw new InvalidOperationException("Öğretmen profili bulunamadı.");
+
+        var listing = new TeacherListing
+        {
+            TeacherProfileId = profile.Id,
+            SubjectId = request.SubjectId,
+            CityId = request.CityId,
+            DistrictId = request.DistrictId,
+            NeighborhoodId = request.NeighborhoodId,
+            Headline = request.Headline?.Trim(),
+            Title = request.Title.Trim(),
+            Description = request.Description.Trim(),
+            Category = request.Category.Trim(),
+            SubCategory = request.SubCategory.Trim(),
+            ServiceType = request.ServiceType,
+            LessonDuration = request.LessonDuration,
+            Price = request.Price,
+            IsActive = true,
+            IsApproved = false,
+            Status = "Pending",
+            ViewCount = 0
+        };
+
+        await _listingRepository.AddAsync(listing);
+        await _listingRepository.SaveChangesAsync();
+
+        return new MyTutorListingDto
+        {
+            Id = listing.Id,
+            TeacherProfileId = listing.TeacherProfileId,
+
+            SubjectId = listing.SubjectId,
+            CityId = listing.CityId,
+            DistrictId = listing.DistrictId,
+            NeighborhoodId = listing.NeighborhoodId,
+
+            Headline = listing.Headline,
+            Title = listing.Title,
+            Description = listing.Description,
+            Category = listing.Category,
+            SubCategory = listing.SubCategory,
+            ServiceType = listing.ServiceType.ToString(),
+            LessonDuration = listing.LessonDuration,
+            Price = listing.Price,
+            Status = listing.Status,
+            IsActive = listing.IsActive,
+            IsApproved = listing.IsApproved,
+            ViewCount = listing.ViewCount,
+            CreatedAt = listing.CreatedAt,
+            UpdatedAt = listing.UpdatedAt
+        };
+    }
+
+    public async Task<MyTutorListingDto?> UpdateMyListingAsync(
+    Guid currentUserId,
+    Guid listingId,
+    UpdateMyTutorListingDto request)
+    {
+        var listing = await _listingRepository.GetByIdForTeacherUserAsync(
+            listingId,
+            currentUserId);
+
+        if (listing is null)
+            return null;
+
+        listing.SubjectId = request.SubjectId;
+        listing.CityId = request.CityId;
+        listing.DistrictId = request.DistrictId;
+        listing.NeighborhoodId = request.NeighborhoodId;
+        listing.Headline = request.Headline?.Trim();
+        listing.Title = request.Title.Trim();
+        listing.Description = request.Description.Trim();
+        listing.Category = request.Category.Trim();
+        listing.SubCategory = request.SubCategory.Trim();
+        listing.ServiceType = request.ServiceType;
+        listing.LessonDuration = request.LessonDuration;
+        listing.Price = request.Price;
+        listing.IsActive = request.IsActive;
+        listing.UpdatedAt = DateTime.UtcNow;
+
+        // İlan değişince tekrar admin onayına düşsün.
+        listing.IsApproved = false;
+        listing.Status = "Pending";
+
+        await _listingRepository.SaveChangesAsync();
+
+        return new MyTutorListingDto
+        {
+            Id = listing.Id,
+            TeacherProfileId = listing.TeacherProfileId,
+
+            SubjectId = listing.SubjectId,
+            SubjectName = listing.Subject?.Name,
+
+            CityId = listing.CityId,
+            CityName = listing.City?.Name,
+
+            DistrictId = listing.DistrictId,
+            DistrictName = listing.District?.Name,
+
+            NeighborhoodId = listing.NeighborhoodId,
+            NeighborhoodName = listing.Neighborhood?.Name,
+
+            Headline = listing.Headline,
+            Title = listing.Title,
+            Description = listing.Description,
+            Category = listing.Category,
+            SubCategory = listing.SubCategory,
+            ServiceType = listing.ServiceType.ToString(),
+            LessonDuration = listing.LessonDuration,
+            Price = listing.Price,
+            Status = listing.Status,
+            IsActive = listing.IsActive,
+            IsApproved = listing.IsApproved,
+            ViewCount = listing.ViewCount,
+            CreatedAt = listing.CreatedAt,
+            UpdatedAt = listing.UpdatedAt
+        };
+    }
 }

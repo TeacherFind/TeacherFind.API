@@ -152,4 +152,40 @@ public class AuthController : ControllerBase
 
         return Ok(new { message = "Şifreniz başarıyla değiştirildi." });
     }
+
+    [Authorize]
+    [HttpPost("change-password")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
+    {
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (!Guid.TryParse(userIdValue, out var userId))
+            return Unauthorized(new { message = "Geçersiz token." });
+
+        var user = await _userRepository.GetByIdAsync(userId);
+
+        if (user == null)
+            return Unauthorized(new { message = "Kullanıcı bulunamadı." });
+
+        var isCurrentPasswordValid = _passwordHasher.Verify(
+            dto.CurrentPassword,
+            user.PasswordHash);
+
+        if (!isCurrentPasswordValid)
+            return BadRequest(new { message = "Mevcut şifre hatalı." });
+
+        if (string.IsNullOrWhiteSpace(dto.NewPassword) || dto.NewPassword.Length < 6)
+            return BadRequest(new { message = "Yeni şifre en az 6 karakter olmalıdır." });
+
+        user.PasswordHash = _passwordHasher.Hash(dto.NewPassword);
+        user.RefreshToken = null;
+        user.RefreshTokenExpiryTime = null;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _userRepository.SaveChangesAsync();
+
+        return Ok(new { message = "Şifre başarıyla değiştirildi." });
+    }
+
+
 }

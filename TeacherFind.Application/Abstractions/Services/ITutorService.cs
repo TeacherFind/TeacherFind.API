@@ -16,4 +16,16 @@ public interface ITutorService
     Task<bool> UpdateMyProfileAsync(
         Guid currentUserId,
         UpdateTutorProfileDto request);
+
+    Task<List<MyTutorListingDto>> GetMyListingsAsync(
+        Guid currentUserId);
+
+    Task<MyTutorListingDto> CreateMyListingAsync(
+    Guid currentUserId,
+    CreateMyTutorListingDto request);
+
+    Task<MyTutorListingDto?> UpdateMyListingAsync(
+    Guid currentUserId,
+    Guid listingId,
+    UpdateMyTutorListingDto request);
 }

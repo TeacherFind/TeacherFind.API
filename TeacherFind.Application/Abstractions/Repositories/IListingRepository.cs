@@ -13,6 +13,9 @@ public interface IListingRepository
     Task<TeacherListing?> GetByIdForOwnerAsync(Guid id, Guid userId);
     Task<TeacherProfile?> GetTeacherProfileByUserIdAsync(Guid userId);
 
+    Task<List<TeacherListing>> GetByTeacherUserIdAsync(Guid userId);
+    Task<TeacherListing?> GetByIdForTeacherUserAsync(Guid listingId, Guid userId);
+
     IQueryable<TeacherListing> Query();
 
     Task AddAsync(TeacherListing listing);
