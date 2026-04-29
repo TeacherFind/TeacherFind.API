@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using TeacherFind.Application.Abstractions.Services;
+using TeacherFind.Contracts.Bookings;
 using TeacherFind.Contracts.Tutors;
 
 namespace TeacherFind.API.Controllers;
@@ -11,10 +12,14 @@ namespace TeacherFind.API.Controllers;
 public class TutorsController : ControllerBase
 {
     private readonly ITutorService _tutorService;
+    private readonly IBookingService _bookingService;
 
-    public TutorsController(ITutorService tutorService)
+    public TutorsController(
+        ITutorService tutorService,
+        IBookingService bookingService)
     {
         _tutorService = tutorService;
+        _bookingService = bookingService;
     }
 
     // GET /api/tutors
@@ -107,6 +112,101 @@ public class TutorsController : ControllerBase
             return BadRequest(new { message = "Profil güncellenemedi." });
 
         return Ok(new { message = "Profil başarıyla güncellendi." });
+    }
+
+    // GET /api/tutors/my-bookings
+    [Authorize(Policy = "TutorOnly")]
+    [HttpGet("my-bookings")]
+    public async Task<IActionResult> GetMyBookings()
+    {
+        var currentUserId = GetRequiredCurrentUserId();
+
+        var result = await _bookingService.GetTutorBookingsAsync(currentUserId);
+
+        return Ok(result);
+    }
+
+    // PUT /api/tutors/my-bookings/{id}/approve
+    [Authorize(Policy = "TutorOnly")]
+    [HttpPut("my-bookings/{id:guid}/approve")]
+    public async Task<IActionResult> ApproveBooking(Guid id)
+    {
+        var currentUserId = GetRequiredCurrentUserId();
+
+        try
+        {
+            var result = await _bookingService.ApproveAsync(id, currentUserId);
+
+            if (!result)
+                return NotFound(new { message = "Rezervasyon bulunamadı veya erişim yetkiniz yok." });
+
+            return Ok(new { message = "Rezervasyon onaylandı." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    // PUT /api/tutors/my-bookings/{id}/reject
+    [Authorize(Policy = "TutorOnly")]
+    [HttpPut("my-bookings/{id:guid}/reject")]
+    public async Task<IActionResult> RejectBooking(
+        Guid id,
+        [FromBody] RejectBookingRequestDto request)
+    {
+        var currentUserId = GetRequiredCurrentUserId();
+
+        try
+        {
+            var result = await _bookingService.RejectAsync(
+                id,
+                currentUserId,
+                request);
+
+            if (!result)
+                return NotFound(new { message = "Rezervasyon bulunamadı veya erişim yetkiniz yok." });
+
+            return Ok(new { message = "Rezervasyon reddedildi." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    // PUT /api/tutors/my-bookings/{id}/complete
+    [Authorize(Policy = "TutorOnly")]
+    [HttpPut("my-bookings/{id:guid}/complete")]
+    public async Task<IActionResult> CompleteBooking(Guid id)
+    {
+        var currentUserId = GetRequiredCurrentUserId();
+
+        try
+        {
+            var result = await _bookingService.CompleteAsync(id, currentUserId);
+
+            if (!result)
+                return NotFound(new { message = "Rezervasyon bulunamadı veya erişim yetkiniz yok." });
+
+            return Ok(new { message = "Ders tamamlandı olarak işaretlendi." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    // GET /api/tutors/my-students
+    [Authorize(Policy = "TutorOnly")]
+    [HttpGet("my-students")]
+    public async Task<IActionResult> GetMyStudents()
+    {
+        var currentUserId = GetRequiredCurrentUserId();
+
+        var result = await _tutorService.GetMyStudentsAsync(currentUserId);
+
+        return Ok(result);
     }
 
     private Guid? GetCurrentUserId()
