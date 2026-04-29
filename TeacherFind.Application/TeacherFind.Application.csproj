@@ -24,7 +24,6 @@
     <Folder Include="Features\Listings\Queries\" />
     <Folder Include="Features\ReferenceData\" />
     <Folder Include="Features\Parents\" />
-    <Folder Include="Features\Students\" />
     <Folder Include="Features\Teachers\" />
     <Folder Include="Features\Users\" />
     <Folder Include="Mapping\" />

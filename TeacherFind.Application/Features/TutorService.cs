@@ -12,17 +12,20 @@ public class TutorService : ITutorService
     private readonly IFavoriteRepository _favoriteRepository;
     private readonly IReviewRepository _reviewRepository;
     private readonly ITeacherRepository _teacherRepository;
+    private readonly IBookingRepository _bookingRepository;
 
     public TutorService(
-        IListingRepository listingRepository,
-        IFavoriteRepository favoriteRepository,
-        IReviewRepository reviewRepository,
-        ITeacherRepository teacherRepository)
+    IListingRepository listingRepository,
+    IFavoriteRepository favoriteRepository,
+    IReviewRepository reviewRepository,
+    ITeacherRepository teacherRepository,
+    IBookingRepository bookingRepository)
     {
         _listingRepository = listingRepository;
         _favoriteRepository = favoriteRepository;
         _reviewRepository = reviewRepository;
         _teacherRepository = teacherRepository;
+        _bookingRepository = bookingRepository;
     }
 
     public async Task<PagedResultDto<TutorListItemDto>> GetTutorsAsync(
@@ -300,5 +303,32 @@ public class TutorService : ITutorService
             CreatedAt = listing.CreatedAt,
             UpdatedAt = listing.UpdatedAt
         };
+    }
+
+    public async Task<List<MyStudentDto>> GetMyStudentsAsync(Guid currentUserId)
+    {
+        var completedBookings = await _bookingRepository.GetCompletedByTutorUserIdAsync(currentUserId);
+
+        return completedBookings
+            .GroupBy(x => x.StudentUserId)
+            .Select(group =>
+            {
+                var lastBooking = group
+                    .OrderByDescending(x => x.StartTime)
+                    .First();
+
+                return new MyStudentDto
+                {
+                    StudentId = lastBooking.StudentUserId,
+                    StudentName = lastBooking.StudentUser.FullName,
+                    TeacherListingId = lastBooking.TeacherListingId,
+                    LessonTitle = lastBooking.TeacherListing.Title,
+                    LastLessonDate = lastBooking.StartTime,
+                    Source = lastBooking.Source.ToString(),
+                    CompletedLessonCount = group.Count()
+                };
+            })
+            .OrderByDescending(x => x.LastLessonDate)
+            .ToList();
     }
 }
