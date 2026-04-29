@@ -25,9 +25,6 @@ public class TeacherProfile : AuditableEntity
     public string? EducationLevel { get; set; }
     public bool? IsStudent { get; set; }
 
-    public string? Headline { get; set; }
-
-    public string? TeachingStyle { get; set; }
     public ICollection<TeacherCertificate> Certificates { get; set; } = new List<TeacherCertificate>();
     public ICollection<TeacherAvailability> Availabilities { get; set; } = new List<TeacherAvailability>();
 }
