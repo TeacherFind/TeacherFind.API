@@ -23,4 +23,5 @@ public interface IAdminInvitationService
         AcceptAdminInvitationRequest request,
         string? ipAddress,
         string? userAgent);
+
 }

@@ -18,6 +18,8 @@ using TeacherFind.Infrastructure.Persistence;
 using TeacherFind.Infrastructure.Persistence.Repositories;
 using TeacherFind.Infrastructure.Seeds;
 using TeacherFind.Infrastructure.Services.Admin;
+using TeacherFind.Application.Features.Reports;
+using TeacherFind.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -178,6 +180,7 @@ builder.Services.AddScoped<IConversationRepository, ConversationRepository>();
 builder.Services.AddScoped<IMessageRepository, MessageRepository>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<IVerificationRepository, VerificationRepository>();
+builder.Services.AddScoped<IReportRepository, ReportRepository>();
 
 // =====================================================
 // Dependency Injection - Services
@@ -198,6 +201,7 @@ builder.Services.AddScoped<IAdminActionLogService, AdminActionLogService>();
 builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
 builder.Services.AddScoped<IAdminListingService, AdminListingService>();
 builder.Services.AddScoped<IAdminInvitationService, AdminInvitationService>();
+builder.Services.AddScoped<IReportService, ReportService>();
 
 var app = builder.Build();
 

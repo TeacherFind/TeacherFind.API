@@ -8,7 +8,9 @@ public class TeacherProfile : AuditableEntity
     public User User { get; set; } = default!;
 
     public string? Title { get; set; }
+    public string? Headline { get; set; }
     public string? Bio { get; set; }
+    public string? TeachingStyle { get; set; }
     public string? City { get; set; }
 
     public double Rating { get; set; }
