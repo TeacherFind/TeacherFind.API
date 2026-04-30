@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "../Ekta-Mobilya/Ekta Mobilya web/ekta-mobilya-frontend/.vscode"
+		},
+		{
+			"path": "../Ekta-Mobilya/Ekta Mobilya web/ekta-mobilya-frontend/node_modules"
+		},
+		{
+			"path": "../Ekta-Mobilya/Ekta Mobilya web/ekta-mobilya-frontend/public"
+		},
+		{
+			"path": "../Ekta-Mobilya/Ekta Mobilya web/ekta-mobilya-frontend/src"
+		}
+	]
+}

@@ -1,6 +1,7 @@
 namespace TeacherFind.Mobile.Shell;
 
-public partial class AppShell : ResourceDictionary
+// Eski hali: public partial class AppShell : Shell
+public partial class AppShell : Microsoft.Maui.Controls.Shell
 {
 	public AppShell()
 	{
