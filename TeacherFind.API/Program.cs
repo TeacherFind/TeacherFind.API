@@ -23,6 +23,7 @@ using TeacherFind.Infrastructure.Persistence.Repositories;
 using TeacherFind.Infrastructure.Seeds;
 using TeacherFind.Infrastructure.Services;
 using TeacherFind.Infrastructure.Services.Admin;
+using TeacherFind.Infrastructure.Persistence.Seed;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -257,6 +258,10 @@ using (var scope = app.Services.CreateScope())
     try
     {
         db.Database.Migrate();
+
+        await CitySeed.SeedAsync(db);
+        await DistrictSeed.SeedAsync(db);
+        await NeighborhoodSeed.SeedAsync(db);
 
         await SuperAdminSeed.SeedAsync(db, builder.Configuration);
 

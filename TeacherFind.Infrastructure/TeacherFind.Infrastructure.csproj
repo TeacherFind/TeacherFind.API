@@ -7,6 +7,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Persistence\Seed\Data\turkiye-il-ilce-mahalle.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Persistence\Seed\Data\turkiye-il-ilce-mahalle.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\TeacherFind.Application\TeacherFind.Application.csproj" />
     <ProjectReference Include="..\TeacherFind.Contracts\TeacherFind.Contracts.csproj" />
     <ProjectReference Include="..\TeacherFind.Domain\TeacherFind.Domain.csproj" />
@@ -32,6 +42,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="10.0.7" />
   </ItemGroup>
 
 </Project>
