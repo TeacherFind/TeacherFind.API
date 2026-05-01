@@ -41,9 +41,32 @@ public class TutorProfileDto
 public class TutorProfileCertificateDto
 {
     public Guid Id { get; set; }
+
     public string Name { get; set; } = default!;
+
     public string Organization { get; set; } = default!;
+
     public int Year { get; set; }
+
+    public string? FileUrl { get; set; }
+
+    public string? FileName { get; set; }
+
+    public string? ContentType { get; set; }
+}
+public class AddTutorCertificateDto
+{
+    public string Name { get; set; } = default!;
+
+    public string Organization { get; set; } = default!;
+
+    public int Year { get; set; }
+
+    public string? FileUrl { get; set; }
+
+    public string? FileName { get; set; }
+
+    public string? ContentType { get; set; }
 }
 
 public class TutorProfileAvailabilityDto

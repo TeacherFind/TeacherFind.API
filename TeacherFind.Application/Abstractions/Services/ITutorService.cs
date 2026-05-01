@@ -32,4 +32,10 @@ public interface ITutorService
     Task<List<MyStudentDto>> GetMyStudentsAsync(Guid currentUserId);
 
     Task<TutorProfileDto?> GetMyProfileAsync(Guid userId);
+
+    Task<List<TutorProfileCertificateDto>> GetMyCertificatesAsync(Guid currentUserId);
+
+    Task<TutorProfileCertificateDto> AddMyCertificateAsync(Guid currentUserId, AddTutorCertificateDto request);
+
+    Task<bool> DeleteMyCertificateAsync(Guid currentUserId, Guid certificateId);
 }

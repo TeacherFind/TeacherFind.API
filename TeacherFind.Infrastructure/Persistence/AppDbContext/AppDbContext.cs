@@ -22,6 +22,8 @@ public class AppDbContext : DbContext
 
     public DbSet<Booking> Bookings => Set<Booking>();
 
+    public DbSet<TeacherCertificate> TeacherCertificates => Set<TeacherCertificate>();
+
     // =====================================================
     // Interaction Tables
     // =====================================================

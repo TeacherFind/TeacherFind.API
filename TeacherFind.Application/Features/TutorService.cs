@@ -372,7 +372,10 @@ public class TutorService : ITutorService
                 Id = c.Id,
                 Name = c.Name,
                 Organization = c.Organization,
-                Year = c.Year
+                Year = c.Year,
+                FileUrl = c.FileUrl,
+                FileName = c.FileName,
+                ContentType = c.ContentType
             }).ToList(),
 
             Availabilities = profile.Availabilities.Select(a => new TutorProfileAvailabilityDto
@@ -383,5 +386,77 @@ public class TutorService : ITutorService
                 End = a.End
             }).ToList()
         };
+    }
+
+    public async Task<List<TutorProfileCertificateDto>> GetMyCertificatesAsync(Guid currentUserId)
+    {
+        var profile = await _teacherRepository.GetByUserIdWithCertificatesAsync(currentUserId);
+
+        if (profile is null)
+            return new List<TutorProfileCertificateDto>();
+
+        return profile.Certificates
+            .OrderByDescending(x => x.Year)
+            .Select(x => new TutorProfileCertificateDto
+            {
+                Id = x.Id,
+                Name = x.Name,
+                Organization = x.Organization,
+                Year = x.Year,
+                FileUrl = x.FileUrl,
+                FileName = x.FileName,
+                ContentType = x.ContentType
+            })
+            .ToList();
+    }
+
+    public async Task<TutorProfileCertificateDto> AddMyCertificateAsync(
+        Guid currentUserId,
+        AddTutorCertificateDto request)
+    {
+        var profile = await _teacherRepository.GetByUserIdAsync(currentUserId);
+
+        if (profile is null)
+            throw new InvalidOperationException("Öğretmen profili bulunamadı.");
+
+        var certificate = new TeacherCertificate
+        {
+            TeacherProfileId = profile.Id,
+            Name = request.Name.Trim(),
+            Organization = request.Organization.Trim(),
+            Year = request.Year,
+            FileUrl = request.FileUrl,
+            FileName = request.FileName,
+            ContentType = request.ContentType
+        };
+
+        await _teacherRepository.AddCertificateAsync(certificate);
+        await _teacherRepository.SaveChangesAsync();
+
+        return new TutorProfileCertificateDto
+        {
+            Id = certificate.Id,
+            Name = certificate.Name,
+            Organization = certificate.Organization,
+            Year = certificate.Year,
+            FileUrl = certificate.FileUrl,
+            FileName = certificate.FileName,
+            ContentType = certificate.ContentType
+        };
+    }
+
+    public async Task<bool> DeleteMyCertificateAsync(Guid currentUserId, Guid certificateId)
+    {
+        var certificate = await _teacherRepository.GetCertificateForUserAsync(
+            currentUserId,
+            certificateId);
+
+        if (certificate is null)
+            return false;
+
+        _teacherRepository.RemoveCertificate(certificate);
+        await _teacherRepository.SaveChangesAsync();
+
+        return true;
     }
 }

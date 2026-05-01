@@ -304,4 +304,114 @@ public class TutorsController : ControllerBase
             profileImageUrl = avatarUrl
         });
     }
+
+    // GET /api/tutors/certificates
+    [Authorize(Policy = "TutorOnly")]
+    [HttpGet("certificates")]
+    public async Task<IActionResult> GetMyCertificates()
+    {
+        var currentUserId = GetRequiredCurrentUserId();
+
+        var result = await _tutorService.GetMyCertificatesAsync(currentUserId);
+
+        return Ok(result);
+    }
+
+    // POST /api/tutors/certificates
+    [Authorize(Policy = "TutorOnly")]
+    [HttpPost("certificates")]
+    public async Task<IActionResult> AddCertificate(
+        [FromForm] string name,
+        [FromForm] string organization,
+        [FromForm] int year,
+        IFormFile? file)
+    {
+        var currentUserId = GetRequiredCurrentUserId();
+
+        if (string.IsNullOrWhiteSpace(name))
+            return BadRequest(new { message = "Sertifika adı zorunludur." });
+
+        if (string.IsNullOrWhiteSpace(organization))
+            return BadRequest(new { message = "Kurum adı zorunludur." });
+
+        if (year < 1950 || year > DateTime.UtcNow.Year + 1)
+            return BadRequest(new { message = "Geçerli bir yıl giriniz." });
+
+        string? fileUrl = null;
+        string? fileName = null;
+        string? contentType = null;
+
+        if (file is not null && file.Length > 0)
+        {
+            var allowedExtensions = new[] { ".pdf", ".jpg", ".jpeg", ".png", ".webp" };
+            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+
+            if (!allowedExtensions.Contains(extension))
+                return BadRequest(new { message = "Sadece PDF veya görsel dosyası yüklenebilir." });
+
+            const long maxFileSize = 5 * 1024 * 1024;
+
+            if (file.Length > maxFileSize)
+                return BadRequest(new { message = "Dosya boyutu en fazla 5 MB olabilir." });
+
+            var uploadsFolder = Path.Combine(
+                Directory.GetCurrentDirectory(),
+                "wwwroot",
+                "uploads",
+                "certificates");
+
+            if (!Directory.Exists(uploadsFolder))
+                Directory.CreateDirectory(uploadsFolder);
+
+            var storedFileName = $"{currentUserId}_{Guid.NewGuid():N}{extension}";
+            var filePath = Path.Combine(uploadsFolder, storedFileName);
+
+            await using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            fileUrl = $"/uploads/certificates/{storedFileName}";
+            fileName = file.FileName;
+            contentType = file.ContentType;
+        }
+
+        try
+        {
+            var result = await _tutorService.AddMyCertificateAsync(
+                currentUserId,
+                new AddTutorCertificateDto
+                {
+                    Name = name,
+                    Organization = organization,
+                    Year = year,
+                    FileUrl = fileUrl,
+                    FileName = fileName,
+                    ContentType = contentType
+                });
+
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    // DELETE /api/tutors/certificates/{id}
+    [Authorize(Policy = "TutorOnly")]
+    [HttpDelete("certificates/{id:guid}")]
+    public async Task<IActionResult> DeleteCertificate(Guid id)
+    {
+        var currentUserId = GetRequiredCurrentUserId();
+
+        var result = await _tutorService.DeleteMyCertificateAsync(
+            currentUserId,
+            id);
+
+        if (!result)
+            return NotFound(new { message = "Sertifika bulunamadı veya erişim yetkiniz yok." });
+
+        return Ok(new { message = "Sertifika silindi." });
+    }
 }
