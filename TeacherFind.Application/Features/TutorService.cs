@@ -372,7 +372,10 @@ public class TutorService : ITutorService
                 Id = c.Id,
                 Name = c.Name,
                 Organization = c.Organization,
-                Year = c.Year
+                Year = c.Year,
+                FileUrl = c.FileUrl,
+                FileName = c.FileName,
+                ContentType = c.ContentType
             }).ToList(),
 
             Availabilities = profile.Availabilities.Select(a => new TutorProfileAvailabilityDto
@@ -382,6 +385,171 @@ public class TutorService : ITutorService
                 Start = a.Start,
                 End = a.End
             }).ToList()
+        };
+    }
+
+    public async Task<List<TutorProfileCertificateDto>> GetMyCertificatesAsync(Guid currentUserId)
+    {
+        var profile = await _teacherRepository.GetByUserIdWithCertificatesAsync(currentUserId);
+
+        if (profile is null)
+            return new List<TutorProfileCertificateDto>();
+
+        return profile.Certificates
+            .OrderByDescending(x => x.Year)
+            .Select(x => new TutorProfileCertificateDto
+            {
+                Id = x.Id,
+                Name = x.Name,
+                Organization = x.Organization,
+                Year = x.Year,
+                FileUrl = x.FileUrl,
+                FileName = x.FileName,
+                ContentType = x.ContentType
+            })
+            .ToList();
+    }
+
+    public async Task<TutorProfileCertificateDto> AddMyCertificateAsync(
+        Guid currentUserId,
+        AddTutorCertificateDto request)
+    {
+        var profile = await _teacherRepository.GetByUserIdAsync(currentUserId);
+
+        if (profile is null)
+            throw new InvalidOperationException("Öğretmen profili bulunamadı.");
+
+        var certificate = new TeacherCertificate
+        {
+            TeacherProfileId = profile.Id,
+            Name = request.Name.Trim(),
+            Organization = request.Organization.Trim(),
+            Year = request.Year,
+            FileUrl = request.FileUrl,
+            FileName = request.FileName,
+            ContentType = request.ContentType
+        };
+
+        await _teacherRepository.AddCertificateAsync(certificate);
+        await _teacherRepository.SaveChangesAsync();
+
+        return new TutorProfileCertificateDto
+        {
+            Id = certificate.Id,
+            Name = certificate.Name,
+            Organization = certificate.Organization,
+            Year = certificate.Year,
+            FileUrl = certificate.FileUrl,
+            FileName = certificate.FileName,
+            ContentType = certificate.ContentType
+        };
+    }
+
+    public async Task<bool> DeleteMyCertificateAsync(Guid currentUserId, Guid certificateId)
+    {
+        var certificate = await _teacherRepository.GetCertificateForUserAsync(
+            currentUserId,
+            certificateId);
+
+        if (certificate is null)
+            return false;
+
+        _teacherRepository.RemoveCertificate(certificate);
+        await _teacherRepository.SaveChangesAsync();
+
+        return true;
+    }
+
+    public async Task<List<TutorProfileAvailabilityDto>> GetMyAvailabilityAsync(Guid currentUserId)
+    {
+        var profile = await _teacherRepository.GetByUserIdWithAvailabilitiesAsync(currentUserId);
+
+        if (profile is null)
+            return new List<TutorProfileAvailabilityDto>();
+
+        return profile.Availabilities
+            .OrderBy(x => GetDayOrder(x.Day))
+            .ThenBy(x => x.Start)
+            .Select(x => new TutorProfileAvailabilityDto
+            {
+                Id = x.Id,
+                Day = x.Day,
+                Start = x.Start,
+                End = x.End
+            })
+            .ToList();
+    }
+
+    public async Task<List<TutorProfileAvailabilityDto>> UpdateMyAvailabilityAsync(
+        Guid currentUserId,
+        UpdateTutorAvailabilityDto request)
+    {
+        var profile = await _teacherRepository.GetByUserIdAsync(currentUserId);
+
+        if (profile is null)
+            throw new InvalidOperationException("Öğretmen profili bulunamadı.");
+
+        var availabilities = request.Items
+            .Where(x =>
+                !string.IsNullOrWhiteSpace(x.Day) &&
+                !string.IsNullOrWhiteSpace(x.Start) &&
+                !string.IsNullOrWhiteSpace(x.End))
+            .Select(x => new TeacherAvailability
+            {
+                TeacherProfileId = profile.Id,
+                Day = x.Day.Trim(),
+                Start = x.Start.Trim(),
+                End = x.End.Trim()
+            })
+            .ToList();
+
+        await _teacherRepository.ReplaceAvailabilitiesAsync(profile.Id, availabilities);
+
+        profile.UpdatedAt = DateTime.UtcNow;
+
+        await _teacherRepository.SaveChangesAsync();
+
+        return availabilities
+            .OrderBy(x => GetDayOrder(x.Day))
+            .ThenBy(x => x.Start)
+            .Select(x => new TutorProfileAvailabilityDto
+            {
+                Id = x.Id,
+                Day = x.Day,
+                Start = x.Start,
+                End = x.End
+            })
+            .ToList();
+    }
+
+    public async Task<bool> DeleteMyAvailabilityAsync(Guid currentUserId, Guid availabilityId)
+    {
+        var availability = await _teacherRepository.GetAvailabilityForUserAsync(
+            currentUserId,
+            availabilityId);
+
+        if (availability is null)
+            return false;
+
+        _teacherRepository.RemoveAvailability(availability);
+
+        await _teacherRepository.SaveChangesAsync();
+
+        return true;
+    }
+
+    private static int GetDayOrder(string day)
+    {
+        return day.Trim().ToLowerInvariant() switch
+        {
+            "monday" or "pazartesi" => 1,
+            "tuesday" or "salı" => 2,
+            "wednesday" or "çarşamba" => 3,
+            "thursday" or "perşembe" => 4,
+            "friday" or "cuma" => 5,
+            "saturday" or "cumartesi" => 6,
+            "sunday" or "pazar" => 7,
+            _ => 99
         };
     }
 }

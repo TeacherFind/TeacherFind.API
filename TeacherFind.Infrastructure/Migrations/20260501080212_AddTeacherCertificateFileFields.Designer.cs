@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TeacherFind.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using TeacherFind.Infrastructure.Persistence;
 namespace TeacherFind.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260501080212_AddTeacherCertificateFileFields")]
+    partial class AddTeacherCertificateFileFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -549,18 +552,15 @@ namespace TeacherFind.Infrastructure.Migrations
 
                     b.Property<string>("Day")
                         .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("End")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Start")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid>("TeacherProfileId")
                         .HasColumnType("uniqueidentifier");
@@ -569,7 +569,7 @@ namespace TeacherFind.Infrastructure.Migrations
 
                     b.HasIndex("TeacherProfileId");
 
-                    b.ToTable("TeacherAvailabilities");
+                    b.ToTable("TeacherAvailability");
                 });
 
             modelBuilder.Entity("TeacherFind.Domain.Entities.TeacherCertificate", b =>
@@ -579,26 +579,21 @@ namespace TeacherFind.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("ContentType")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("FileName")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("FileUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Organization")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid>("TeacherProfileId")
                         .HasColumnType("uniqueidentifier");
@@ -1052,13 +1047,11 @@ namespace TeacherFind.Infrastructure.Migrations
 
             modelBuilder.Entity("TeacherFind.Domain.Entities.TeacherAvailability", b =>
                 {
-                    b.HasOne("TeacherFind.Domain.Entities.TeacherProfile", "TeacherProfile")
+                    b.HasOne("TeacherFind.Domain.Entities.TeacherProfile", null)
                         .WithMany("Availabilities")
                         .HasForeignKey("TeacherProfileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("TeacherProfile");
                 });
 
             modelBuilder.Entity("TeacherFind.Domain.Entities.TeacherCertificate", b =>

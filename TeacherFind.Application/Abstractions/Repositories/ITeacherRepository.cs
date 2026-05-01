@@ -11,6 +11,22 @@ public interface ITeacherRepository
 {
     Task<TeacherProfile?> GetByUserIdAsync(Guid userId);
 
+    Task<TeacherProfile?> GetByUserIdWithCertificatesAsync(Guid userId);
+
+    Task<TeacherProfile?> GetByUserIdWithAvailabilitiesAsync(Guid userId);
+
+    Task<TeacherCertificate?> GetCertificateForUserAsync(Guid userId, Guid certificateId);
+
+    Task<TeacherAvailability?> GetAvailabilityForUserAsync(Guid userId, Guid availabilityId);
+
+    Task AddCertificateAsync(TeacherCertificate certificate);
+
+    void RemoveCertificate(TeacherCertificate certificate);
+
+    Task ReplaceAvailabilitiesAsync(Guid teacherProfileId, List<TeacherAvailability> availabilities);
+
+    void RemoveAvailability(TeacherAvailability availability);
+
     Task AddAsync(TeacherProfile teacher);
 
     Task SaveChangesAsync();
