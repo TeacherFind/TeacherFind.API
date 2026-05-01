@@ -13,7 +13,17 @@ public interface IListingRepository
     Task<TeacherListing?> GetByIdForOwnerAsync(Guid id, Guid userId);
     Task<TeacherProfile?> GetTeacherProfileByUserIdAsync(Guid userId);
 
+    Task<List<TeacherListing>> GetByTeacherUserIdAsync(Guid userId);
+    Task<TeacherListing?> GetByIdForTeacherUserAsync(Guid listingId, Guid userId);
+
     IQueryable<TeacherListing> Query();
+
+    Task<bool> ExistsForTeacherBranchAsync(
+    Guid teacherUserId,
+    Guid? subjectId,
+    string category,
+    string subCategory,
+    Guid? excludeListingId = null);
 
     Task AddAsync(TeacherListing listing);
     Task<List<TeacherListing>> FilterAsync(ListingFilterRequestDto filter);

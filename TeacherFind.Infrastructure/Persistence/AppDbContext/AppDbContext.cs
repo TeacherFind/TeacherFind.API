@@ -10,25 +10,58 @@ public class AppDbContext : DbContext
     {
     }
 
+    // =====================================================
+    // Core Tables
+    // =====================================================
+
     public DbSet<User> Users => Set<User>();
+
     public DbSet<TeacherProfile> TeacherProfiles => Set<TeacherProfile>();
+
     public DbSet<TeacherListing> TeacherListings => Set<TeacherListing>();
 
+    public DbSet<Booking> Bookings => Set<Booking>();
+
+    // =====================================================
+    // Interaction Tables
+    // =====================================================
+
     public DbSet<Favorite> Favorites => Set<Favorite>();
+
     public DbSet<Review> Reviews => Set<Review>();
+
     public DbSet<Conversation> Conversations => Set<Conversation>();
+
     public DbSet<Message> Messages => Set<Message>();
+
     public DbSet<Notification> Notifications => Set<Notification>();
+
     public DbSet<VerificationCode> VerificationCodes => Set<VerificationCode>();
 
+    public DbSet<Report> Reports => Set<Report>();
+
+    // =====================================================
+    // Reference Data
+    // =====================================================
+
     public DbSet<Subject> Subjects => Set<Subject>();
+
     public DbSet<City> Cities => Set<City>();
-    public DbSet<University> Universities => Set<University>();
-    public DbSet<Department> Departments => Set<Department>();
+
     public DbSet<District> Districts => Set<District>();
+
     public DbSet<Neighborhood> Neighborhoods => Set<Neighborhood>();
 
+    public DbSet<University> Universities => Set<University>();
+
+    public DbSet<Department> Departments => Set<Department>();
+
+    // =====================================================
+    // Admin
+    // =====================================================
+
     public DbSet<AdminInvitation> AdminInvitations => Set<AdminInvitation>();
+
     public DbSet<AdminActionLog> AdminActionLogs => Set<AdminActionLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -38,17 +71,17 @@ public class AppDbContext : DbContext
         ConfigureConversation(modelBuilder);
         ConfigureMessage(modelBuilder);
         ConfigureListing(modelBuilder);
+        ConfigureBooking(modelBuilder);
 
         ConfigureUniversity(modelBuilder);
         ConfigureDepartment(modelBuilder);
-
         ConfigureDistrict(modelBuilder);
         ConfigureNeighborhood(modelBuilder);
-
         ConfigureTeacherProfileEducation(modelBuilder);
 
         ConfigureAdminInvitation(modelBuilder);
         ConfigureAdminActionLog(modelBuilder);
+        ConfigureReport(modelBuilder);
     }
 
     private static void ConfigureConversation(ModelBuilder modelBuilder)
@@ -100,6 +133,9 @@ public class AppDbContext : DbContext
                 .HasForeignKey(x => x.NeighborhoodId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            entity.Property(x => x.Headline)
+                .HasMaxLength(200);
+
             entity.Property(x => x.Title)
                 .IsRequired()
                 .HasMaxLength(150);
@@ -129,6 +165,51 @@ public class AppDbContext : DbContext
             entity.HasIndex(x => x.NeighborhoodId);
             entity.HasIndex(x => x.IsActive);
             entity.HasIndex(x => x.IsApproved);
+        });
+    }
+
+    private static void ConfigureBooking(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Booking>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.HasOne(x => x.TeacherListing)
+                .WithMany()
+                .HasForeignKey(x => x.TeacherListingId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.StudentUser)
+                .WithMany()
+                .HasForeignKey(x => x.StudentUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.TutorUser)
+                .WithMany()
+                .HasForeignKey(x => x.TutorUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.Property(x => x.Status)
+                .HasConversion<string>()
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.Property(x => x.Source)
+                .HasConversion<string>()
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.Property(x => x.StudentNote)
+                .HasMaxLength(1000);
+
+            entity.Property(x => x.TutorNote)
+                .HasMaxLength(1000);
+
+            entity.HasIndex(x => x.TeacherListingId);
+            entity.HasIndex(x => x.StudentUserId);
+            entity.HasIndex(x => x.TutorUserId);
+            entity.HasIndex(x => x.Status);
+            entity.HasIndex(x => x.StartTime);
         });
     }
 
@@ -327,6 +408,38 @@ public class AppDbContext : DbContext
             entity.HasIndex(x => x.Action);
             entity.HasIndex(x => x.EntityName);
             entity.HasIndex(x => x.CreatedAt);
+        });
+    }
+
+    private static void ConfigureReport(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Report>(entity =>
+        {
+            entity.HasOne(x => x.Reporter)
+                .WithMany()
+                .HasForeignKey(x => x.ReporterId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.TargetUser)
+                .WithMany()
+                .HasForeignKey(x => x.TargetUserId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasOne(x => x.TargetListing)
+                .WithMany()
+                .HasForeignKey(x => x.TargetListingId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.Property(x => x.Reason)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            entity.Property(x => x.Status)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.HasIndex(x => x.Status);
+            entity.HasIndex(x => x.ReporterId);
         });
     }
 }

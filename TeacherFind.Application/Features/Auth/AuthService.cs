@@ -10,80 +10,76 @@ namespace TeacherFind.Application.Features.Auth;
 public class AuthService : IAuthService
 {
     private readonly IUserRepository _userRepository;
+    private readonly ITeacherRepository _teacherRepository;
+    private readonly IVerificationRepository _verificationRepository;
     private readonly IJwtProvider _jwtProvider;
     private readonly IPasswordHasher _passwordHasher;
-    private readonly IVerificationRepository _verificationRepository;
 
     public AuthService(
         IUserRepository userRepository,
+        ITeacherRepository teacherRepository,
+        IVerificationRepository verificationRepository,
         IJwtProvider jwtProvider,
-        IPasswordHasher passwordHasher,
-        IVerificationRepository verificationRepository)
+        IPasswordHasher passwordHasher)
     {
         _userRepository = userRepository;
+        _teacherRepository = teacherRepository;
+        _verificationRepository = verificationRepository;
         _jwtProvider = jwtProvider;
         _passwordHasher = passwordHasher;
-        _verificationRepository = verificationRepository;
     }
 
     public async Task<User> RegisterAsync(RegisterRequest request)
     {
-        var existing = await _userRepository.GetByEmailAsync(request.Email);
+        var existingUser = await _userRepository.GetByEmailAsync(request.Email);
 
-        if (existing != null)
+        if (existingUser is not null)
             throw new Exception("User already exists");
 
-        // Güvenlik:
-        // Dışarıdan Admin veya SuperAdmin gönderilse bile kabul etmiyoruz.
-        // Sadece Tutor gönderilmişse Tutor olur, diğer her durumda Student olur.
-        var role = request.Role == UserRole.Tutor
-            ? UserRole.Tutor
-            : UserRole.Student;
-
-        var hashedPassword = _passwordHasher.Hash(request.Password);
+        var role = ResolveRegisterRole(request.Role);
 
         var user = new User
         {
-            FullName = request.FullName,
-            Email = request.Email,
-            PasswordHash = hashedPassword,
+            FullName = request.FullName.Trim(),
+            Email = request.Email.Trim(),
+            PasswordHash = _passwordHasher.Hash(request.Password),
             Role = role,
             IsActive = true,
-            IsEmailVerified = false
+            IsEmailVerified = false,
+            IsPhoneVerified = false
         };
 
         await _userRepository.AddAsync(user);
+
+        if (user.Role == UserRole.Tutor)
+        {
+            var teacherProfile = CreateInitialTeacherProfile(user);
+            await _teacherRepository.AddAsync(teacherProfile);
+        }
+
+        var verificationCode = CreatePhoneVerificationCode(user.Id);
+        await _verificationRepository.AddAsync(verificationCode);
+
         await _userRepository.SaveChangesAsync();
 
-        var code = new VerificationCode
-        {
-            UserId = user.Id,
-            Code = new Random().Next(100000, 999999).ToString(),
-            Type = "Phone",
-            ExpireAt = DateTime.UtcNow.AddMinutes(5)
-        };
-
-        await _verificationRepository.AddAsync(code);
-        await _verificationRepository.SaveChangesAsync();
-
-        Console.WriteLine($"SMS CODE: {code.Code}");
+        Console.WriteLine($"SMS CODE: {verificationCode.Code}");
 
         return user;
     }
 
     public async Task<LoginResponse?> LoginAsync(string email, string password)
     {
-        var user = await _userRepository.GetByEmailAsync(email);
+        var user = await _userRepository.GetByEmailAsync(email.Trim());
 
-        if (user == null)
+        if (user is null)
             return null;
 
         if (!user.IsActive)
             return null;
 
-        var isValid = _passwordHasher.Verify(password, user.PasswordHash);
+        var isValidPassword = _passwordHasher.Verify(password, user.PasswordHash);
 
-        if (!isValid)
+        if (!isValidPassword)
             return null;
 
         var token = _jwtProvider.GenerateToken(user);
@@ -95,6 +91,42 @@ public class AuthService : IAuthService
             FullName = user.FullName,
             Email = user.Email,
             Role = user.Role.ToString()
+        };
+    }
+
+    private static UserRole ResolveRegisterRole(UserRole requestedRole)
+    {
+        return requestedRole == UserRole.Tutor
+            ? UserRole.Tutor
+            : UserRole.Student;
+    }
+
+    private static TeacherProfile CreateInitialTeacherProfile(User user)
+    {
+        return new TeacherProfile
+        {
+            UserId = user.Id,
+            Title = $"{user.FullName} öğretmen profili",
+            Headline = null,
+            Bio = null,
+            TeachingStyle = null,
+            City = null,
+            Rating = 0,
+            TotalReviews = 0,
+            EducationLevel = null,
+            IsStudent = false
+        };
+    }
+
+    private static VerificationCode CreatePhoneVerificationCode(Guid userId)
+    {
+        return new VerificationCode
+        {
+            UserId = userId,
+            Code = Random.Shared.Next(100000, 999999).ToString(),
+            Type = "Phone",
+            ExpireAt = DateTime.UtcNow.AddMinutes(5),
+            IsUsed = false
         };
     }
 }

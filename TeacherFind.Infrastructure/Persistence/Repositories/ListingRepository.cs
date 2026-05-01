@@ -119,4 +119,70 @@ public class ListingRepository : IListingRepository
     }
 
     public async Task SaveChangesAsync() => await _context.SaveChangesAsync();
+
+    // Task 7 — get all listings for a teacher, with details, single query
+    public async Task<List<TeacherListing>> GetByTeacherUserIdAsync(Guid userId)
+    {
+        return await _context.TeacherListings
+            .AsNoTracking()
+            .Include(x => x.TeacherProfile)
+                .ThenInclude(x => x.User)
+            .Include(x => x.Subject)
+            .Include(x => x.City)
+            .Include(x => x.District)
+            .Include(x => x.Neighborhood)
+            .Where(x => x.TeacherProfile.UserId == userId)
+            .OrderByDescending(x => x.CreatedAt)
+            .ToListAsync();
+    }
+
+    public async Task<TeacherListing?> GetByIdForTeacherUserAsync(Guid listingId, Guid userId)
+    {
+        return await _context.TeacherListings
+            .Include(x => x.TeacherProfile)
+            .Include(x => x.Subject)
+            .Include(x => x.City)
+            .Include(x => x.District)
+            .Include(x => x.Neighborhood)
+            .FirstOrDefaultAsync(x =>
+                x.Id == listingId &&
+                x.TeacherProfile.UserId == userId);
+
+
+    }
+
+    public async Task<bool> ExistsForTeacherBranchAsync(
+    Guid teacherUserId,
+    Guid? subjectId,
+    string category,
+    string subCategory,
+    Guid? excludeListingId = null)
+    {
+        var query = _context.TeacherListings
+            .Include(x => x.TeacherProfile)
+            .Where(x => x.TeacherProfile.UserId == teacherUserId);
+
+        if (excludeListingId.HasValue)
+        {
+            query = query.Where(x => x.Id != excludeListingId.Value);
+        }
+
+        if (subjectId.HasValue)
+        {
+            query = query.Where(x => x.SubjectId == subjectId.Value);
+        }
+        else
+        {
+            var normalizedCategory = category.Trim();
+            var normalizedSubCategory = subCategory.Trim();
+
+            query = query.Where(x =>
+                x.Category == normalizedCategory &&
+                x.SubCategory == normalizedSubCategory);
+        }
+
+        return await query.AnyAsync();
+    }
+
+
 }

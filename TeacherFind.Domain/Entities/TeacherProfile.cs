@@ -8,7 +8,9 @@ public class TeacherProfile : AuditableEntity
     public User User { get; set; } = default!;
 
     public string? Title { get; set; }
+    public string? Headline { get; set; }
     public string? Bio { get; set; }
+    public string? TeachingStyle { get; set; }
     public string? City { get; set; }
 
     public double Rating { get; set; }
@@ -23,9 +25,6 @@ public class TeacherProfile : AuditableEntity
     public string? EducationLevel { get; set; }
     public bool? IsStudent { get; set; }
 
-    public string? Headline { get; set; }
-
-    public string? TeachingStyle { get; set; }
     public ICollection<TeacherCertificate> Certificates { get; set; } = new List<TeacherCertificate>();
     public ICollection<TeacherAvailability> Availabilities { get; set; } = new List<TeacherAvailability>();
 }
