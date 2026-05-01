@@ -22,4 +22,14 @@ public interface IBookingRepository
     Task<List<Booking>> GetCompletedByTutorUserIdAsync(Guid tutorUserId);
 
     Task SaveChangesAsync();
+
+    Task<bool> HasTutorTimeConflictAsync(
+    Guid tutorUserId,
+    DateTime startTime,
+    DateTime endTime);
+
+    Task<List<Booking>> GetOccupiedSlotsByListingAsync(
+        Guid teacherListingId,
+        DateTime from,
+        DateTime to);
 }
