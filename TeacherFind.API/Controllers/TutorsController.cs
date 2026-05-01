@@ -4,6 +4,7 @@ using System.Security.Claims;
 using TeacherFind.Application.Abstractions.Services;
 using TeacherFind.Contracts.Bookings;
 using TeacherFind.Contracts.Tutors;
+using TeacherFind.Application.Abstractions.Repositories;
 
 namespace TeacherFind.API.Controllers;
 
@@ -13,13 +14,16 @@ public class TutorsController : ControllerBase
 {
     private readonly ITutorService _tutorService;
     private readonly IBookingService _bookingService;
+    private readonly IUserRepository _userRepository;
 
     public TutorsController(
         ITutorService tutorService,
-        IBookingService bookingService)
+        IBookingService bookingService,
+        IUserRepository userRepository)
     {
         _tutorService = tutorService;
         _bookingService = bookingService;
+        _userRepository = userRepository;
     }
 
     // GET /api/tutors
@@ -242,5 +246,62 @@ public class TutorsController : ControllerBase
             return NotFound(new { message = "Öğretmen profili bulunamadı." });
 
         return Ok(profile);
+    }
+
+    // POST /api/tutors/avatar
+    [Authorize(Policy = "TutorOnly")]
+    [HttpPost("avatar")]
+    public async Task<IActionResult> UploadAvatar(IFormFile file)
+    {
+        var currentUserId = GetRequiredCurrentUserId();
+
+        if (file is null || file.Length == 0)
+            return BadRequest(new { message = "Dosya gönderilmedi." });
+
+        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+
+        if (!allowedExtensions.Contains(extension))
+            return BadRequest(new { message = "Sadece .jpg, .jpeg, .png veya .webp dosyaları yüklenebilir." });
+
+        const long maxFileSize = 2 * 1024 * 1024;
+
+        if (file.Length > maxFileSize)
+            return BadRequest(new { message = "Dosya boyutu en fazla 2 MB olabilir." });
+
+        var user = await _userRepository.GetByIdAsync(currentUserId);
+
+        if (user is null)
+            return NotFound(new { message = "Kullanıcı bulunamadı." });
+
+        var uploadsFolder = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "wwwroot",
+            "uploads",
+            "avatars");
+
+        if (!Directory.Exists(uploadsFolder))
+            Directory.CreateDirectory(uploadsFolder);
+
+        var fileName = $"{currentUserId}_{Guid.NewGuid():N}{extension}";
+        var filePath = Path.Combine(uploadsFolder, fileName);
+
+        await using (var stream = new FileStream(filePath, FileMode.Create))
+        {
+            await file.CopyToAsync(stream);
+        }
+
+        var avatarUrl = $"/uploads/avatars/{fileName}";
+
+        user.ProfileImageUrl = avatarUrl;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _userRepository.SaveChangesAsync();
+
+        return Ok(new
+        {
+            message = "Avatar başarıyla yüklendi.",
+            profileImageUrl = avatarUrl
+        });
     }
 }

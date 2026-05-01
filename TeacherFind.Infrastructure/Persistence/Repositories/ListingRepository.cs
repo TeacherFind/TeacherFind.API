@@ -47,8 +47,16 @@ public class ListingRepository : IListingRepository
             .FirstOrDefaultAsync(x => x.Id == id && x.TeacherProfile.UserId == userId);
 
     public async Task<TeacherProfile?> GetTeacherProfileByUserIdAsync(Guid userId)
-        => await _context.TeacherProfiles.FirstOrDefaultAsync(x => x.UserId == userId);
-
+    {
+        return await _context.TeacherProfiles
+            .AsNoTracking()
+            .Include(x => x.User)
+            .Include(x => x.University)
+            .Include(x => x.DepartmentEntity)
+            .Include(x => x.Certificates)
+            .Include(x => x.Availabilities)
+            .FirstOrDefaultAsync(x => x.UserId == userId);
+    }
     public async Task AddAsync(TeacherListing listing)
         => await _context.TeacherListings.AddAsync(listing);
 
