@@ -30,4 +30,6 @@ public interface ITutorService
     UpdateMyTutorListingDto request);
 
     Task<List<MyStudentDto>> GetMyStudentsAsync(Guid currentUserId);
+
+    Task<TutorProfileDto?> GetMyProfileAsync(Guid userId);
 }
