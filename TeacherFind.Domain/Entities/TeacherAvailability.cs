@@ -10,6 +10,7 @@ namespace TeacherFind.Domain.Entities
     public class TeacherAvailability : BaseEntity
     {
         public Guid TeacherProfileId { get; set; }
+        public TeacherProfile TeacherProfile { get; set; } = default!;
         public string Day { get; set; } = default!;
         public string Start { get; set; } = default!;
         public string End { get; set; } = default!;

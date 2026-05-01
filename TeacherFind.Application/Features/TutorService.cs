@@ -459,4 +459,97 @@ public class TutorService : ITutorService
 
         return true;
     }
+
+    public async Task<List<TutorProfileAvailabilityDto>> GetMyAvailabilityAsync(Guid currentUserId)
+    {
+        var profile = await _teacherRepository.GetByUserIdWithAvailabilitiesAsync(currentUserId);
+
+        if (profile is null)
+            return new List<TutorProfileAvailabilityDto>();
+
+        return profile.Availabilities
+            .OrderBy(x => GetDayOrder(x.Day))
+            .ThenBy(x => x.Start)
+            .Select(x => new TutorProfileAvailabilityDto
+            {
+                Id = x.Id,
+                Day = x.Day,
+                Start = x.Start,
+                End = x.End
+            })
+            .ToList();
+    }
+
+    public async Task<List<TutorProfileAvailabilityDto>> UpdateMyAvailabilityAsync(
+        Guid currentUserId,
+        UpdateTutorAvailabilityDto request)
+    {
+        var profile = await _teacherRepository.GetByUserIdAsync(currentUserId);
+
+        if (profile is null)
+            throw new InvalidOperationException("Öğretmen profili bulunamadı.");
+
+        var availabilities = request.Items
+            .Where(x =>
+                !string.IsNullOrWhiteSpace(x.Day) &&
+                !string.IsNullOrWhiteSpace(x.Start) &&
+                !string.IsNullOrWhiteSpace(x.End))
+            .Select(x => new TeacherAvailability
+            {
+                TeacherProfileId = profile.Id,
+                Day = x.Day.Trim(),
+                Start = x.Start.Trim(),
+                End = x.End.Trim()
+            })
+            .ToList();
+
+        await _teacherRepository.ReplaceAvailabilitiesAsync(profile.Id, availabilities);
+
+        profile.UpdatedAt = DateTime.UtcNow;
+
+        await _teacherRepository.SaveChangesAsync();
+
+        return availabilities
+            .OrderBy(x => GetDayOrder(x.Day))
+            .ThenBy(x => x.Start)
+            .Select(x => new TutorProfileAvailabilityDto
+            {
+                Id = x.Id,
+                Day = x.Day,
+                Start = x.Start,
+                End = x.End
+            })
+            .ToList();
+    }
+
+    public async Task<bool> DeleteMyAvailabilityAsync(Guid currentUserId, Guid availabilityId)
+    {
+        var availability = await _teacherRepository.GetAvailabilityForUserAsync(
+            currentUserId,
+            availabilityId);
+
+        if (availability is null)
+            return false;
+
+        _teacherRepository.RemoveAvailability(availability);
+
+        await _teacherRepository.SaveChangesAsync();
+
+        return true;
+    }
+
+    private static int GetDayOrder(string day)
+    {
+        return day.Trim().ToLowerInvariant() switch
+        {
+            "monday" or "pazartesi" => 1,
+            "tuesday" or "salı" => 2,
+            "wednesday" or "çarşamba" => 3,
+            "thursday" or "perşembe" => 4,
+            "friday" or "cuma" => 5,
+            "saturday" or "cumartesi" => 6,
+            "sunday" or "pazar" => 7,
+            _ => 99
+        };
+    }
 }

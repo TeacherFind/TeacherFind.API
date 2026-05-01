@@ -1,10 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using TeacherFind.Application.Abstractions.Repositories;
 using TeacherFind.Application.Abstractions.Services;
 using TeacherFind.Contracts.Bookings;
 using TeacherFind.Contracts.Tutors;
-using TeacherFind.Application.Abstractions.Repositories;
 
 namespace TeacherFind.API.Controllers;
 
@@ -26,6 +26,10 @@ public class TutorsController : ControllerBase
         _userRepository = userRepository;
     }
 
+    // =====================================================
+    // Public Tutor Endpoints
+    // =====================================================
+
     // GET /api/tutors
     [HttpGet]
     public async Task<IActionResult> GetTutors([FromQuery] TutorFilterRequestDto filter)
@@ -46,6 +50,103 @@ public class TutorsController : ControllerBase
         return Ok(result);
     }
 
+    // =====================================================
+    // Tutor Profile
+    // =====================================================
+
+    // GET /api/tutors/profile
+    [Authorize(Policy = "TutorOnly")]
+    [HttpGet("profile")]
+    public async Task<IActionResult> GetMyProfile()
+    {
+        var currentUserId = GetRequiredCurrentUserId();
+
+        var profile = await _tutorService.GetMyProfileAsync(currentUserId);
+
+        if (profile is null)
+            return NotFound(new { message = "Öğretmen profili bulunamadı." });
+
+        return Ok(profile);
+    }
+
+    // PUT /api/tutors/profile
+    [Authorize(Policy = "TutorOnly")]
+    [HttpPut("profile")]
+    public async Task<IActionResult> UpdateMyProfile([FromBody] UpdateTutorProfileDto request)
+    {
+        if (request is null)
+            return BadRequest(new { message = "Profil bilgileri gönderilmedi." });
+
+        var currentUserId = GetRequiredCurrentUserId();
+
+        var result = await _tutorService.UpdateMyProfileAsync(currentUserId, request);
+
+        if (!result)
+            return BadRequest(new { message = "Profil güncellenemedi." });
+
+        return Ok(new { message = "Profil başarıyla güncellendi." });
+    }
+
+    // POST /api/tutors/avatar
+    [Authorize(Policy = "TutorOnly")]
+    [HttpPost("avatar")]
+    public async Task<IActionResult> UploadAvatar([FromForm] IFormFile file)
+    {
+        var currentUserId = GetRequiredCurrentUserId();
+
+        if (file is null || file.Length == 0)
+            return BadRequest(new { message = "Dosya gönderilmedi." });
+
+        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+
+        if (!allowedExtensions.Contains(extension))
+            return BadRequest(new { message = "Sadece .jpg, .jpeg, .png veya .webp dosyaları yüklenebilir." });
+
+        const long maxFileSize = 2 * 1024 * 1024;
+
+        if (file.Length > maxFileSize)
+            return BadRequest(new { message = "Dosya boyutu en fazla 2 MB olabilir." });
+
+        var user = await _userRepository.GetByIdAsync(currentUserId);
+
+        if (user is null)
+            return NotFound(new { message = "Kullanıcı bulunamadı." });
+
+        var uploadsFolder = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "wwwroot",
+            "uploads",
+            "avatars");
+
+        Directory.CreateDirectory(uploadsFolder);
+
+        var fileName = $"{currentUserId}_{Guid.NewGuid():N}{extension}";
+        var filePath = Path.Combine(uploadsFolder, fileName);
+
+        await using (var stream = new FileStream(filePath, FileMode.Create))
+        {
+            await file.CopyToAsync(stream);
+        }
+
+        var avatarUrl = $"/uploads/avatars/{fileName}";
+
+        user.ProfileImageUrl = avatarUrl;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _userRepository.SaveChangesAsync();
+
+        return Ok(new
+        {
+            message = "Avatar başarıyla yüklendi.",
+            profileImageUrl = avatarUrl
+        });
+    }
+
+    // =====================================================
+    // Tutor Listings
+    // =====================================================
+
     // GET /api/tutors/my-listings
     [Authorize(Policy = "TutorOnly")]
     [HttpGet("my-listings")]
@@ -63,6 +164,9 @@ public class TutorsController : ControllerBase
     [HttpPost("my-listings")]
     public async Task<IActionResult> CreateMyListing([FromBody] CreateMyTutorListingDto request)
     {
+        if (request is null)
+            return BadRequest(new { message = "İlan bilgileri gönderilmedi." });
+
         var currentUserId = GetRequiredCurrentUserId();
 
         try
@@ -83,6 +187,9 @@ public class TutorsController : ControllerBase
         Guid id,
         [FromBody] UpdateMyTutorListingDto request)
     {
+        if (request is null)
+            return BadRequest(new { message = "İlan bilgileri gönderilmedi." });
+
         var currentUserId = GetRequiredCurrentUserId();
 
         try
@@ -103,20 +210,136 @@ public class TutorsController : ControllerBase
         }
     }
 
-    // PUT /api/tutors/profile
+    // =====================================================
+    // Tutor Certificates
+    // =====================================================
+
+    // GET /api/tutors/certificates
     [Authorize(Policy = "TutorOnly")]
-    [HttpPut("profile")]
-    public async Task<IActionResult> UpdateMyProfile([FromBody] UpdateTutorProfileDto request)
+    [HttpGet("certificates")]
+    public async Task<IActionResult> GetMyCertificates()
     {
         var currentUserId = GetRequiredCurrentUserId();
 
-        var result = await _tutorService.UpdateMyProfileAsync(currentUserId, request);
+        var result = await _tutorService.GetMyCertificatesAsync(currentUserId);
+
+        return Ok(result);
+    }
+
+    // POST /api/tutors/certificates
+    [Authorize(Policy = "TutorOnly")]
+    [HttpPost("certificates")]
+    public async Task<IActionResult> AddCertificate(
+        [FromForm] string name,
+        [FromForm] string organization,
+        [FromForm] int year,
+        [FromForm] IFormFile? file)
+    {
+        var currentUserId = GetRequiredCurrentUserId();
+
+        if (string.IsNullOrWhiteSpace(name))
+            return BadRequest(new { message = "Sertifika adı zorunludur." });
+
+        if (string.IsNullOrWhiteSpace(organization))
+            return BadRequest(new { message = "Kurum adı zorunludur." });
+
+        if (year < 1950 || year > DateTime.UtcNow.Year + 1)
+            return BadRequest(new { message = "Geçerli bir yıl giriniz." });
+
+        var certificateFile = await SaveCertificateFileAsync(currentUserId, file);
+
+        try
+        {
+            var result = await _tutorService.AddMyCertificateAsync(
+                currentUserId,
+                new AddTutorCertificateDto
+                {
+                    Name = name,
+                    Organization = organization,
+                    Year = year,
+                    FileUrl = certificateFile.FileUrl,
+                    FileName = certificateFile.FileName,
+                    ContentType = certificateFile.ContentType
+                });
+
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    // DELETE /api/tutors/certificates/{id}
+    [Authorize(Policy = "TutorOnly")]
+    [HttpDelete("certificates/{id:guid}")]
+    public async Task<IActionResult> DeleteCertificate(Guid id)
+    {
+        var currentUserId = GetRequiredCurrentUserId();
+
+        var result = await _tutorService.DeleteMyCertificateAsync(currentUserId, id);
 
         if (!result)
-            return BadRequest(new { message = "Profil güncellenemedi." });
+            return NotFound(new { message = "Sertifika bulunamadı veya erişim yetkiniz yok." });
 
-        return Ok(new { message = "Profil başarıyla güncellendi." });
+        return Ok(new { message = "Sertifika silindi." });
     }
+
+    // =====================================================
+    // Tutor Availability
+    // =====================================================
+
+    // GET /api/tutors/availability
+    [Authorize(Policy = "TutorOnly")]
+    [HttpGet("availability")]
+    public async Task<IActionResult> GetMyAvailability()
+    {
+        var currentUserId = GetRequiredCurrentUserId();
+
+        var result = await _tutorService.GetMyAvailabilityAsync(currentUserId);
+
+        return Ok(result);
+    }
+
+    // PUT /api/tutors/availability
+    [Authorize(Policy = "TutorOnly")]
+    [HttpPut("availability")]
+    public async Task<IActionResult> UpdateMyAvailability([FromBody] UpdateTutorAvailabilityDto request)
+    {
+        if (request is null || request.Items.Count == 0)
+            return BadRequest(new { message = "En az bir müsaitlik aralığı gönderilmelidir." });
+
+        var currentUserId = GetRequiredCurrentUserId();
+
+        try
+        {
+            var result = await _tutorService.UpdateMyAvailabilityAsync(currentUserId, request);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    // DELETE /api/tutors/availability/{id}
+    [Authorize(Policy = "TutorOnly")]
+    [HttpDelete("availability/{id:guid}")]
+    public async Task<IActionResult> DeleteMyAvailability(Guid id)
+    {
+        var currentUserId = GetRequiredCurrentUserId();
+
+        var result = await _tutorService.DeleteMyAvailabilityAsync(currentUserId, id);
+
+        if (!result)
+            return NotFound(new { message = "Müsaitlik kaydı bulunamadı veya erişim yetkiniz yok." });
+
+        return Ok(new { message = "Müsaitlik kaydı silindi." });
+    }
+
+    // =====================================================
+    // Tutor Bookings
+    // =====================================================
 
     // GET /api/tutors/my-bookings
     [Authorize(Policy = "TutorOnly")]
@@ -159,14 +382,14 @@ public class TutorsController : ControllerBase
         Guid id,
         [FromBody] RejectBookingRequestDto request)
     {
+        if (request is null)
+            return BadRequest(new { message = "Ret bilgisi gönderilmedi." });
+
         var currentUserId = GetRequiredCurrentUserId();
 
         try
         {
-            var result = await _bookingService.RejectAsync(
-                id,
-                currentUserId,
-                request);
+            var result = await _bookingService.RejectAsync(id, currentUserId, request);
 
             if (!result)
                 return NotFound(new { message = "Rezervasyon bulunamadı veya erişim yetkiniz yok." });
@@ -201,6 +424,10 @@ public class TutorsController : ControllerBase
         }
     }
 
+    // =====================================================
+    // Tutor Students
+    // =====================================================
+
     // GET /api/tutors/my-students
     [Authorize(Policy = "TutorOnly")]
     [HttpGet("my-students")]
@@ -212,6 +439,10 @@ public class TutorsController : ControllerBase
 
         return Ok(result);
     }
+
+    // =====================================================
+    // Helpers
+    // =====================================================
 
     private Guid? GetCurrentUserId()
     {
@@ -232,186 +463,54 @@ public class TutorsController : ControllerBase
         return userId;
     }
 
-    [HttpGet("profile")]
-    public async Task<IActionResult> GetMyProfile()
+    private static async Task<UploadedFileResult> SaveCertificateFileAsync(
+        Guid currentUserId,
+        IFormFile? file)
     {
-        var userId = GetCurrentUserId();
-
-        if (userId is null)
-            return Unauthorized(new { message = "Kullanıcı doğrulanamadı." });
-
-        var profile = await _tutorService.GetMyProfileAsync(userId.Value);
-
-        if (profile is null)
-            return NotFound(new { message = "Öğretmen profili bulunamadı." });
-
-        return Ok(profile);
-    }
-
-    // POST /api/tutors/avatar
-    [Authorize(Policy = "TutorOnly")]
-    [HttpPost("avatar")]
-    public async Task<IActionResult> UploadAvatar(IFormFile file)
-    {
-        var currentUserId = GetRequiredCurrentUserId();
-
         if (file is null || file.Length == 0)
-            return BadRequest(new { message = "Dosya gönderilmedi." });
+            return new UploadedFileResult();
 
-        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+        var allowedExtensions = new[] { ".pdf", ".jpg", ".jpeg", ".png", ".webp" };
         var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
 
         if (!allowedExtensions.Contains(extension))
-            return BadRequest(new { message = "Sadece .jpg, .jpeg, .png veya .webp dosyaları yüklenebilir." });
+            throw new InvalidOperationException("Sadece PDF veya görsel dosyası yüklenebilir.");
 
-        const long maxFileSize = 2 * 1024 * 1024;
+        const long maxFileSize = 5 * 1024 * 1024;
 
         if (file.Length > maxFileSize)
-            return BadRequest(new { message = "Dosya boyutu en fazla 2 MB olabilir." });
-
-        var user = await _userRepository.GetByIdAsync(currentUserId);
-
-        if (user is null)
-            return NotFound(new { message = "Kullanıcı bulunamadı." });
+            throw new InvalidOperationException("Dosya boyutu en fazla 5 MB olabilir.");
 
         var uploadsFolder = Path.Combine(
             Directory.GetCurrentDirectory(),
             "wwwroot",
             "uploads",
-            "avatars");
+            "certificates");
 
-        if (!Directory.Exists(uploadsFolder))
-            Directory.CreateDirectory(uploadsFolder);
+        Directory.CreateDirectory(uploadsFolder);
 
-        var fileName = $"{currentUserId}_{Guid.NewGuid():N}{extension}";
-        var filePath = Path.Combine(uploadsFolder, fileName);
+        var storedFileName = $"{currentUserId}_{Guid.NewGuid():N}{extension}";
+        var filePath = Path.Combine(uploadsFolder, storedFileName);
 
         await using (var stream = new FileStream(filePath, FileMode.Create))
         {
             await file.CopyToAsync(stream);
         }
 
-        var avatarUrl = $"/uploads/avatars/{fileName}";
-
-        user.ProfileImageUrl = avatarUrl;
-        user.UpdatedAt = DateTime.UtcNow;
-
-        await _userRepository.SaveChangesAsync();
-
-        return Ok(new
+        return new UploadedFileResult
         {
-            message = "Avatar başarıyla yüklendi.",
-            profileImageUrl = avatarUrl
-        });
+            FileUrl = $"/uploads/certificates/{storedFileName}",
+            FileName = file.FileName,
+            ContentType = file.ContentType
+        };
     }
 
-    // GET /api/tutors/certificates
-    [Authorize(Policy = "TutorOnly")]
-    [HttpGet("certificates")]
-    public async Task<IActionResult> GetMyCertificates()
+    private sealed class UploadedFileResult
     {
-        var currentUserId = GetRequiredCurrentUserId();
+        public string? FileUrl { get; set; }
 
-        var result = await _tutorService.GetMyCertificatesAsync(currentUserId);
+        public string? FileName { get; set; }
 
-        return Ok(result);
-    }
-
-    // POST /api/tutors/certificates
-    [Authorize(Policy = "TutorOnly")]
-    [HttpPost("certificates")]
-    public async Task<IActionResult> AddCertificate(
-        [FromForm] string name,
-        [FromForm] string organization,
-        [FromForm] int year,
-        IFormFile? file)
-    {
-        var currentUserId = GetRequiredCurrentUserId();
-
-        if (string.IsNullOrWhiteSpace(name))
-            return BadRequest(new { message = "Sertifika adı zorunludur." });
-
-        if (string.IsNullOrWhiteSpace(organization))
-            return BadRequest(new { message = "Kurum adı zorunludur." });
-
-        if (year < 1950 || year > DateTime.UtcNow.Year + 1)
-            return BadRequest(new { message = "Geçerli bir yıl giriniz." });
-
-        string? fileUrl = null;
-        string? fileName = null;
-        string? contentType = null;
-
-        if (file is not null && file.Length > 0)
-        {
-            var allowedExtensions = new[] { ".pdf", ".jpg", ".jpeg", ".png", ".webp" };
-            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-
-            if (!allowedExtensions.Contains(extension))
-                return BadRequest(new { message = "Sadece PDF veya görsel dosyası yüklenebilir." });
-
-            const long maxFileSize = 5 * 1024 * 1024;
-
-            if (file.Length > maxFileSize)
-                return BadRequest(new { message = "Dosya boyutu en fazla 5 MB olabilir." });
-
-            var uploadsFolder = Path.Combine(
-                Directory.GetCurrentDirectory(),
-                "wwwroot",
-                "uploads",
-                "certificates");
-
-            if (!Directory.Exists(uploadsFolder))
-                Directory.CreateDirectory(uploadsFolder);
-
-            var storedFileName = $"{currentUserId}_{Guid.NewGuid():N}{extension}";
-            var filePath = Path.Combine(uploadsFolder, storedFileName);
-
-            await using (var stream = new FileStream(filePath, FileMode.Create))
-            {
-                await file.CopyToAsync(stream);
-            }
-
-            fileUrl = $"/uploads/certificates/{storedFileName}";
-            fileName = file.FileName;
-            contentType = file.ContentType;
-        }
-
-        try
-        {
-            var result = await _tutorService.AddMyCertificateAsync(
-                currentUserId,
-                new AddTutorCertificateDto
-                {
-                    Name = name,
-                    Organization = organization,
-                    Year = year,
-                    FileUrl = fileUrl,
-                    FileName = fileName,
-                    ContentType = contentType
-                });
-
-            return Ok(result);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-    }
-
-    // DELETE /api/tutors/certificates/{id}
-    [Authorize(Policy = "TutorOnly")]
-    [HttpDelete("certificates/{id:guid}")]
-    public async Task<IActionResult> DeleteCertificate(Guid id)
-    {
-        var currentUserId = GetRequiredCurrentUserId();
-
-        var result = await _tutorService.DeleteMyCertificateAsync(
-            currentUserId,
-            id);
-
-        if (!result)
-            return NotFound(new { message = "Sertifika bulunamadı veya erişim yetkiniz yok." });
-
-        return Ok(new { message = "Sertifika silindi." });
+        public string? ContentType { get; set; }
     }
 }

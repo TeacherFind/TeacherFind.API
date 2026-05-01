@@ -55,4 +55,39 @@ public class TeacherRepository : ITeacherRepository
     {
         _context.TeacherCertificates.Remove(certificate);
     }
+
+    public async Task<TeacherProfile?> GetByUserIdWithAvailabilitiesAsync(Guid userId)
+    {
+        return await _context.TeacherProfiles
+            .AsNoTracking()
+            .Include(x => x.Availabilities)
+            .FirstOrDefaultAsync(x => x.UserId == userId);
+    }
+
+    public async Task<TeacherAvailability?> GetAvailabilityForUserAsync(Guid userId, Guid availabilityId)
+    {
+        return await _context.TeacherAvailabilities
+            .Include(x => x.TeacherProfile)
+            .FirstOrDefaultAsync(x =>
+                x.Id == availabilityId &&
+                x.TeacherProfile.UserId == userId);
+    }
+
+    public async Task ReplaceAvailabilitiesAsync(
+        Guid teacherProfileId,
+        List<TeacherAvailability> availabilities)
+    {
+        var existingAvailabilities = await _context.TeacherAvailabilities
+            .Where(x => x.TeacherProfileId == teacherProfileId)
+            .ToListAsync();
+
+        _context.TeacherAvailabilities.RemoveRange(existingAvailabilities);
+
+        await _context.TeacherAvailabilities.AddRangeAsync(availabilities);
+    }
+
+    public void RemoveAvailability(TeacherAvailability availability)
+    {
+        _context.TeacherAvailabilities.Remove(availability);
+    }
 }

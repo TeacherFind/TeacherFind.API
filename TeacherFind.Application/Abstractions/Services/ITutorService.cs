@@ -38,4 +38,12 @@ public interface ITutorService
     Task<TutorProfileCertificateDto> AddMyCertificateAsync(Guid currentUserId, AddTutorCertificateDto request);
 
     Task<bool> DeleteMyCertificateAsync(Guid currentUserId, Guid certificateId);
+
+    Task<List<TutorProfileAvailabilityDto>> GetMyAvailabilityAsync(Guid currentUserId);
+
+    Task<List<TutorProfileAvailabilityDto>> UpdateMyAvailabilityAsync(
+        Guid currentUserId,
+        UpdateTutorAvailabilityDto request);
+
+    Task<bool> DeleteMyAvailabilityAsync(Guid currentUserId, Guid availabilityId);
 }
