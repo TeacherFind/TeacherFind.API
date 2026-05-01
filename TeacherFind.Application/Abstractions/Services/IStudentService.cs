@@ -10,4 +10,5 @@ namespace TeacherFind.Application.Abstractions.Services;
 public interface IStudentService
 {
     Task<StudentDashboardStatsDto> GetDashboardStatsAsync(Guid studentUserId);
+    Task GetLessonHistoryAsync(Guid userId);
 }

@@ -25,6 +25,7 @@ using TeacherFind.Infrastructure.Seeds;
 using TeacherFind.Infrastructure.Services.Admin;
 using TeacherFind.Infrastructure.Services.Education;
 
+
 var builder = WebApplication.CreateBuilder(args);
 
 // =====================================================
@@ -204,6 +205,7 @@ builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IStudentService, StudentService>();
 builder.Services.AddScoped<IEducationService, EducationService>();
+builder.Services.AddScoped<IStudentService, StudentService>();
 
 
 
@@ -265,6 +267,7 @@ using (var scope = app.Services.CreateScope())
         await CitySeed.SeedAsync(db);
         await DistrictSeed.SeedAsync(db);
         await NeighborhoodSeed.SeedAsync(db);
+        await SubjectSeed.SeedAsync(db);
 
         await SuperAdminSeed.SeedAsync(db, builder.Configuration);
 

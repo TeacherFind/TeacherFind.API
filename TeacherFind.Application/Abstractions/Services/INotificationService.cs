@@ -4,14 +4,16 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TeacherFind.Domain.Entities;
+using TeacherFind.Contracts.Notifications;
 
 namespace TeacherFind.Application.Abstractions.Services;
 
 public interface INotificationService
 {
-    Task SendNotificationAsync(Guid userId, string title, string message, string type);
+    Task SendNotificationAsync(Guid userId, string title, string message, string type,
+                               Guid? senderUserId = null, string? senderName = null, string? link = null);
 
-    Task<List<Notification>> GetMyNotificationsAsync(Guid userId);
-
-    Task MarkAsReadAsync(Guid notificationId);
+    Task<List<NotificationDto>> GetMyNotificationsAsync(Guid userId);
+    Task<bool> MarkAsReadAsync(Guid notificationId, Guid userId);
+    Task MarkAllAsReadAsync(Guid userId);
 }

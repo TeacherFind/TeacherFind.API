@@ -43,4 +43,9 @@ public class StudentService : IStudentService
             RemainingSubscriptionHours = 0
         };
     }
+
+    public Task GetLessonHistoryAsync(Guid userId)
+    {
+        throw new NotImplementedException();
+    }
 }

@@ -84,6 +84,7 @@ public class AppDbContext : DbContext
         ConfigureTeacherProfileEducation(modelBuilder);
         ConfigureTeacherAvailability(modelBuilder);
         ConfigureTeacherCertificate(modelBuilder);
+        ConfigureSubject(modelBuilder);
 
 
         ConfigureAdminInvitation(modelBuilder);
@@ -510,6 +511,23 @@ public class AppDbContext : DbContext
                 .HasMaxLength(20);
 
             entity.HasIndex(x => x.TeacherProfileId);
+        });
+    }
+    private static void ConfigureSubject(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Subject>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Code).IsRequired();
+            entity.Property(x => x.Name).IsRequired().HasMaxLength(200);
+            entity.Property(x => x.Category).IsRequired().HasMaxLength(100);
+            entity.Property(x => x.Level).IsRequired().HasMaxLength(50);
+            entity.Property(x => x.IsActive).IsRequired();
+
+            entity.HasIndex(x => x.Code).IsUnique();
+            entity.HasIndex(x => x.Category);
+            entity.HasIndex(x => x.Level);
         });
     }
 }

@@ -33,7 +33,13 @@ public class BookingRepository : IBookingRepository
             .Include(x => x.TutorUser)
             .FirstOrDefaultAsync(x => x.Id == id);
     }
-
+    public async Task<Booking> GetByIdWithListingAsync(Guid id)
+    {
+        // Assuming you are using Entity Framework Core and your DbContext is named _context
+        return await _context.Bookings
+            .Include(b => b.TeacherListing) // This pulls in the related listing data
+            .FirstOrDefaultAsync(b => b.Id == id);
+    }
     public async Task<List<Booking>> GetByStudentUserIdAsync(Guid studentUserId)
     {
         return await _context.Bookings
