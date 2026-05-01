@@ -331,4 +331,57 @@ public class TutorService : ITutorService
             .OrderByDescending(x => x.LastLessonDate)
             .ToList();
     }
+
+    public async Task<TutorProfileDto?> GetMyProfileAsync(Guid userId)
+    {
+        var profile = await _listingRepository.GetTeacherProfileByUserIdAsync(userId);
+
+        if (profile is null)
+            return null;
+
+        return new TutorProfileDto
+        {
+            UserId = profile.UserId,
+            TeacherProfileId = profile.Id,
+
+            FullName = profile.User.FullName,
+            Email = profile.User.Email,
+            PhoneNumber = profile.User.PhoneNumber,
+            ProfileImageUrl = profile.User.ProfileImageUrl,
+
+            Title = profile.Title,
+            Headline = profile.Headline,
+            Bio = profile.Bio,
+            City = profile.City,
+
+            UniversityId = profile.UniversityId,
+            UniversityName = profile.University?.Name,
+
+            DepartmentId = profile.DepartmentId,
+            DepartmentName = profile.DepartmentEntity?.Name,
+
+            EducationLevel = profile.EducationLevel,
+            IsStudent = profile.IsStudent,
+            TeachingStyle = profile.TeachingStyle,
+
+            Rating = profile.Rating,
+            TotalReviews = profile.TotalReviews,
+
+            Certificates = profile.Certificates.Select(c => new TutorProfileCertificateDto
+            {
+                Id = c.Id,
+                Name = c.Name,
+                Organization = c.Organization,
+                Year = c.Year
+            }).ToList(),
+
+            Availabilities = profile.Availabilities.Select(a => new TutorProfileAvailabilityDto
+            {
+                Id = a.Id,
+                Day = a.Day,
+                Start = a.Start,
+                End = a.End
+            }).ToList()
+        };
+    }
 }

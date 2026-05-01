@@ -227,4 +227,20 @@ public class TutorsController : ControllerBase
 
         return userId;
     }
+
+    [HttpGet("profile")]
+    public async Task<IActionResult> GetMyProfile()
+    {
+        var userId = GetCurrentUserId();
+
+        if (userId is null)
+            return Unauthorized(new { message = "Kullanıcı doğrulanamadı." });
+
+        var profile = await _tutorService.GetMyProfileAsync(userId.Value);
+
+        if (profile is null)
+            return NotFound(new { message = "Öğretmen profili bulunamadı." });
+
+        return Ok(profile);
+    }
 }

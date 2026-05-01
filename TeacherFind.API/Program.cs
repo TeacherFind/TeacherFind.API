@@ -20,10 +20,10 @@ using TeacherFind.Application.Features.Tutors;
 using TeacherFind.Infrastructure.Identity;
 using TeacherFind.Infrastructure.Persistence;
 using TeacherFind.Infrastructure.Persistence.Repositories;
-using TeacherFind.Infrastructure.Seeds;
-using TeacherFind.Infrastructure.Services;
-using TeacherFind.Infrastructure.Services.Admin;
 using TeacherFind.Infrastructure.Persistence.Seed;
+using TeacherFind.Infrastructure.Seeds;
+using TeacherFind.Infrastructure.Services.Admin;
+using TeacherFind.Infrastructure.Services.Education;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -203,6 +203,7 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IStudentService, StudentService>();
+builder.Services.AddScoped<IEducationService, EducationService>();
 
 
 

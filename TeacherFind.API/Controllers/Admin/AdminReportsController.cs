@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using TeacherFind.Application.Abstractions.Services;
 using TeacherFind.Contracts.Reports;
 
