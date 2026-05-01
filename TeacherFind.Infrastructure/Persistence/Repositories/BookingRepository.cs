@@ -76,4 +76,32 @@ public class BookingRepository : IBookingRepository
             .OrderByDescending(x => x.StartTime)
             .ToListAsync();
     }
+
+    public async Task<bool> HasTutorTimeConflictAsync(
+    Guid tutorUserId,
+    DateTime startTime,
+    DateTime endTime)
+    {
+        return await _context.Bookings.AnyAsync(x =>
+            x.TutorUserId == tutorUserId &&
+            (x.Status == BookingStatus.Pending || x.Status == BookingStatus.Approved) &&
+            startTime < x.EndTime &&
+            endTime > x.StartTime);
+    }
+
+    public async Task<List<Booking>> GetOccupiedSlotsByListingAsync(
+        Guid teacherListingId,
+        DateTime from,
+        DateTime to)
+    {
+        return await _context.Bookings
+            .AsNoTracking()
+            .Where(x =>
+                x.TeacherListingId == teacherListingId &&
+                (x.Status == BookingStatus.Pending || x.Status == BookingStatus.Approved) &&
+                x.StartTime < to &&
+                x.EndTime > from)
+            .OrderBy(x => x.StartTime)
+            .ToListAsync();
+    }
 }

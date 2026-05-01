@@ -15,7 +15,7 @@ public class Booking : AuditableEntity
     public User TutorUser { get; set; } = default!;
 
     public DateTime StartTime { get; set; }
-
+    public DateTime? ReminderSentAt { get; set; }
     public DateTime EndTime { get; set; }
 
     public BookingStatus Status { get; set; } = BookingStatus.Pending;

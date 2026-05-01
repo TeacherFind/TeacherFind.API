@@ -36,4 +36,11 @@ public interface IBookingService
     Task<bool> CompleteAsync(
         Guid bookingId,
         Guid tutorUserId);
+
+    Task<List<OccupiedBookingSlotDto>> GetOccupiedSlotsAsync(
+    Guid teacherListingId,
+    DateTime from,
+    DateTime to);
+
+
 }
