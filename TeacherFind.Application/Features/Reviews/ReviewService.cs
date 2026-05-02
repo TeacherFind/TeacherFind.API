@@ -1,6 +1,4 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore;
-using TeacherFind.Application.Abstractions.Repositories;
+﻿using TeacherFind.Application.Abstractions.Repositories;
 using TeacherFind.Application.Abstractions.Services;
 using TeacherFind.Contracts.Reviews;
 using TeacherFind.Domain.Entities;
@@ -24,7 +22,7 @@ public class ReviewService : IReviewService
         _teacherProfileRepository = teacherProfileRepository;
     }
 
-    // OLD METHOD (kept for compatibility)
+    // Legacy — kept for backwards compatibility
     public async Task AddReviewAsync(Guid userId, Guid listingId, int rating, string comment)
     {
         var review = new Review
@@ -48,66 +46,63 @@ public class ReviewService : IReviewService
     public async Task<int> GetReviewCountAsync(Guid listingId)
         => await _reviewRepository.GetReviewCountAsync(listingId);
 
-    // ✅ CLEAN VERSION (NO DbContext)
     public async Task CreateReviewAsync(Guid userId, CreateReviewRequestDto dto)
     {
-        // Rating validation
+        // 1. Rating kontrolü
         if (dto.Rating < 1 || dto.Rating > 5)
             throw new Exception("Puan 1 ile 5 arasında olmalıdır.");
 
-        // Get booking
+        // 2. Booking bul
         var booking = await _bookingRepository.GetByIdWithListingAsync(dto.BookingId);
-
         if (booking == null)
             throw new Exception("Ders bulunamadı.");
 
-        // Ownership check
+        // 3. Sahiplik kontrolü
         if (booking.StudentUserId != userId)
             throw new Exception("Bu derse ait yorum yapma yetkiniz yok.");
 
-        // Status check
+        // 4. Ders tamamlandı mı?
         if (booking.Status != BookingStatus.Completed)
             throw new Exception("Sadece tamamlanmış dersler için yorum yapılabilir.");
 
-        // Prevent duplicate review
+        // 5. Daha önce yorum yapılmış mı?
         var alreadyReviewed = await _reviewRepository.ExistsByBookingIdAsync(dto.BookingId);
         if (alreadyReviewed)
             throw new Exception("Bu ders için zaten bir yorum bıraktınız.");
 
-        // Create review
+        // 6. Review oluştur
+        var teacherProfileId = booking.TeacherListing?.TeacherProfileId;
+
         var review = new Review
         {
             UserId = userId,
             ListingId = booking.TeacherListingId,
-            TeacherProfileId = booking.TeacherListing?.TeacherProfileId,
+            TeacherProfileId = teacherProfileId,
             BookingId = dto.BookingId,
             Rating = dto.Rating,
-            Comment = dto.Comment ?? ""
+            Comment = dto.Comment?.Trim() ?? ""
         };
 
         await _reviewRepository.AddAsync(review);
         await _reviewRepository.SaveChangesAsync();
 
-        // Update teacher profile
-        if (review.TeacherProfileId != null)
-        {
-            var profile = await _teacherProfileRepository.GetByIdAsync(review.TeacherProfileId.Value);
+        // 7. Öğretmen profilini güncelle
+        if (teacherProfileId == null) return;
 
-            if (profile != null)
-            {
-                // FIX 1: Make sure you are getting the average for the TEACHER, not just one LISTING.
-                // (Assuming your repository methods expect a TeacherProfileId)
-                var avgRating = await _reviewRepository.GetAverageRatingAsync(profile.Id);
-                var count = await _reviewRepository.GetReviewCountAsync(profile.Id);
+        var profile = await _teacherProfileRepository.GetByIdAsync(teacherProfileId.Value);
+        if (profile == null) return;
 
-                // FIX 2: Cast to decimal. Math.Round often returns a double, which fails if profile.Rating is a decimal.
-                profile.Rating = (double)Math.Round(avgRating, 1);
-                profile.TotalReviews = count;
+        // Fixed: uses TeacherProfileId-based methods, not ListingId-based
+        var avgRating = await _reviewRepository
+            .GetAverageRatingByTeacherProfileIdAsync(teacherProfileId.Value);
+        var count = await _reviewRepository
+            .GetReviewCountByTeacherProfileIdAsync(teacherProfileId.Value);
 
-                // FIX 3: In Entity Framework Core, Update is almost always synchronous.
-                _teacherProfileRepository.Update(profile);
-                await _teacherProfileRepository.SaveChangesAsync();
-            }
-        }
+        profile.Rating = Math.Round(avgRating, 1);
+        profile.TotalReviews = count;
+
+        // Fixed: calls the typed overload, not the object overload
+        _teacherProfileRepository.Update(profile);
+        await _teacherProfileRepository.SaveChangesAsync();
     }
 }

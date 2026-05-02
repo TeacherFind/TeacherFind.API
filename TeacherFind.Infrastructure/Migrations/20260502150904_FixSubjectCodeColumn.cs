@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace TeacherFind.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class AddCityIdToUsers : Migration
+    public partial class FixSubjectCodeColumn : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -20,6 +20,24 @@ namespace TeacherFind.Infrastructure.Migrations
                 oldClrType: typeof(string),
                 oldType: "nvarchar(max)",
                 oldNullable: true);
+
+            migrationBuilder.AlterColumn<string>(
+                name: "FullName",
+                table: "Users",
+                type: "nvarchar(150)",
+                maxLength: 150,
+                nullable: false,
+                oldClrType: typeof(string),
+                oldType: "nvarchar(max)");
+
+            migrationBuilder.AlterColumn<string>(
+                name: "Email",
+                table: "Users",
+                type: "nvarchar(200)",
+                maxLength: 200,
+                nullable: false,
+                oldClrType: typeof(string),
+                oldType: "nvarchar(max)");
 
             migrationBuilder.AddColumn<Guid>(
                 name: "CityId",
@@ -50,6 +68,11 @@ namespace TeacherFind.Infrastructure.Migrations
                 table: "Users",
                 column: "CityId");
 
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_Email",
+                table: "Users",
+                column: "Email");
+
             migrationBuilder.AddForeignKey(
                 name: "FK_Users_Cities_CityId",
                 table: "Users",
@@ -70,6 +93,10 @@ namespace TeacherFind.Infrastructure.Migrations
                 name: "IX_Users_CityId",
                 table: "Users");
 
+            migrationBuilder.DropIndex(
+                name: "IX_Users_Email",
+                table: "Users");
+
             migrationBuilder.DropColumn(
                 name: "CityId",
                 table: "Users");
@@ -83,6 +110,24 @@ namespace TeacherFind.Infrastructure.Migrations
                 oldType: "nvarchar(30)",
                 oldMaxLength: 30,
                 oldNullable: true);
+
+            migrationBuilder.AlterColumn<string>(
+                name: "FullName",
+                table: "Users",
+                type: "nvarchar(max)",
+                nullable: false,
+                oldClrType: typeof(string),
+                oldType: "nvarchar(150)",
+                oldMaxLength: 150);
+
+            migrationBuilder.AlterColumn<string>(
+                name: "Email",
+                table: "Users",
+                type: "nvarchar(max)",
+                nullable: false,
+                oldClrType: typeof(string),
+                oldType: "nvarchar(200)",
+                oldMaxLength: 200);
 
             migrationBuilder.AlterColumn<Guid>(
                 name: "SubjectId",

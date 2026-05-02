@@ -36,6 +36,15 @@ public class ReviewRepository : IReviewRepository
     public async Task<int> GetReviewCountAsync(Guid listingId)
         => await _context.Reviews.CountAsync(x => x.ListingId == listingId);
 
+    public async Task<double> GetAverageRatingByTeacherProfileIdAsync(Guid teacherProfileId)
+        => await _context.Reviews
+            .Where(x => x.TeacherProfileId == teacherProfileId)
+            .AverageAsync(x => (double?)x.Rating) ?? 0;
+
+    public async Task<int> GetReviewCountByTeacherProfileIdAsync(Guid teacherProfileId)
+        => await _context.Reviews
+            .CountAsync(x => x.TeacherProfileId == teacherProfileId);
+
     public async Task SaveChangesAsync()
         => await _context.SaveChangesAsync();
 }

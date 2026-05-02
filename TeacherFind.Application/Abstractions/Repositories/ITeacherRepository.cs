@@ -30,7 +30,7 @@ public interface ITeacherRepository
     Task AddAsync(TeacherProfile teacher);
 
     Task SaveChangesAsync();
-    Task UpdateAsync(object profile);
     Task<TeacherProfile?> GetByIdAsync(Guid id);
-    void Update(object profile);
+    Task UpdateAsync(TeacherProfile profile);
+    void Update(TeacherProfile profile);
 }

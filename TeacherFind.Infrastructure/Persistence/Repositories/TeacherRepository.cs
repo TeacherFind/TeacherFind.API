@@ -106,13 +106,4 @@ public class TeacherRepository : ITeacherRepository
         return Task.CompletedTask;
     }
 
-    public Task UpdateAsync(object profile)
-    {
-        throw new NotImplementedException();
-    }
-
-    public void Update(object profile)
-    {
-        throw new NotImplementedException();
-    }
 }
