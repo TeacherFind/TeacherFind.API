@@ -31,9 +31,10 @@
     <Folder Include="Models\" />
     <Folder Include="appsettings files\" />
     <Folder Include="Program\" />
-    <Folder Include="wwwroot\" />
     <Folder Include="Swagger\" />
     <Folder Include="Options\" />
+    <Folder Include="wwwroot\uploads\avatars\" />
+    <Folder Include="wwwroot\uploads\certificates\" />
   </ItemGroup>
 
 </Project>

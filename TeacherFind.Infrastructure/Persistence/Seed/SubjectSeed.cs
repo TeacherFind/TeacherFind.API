@@ -2,23 +2,13 @@
 using TeacherFind.Domain.Entities;
 using TeacherFind.Infrastructure.Persistence;
 
-namespace TeacherFind.Infrastructure.Seeds;
+namespace TeacherFind.Infrastructure.Persistence.Seed;
 
 /// <summary>
-/// Ders (Subject) seed dosyası.
-///
-/// DepartmentSeed ile aynı pattern kullanılır:
-///   new(Code, Category, Name, Level, IsActive)
-///
-/// Seviyeler:
-///   "İlkokul"    → 1.–4. sınıf
-///   "Ortaokul"   → 5.–8. sınıf
-///   "Lise"       → 9.–12. sınıf
-///   "Üniversite" → lisans / lisansüstü
-///   "Yetişkin"   → mezun, kariyer, mesleki
-///   "Her Seviye" → tüm öğrenci grupları (dil, müzik, spor vb.)
-///
-/// Eşleştirme Code üzerinden yapılır → SubjectSeed önce çalışmalıdır.
+/// Ders / konu referans verilerini seed eder.
+/// 
+/// Eşleştirme Id üzerinden değil, sabit Code üzerinden yapılır.
+/// Subject.Id int identity olduğu için seed içinde Id verilmez.
 /// </summary>
 public static class SubjectSeed
 {
@@ -27,7 +17,9 @@ public static class SubjectSeed
         var existingByCodes = await context.Subjects
             .Where(x => x.Code > 0)
             .GroupBy(x => x.Code)
-            .ToDictionaryAsync(g => g.Key, g => g.First());
+            .ToDictionaryAsync(
+                g => g.Key,
+                g => g.First());
 
         foreach (var seed in GetSubjects())
         {
@@ -37,61 +29,70 @@ public static class SubjectSeed
                 subject.Name = seed.Name;
                 subject.Level = seed.Level;
                 subject.IsActive = seed.IsActive;
+                continue;
             }
-            else
+
+            subject = new Subject
             {
-                subject = new Subject
-                {
-                    Code = seed.Code,
-                    Category = seed.Category,
-                    Name = seed.Name,
-                    Level = seed.Level,
-                    IsActive = seed.IsActive,
-                };
-                context.Subjects.Add(subject);
-                existingByCodes[seed.Code] = subject;
-            }
+                Code = seed.Code,
+                Category = seed.Category,
+                Name = seed.Name,
+                Level = seed.Level,
+                IsActive = seed.IsActive
+            };
+
+            await context.Subjects.AddAsync(subject);
+            existingByCodes[seed.Code] = subject;
         }
 
         await context.SaveChangesAsync();
     }
 
-    // ───────────────────────────────────────────────────────────────────
-    //  MASTER LIST
-    // ───────────────────────────────────────────────────────────────────
     private static List<SubjectSeedItem> GetSubjects()
     {
-        var list = new List<SubjectSeedItem>();
-        list.AddRange(GetMatematik());
-        list.AddRange(GetTurkiyeSinavlari());
-        list.AddRange(GetUluslararasiSinavlar());
-        list.AddRange(GetAlmancaSinavlari());
-        list.AddRange(GetDigerDilSertifikalari());
-        list.AddRange(GetYabanciDiller());
-        list.AddRange(GetFenBilimleri());
-        list.AddRange(GetFizik());
-        list.AddRange(GetKimya());
-        list.AddRange(GetBiyoloji());
-        list.AddRange(GetTurkceEdebiyat());
-        list.AddRange(GetSosyalTarihCografya());
-        list.AddRange(GetFelsefePsikoloji());
-        list.AddRange(GetIstatistikEkonomiHukuk());
-        list.AddRange(GetTemelEgitim());
-        list.AddRange(GetOzelEgitim());
-        list.AddRange(GetUniversiteTakviye());
-        list.AddRange(GetMuzik());
-        list.AddRange(GetSpor());
-        list.AddRange(GetDans());
-        list.AddRange(GetSanat());
-        list.AddRange(GetBilisimTeknolojileri());
-        list.AddRange(GetRobotikKodlama());
-        list.AddRange(GetDanismanlikKocluk());
-        list.AddRange(GetMuhasebeFinans());
-        list.AddRange(GetKisiselGelisim());
-        list.AddRange(GetSaglikYasam());
-        list.AddRange(GetHobiDiger());
-        return list;
+        var subjects = new List<SubjectSeedItem>();
+
+        subjects.AddRange(GetMatematik());
+        subjects.AddRange(GetTurkiyeSinavlari());
+        subjects.AddRange(GetUluslararasiSinavlar());
+        subjects.AddRange(GetAlmancaSinavlari());
+        subjects.AddRange(GetDigerDilSertifikalari());
+        subjects.AddRange(GetYabanciDiller());
+        subjects.AddRange(GetFenBilimleri());
+        subjects.AddRange(GetFizik());
+        subjects.AddRange(GetKimya());
+        subjects.AddRange(GetBiyoloji());
+        subjects.AddRange(GetTurkceEdebiyat());
+        subjects.AddRange(GetSosyalTarihCografya());
+        subjects.AddRange(GetFelsefePsikoloji());
+        subjects.AddRange(GetIstatistikEkonomiHukuk());
+        subjects.AddRange(GetTemelEgitim());
+        subjects.AddRange(GetOzelEgitim());
+        subjects.AddRange(GetUniversiteTakviye());
+        subjects.AddRange(GetMuzik());
+        subjects.AddRange(GetSpor());
+        subjects.AddRange(GetDans());
+        subjects.AddRange(GetSanat());
+        subjects.AddRange(GetBilisimTeknolojileri());
+        subjects.AddRange(GetRobotikKodlama());
+        subjects.AddRange(GetDanismanlikKocluk());
+        subjects.AddRange(GetMuhasebeFinans());
+        subjects.AddRange(GetKisiselGelisim());
+        subjects.AddRange(GetSaglikYasam());
+        subjects.AddRange(GetHobiDiger());
+
+        return subjects;
     }
+
+    // Buradan sonraki GetMatematik(), GetTurkiyeSinavlari()...
+    // metotlarını aynen bırak.
+
+    private sealed record SubjectSeedItem(
+        int Code,
+        string Category,
+        string Name,
+        string Level,
+        bool IsActive);
 
     // ═══════════════════════════════════════════════════════════════════
     //  MATEMATİK  (Codes 1 – 40)
@@ -877,5 +878,4 @@ public static class SubjectSeed
     // ───────────────────────────────────────────────────────────────────
     //  PRIVATE RECORD — DepartmentSeedItem ile aynı pattern
     // ───────────────────────────────────────────────────────────────────
-    private sealed record SubjectSeedItem(int Code, string Category, string Name, string Level, bool IsActive);
 }
