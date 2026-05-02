@@ -56,6 +56,7 @@ public class ReviewsController : ControllerBase
     // POST /api/reviews/{listingId} — eski endpoint, geriye dönük uyumluluk için korundu
     [HttpPost("{listingId:guid}")]
     [Authorize]
+    [Obsolete("Bu endpoint kullanımdan kaldırılacak. POST /api/reviews (BookingId ile) kullanın.")]
     public async Task<IActionResult> Add(Guid listingId, [FromBody] ReviewRequest request)
     {
         var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);

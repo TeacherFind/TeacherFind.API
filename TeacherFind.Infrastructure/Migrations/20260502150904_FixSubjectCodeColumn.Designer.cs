@@ -12,8 +12,8 @@ using TeacherFind.Infrastructure.Persistence;
 namespace TeacherFind.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260502135953_AddCityIdToUsers")]
-    partial class AddCityIdToUsers
+    [Migration("20260502150904_FixSubjectCodeColumn")]
+    partial class FixSubjectCodeColumn
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -867,11 +867,13 @@ namespace TeacherFind.Infrastructure.Migrations
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<string>("FullName")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
 
                     b.Property<int>("Gender")
                         .HasColumnType("int");
@@ -917,6 +919,8 @@ namespace TeacherFind.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CityId");
+
+                    b.HasIndex("Email");
 
                     b.ToTable("Users");
                 });

@@ -1,4 +1,5 @@
-﻿using TeacherFind.Domain.Entities;
+﻿
+using TeacherFind.Domain.Entities;
 
 namespace TeacherFind.Application.Abstractions.Repositories;
 
@@ -10,5 +11,7 @@ public interface IReviewRepository
     Task<bool> ExistsByBookingIdAsync(Guid bookingId);
     Task<double> GetAverageRatingAsync(Guid listingId);
     Task<int> GetReviewCountAsync(Guid listingId);
+    Task<double> GetAverageRatingByTeacherProfileIdAsync(Guid teacherProfileId);
+    Task<int> GetReviewCountByTeacherProfileIdAsync(Guid teacherProfileId);
     Task SaveChangesAsync();
 }
