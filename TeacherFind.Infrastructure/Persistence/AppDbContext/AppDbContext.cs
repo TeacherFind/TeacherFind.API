@@ -15,15 +15,10 @@ public class AppDbContext : DbContext
     // =====================================================
 
     public DbSet<User> Users => Set<User>();
-
     public DbSet<TeacherProfile> TeacherProfiles => Set<TeacherProfile>();
-
     public DbSet<TeacherListing> TeacherListings => Set<TeacherListing>();
-
     public DbSet<Booking> Bookings => Set<Booking>();
-
     public DbSet<TeacherCertificate> TeacherCertificates => Set<TeacherCertificate>();
-
     public DbSet<TeacherAvailability> TeacherAvailabilities => Set<TeacherAvailability>();
 
     // =====================================================
@@ -31,17 +26,11 @@ public class AppDbContext : DbContext
     // =====================================================
 
     public DbSet<Favorite> Favorites => Set<Favorite>();
-
     public DbSet<Review> Reviews => Set<Review>();
-
     public DbSet<Conversation> Conversations => Set<Conversation>();
-
     public DbSet<Message> Messages => Set<Message>();
-
     public DbSet<Notification> Notifications => Set<Notification>();
-
     public DbSet<VerificationCode> VerificationCodes => Set<VerificationCode>();
-
     public DbSet<Report> Reports => Set<Report>();
 
     // =====================================================
@@ -49,15 +38,10 @@ public class AppDbContext : DbContext
     // =====================================================
 
     public DbSet<Subject> Subjects => Set<Subject>();
-
     public DbSet<City> Cities => Set<City>();
-
     public DbSet<District> Districts => Set<District>();
-
     public DbSet<Neighborhood> Neighborhoods => Set<Neighborhood>();
-
     public DbSet<University> Universities => Set<University>();
-
     public DbSet<Department> Departments => Set<Department>();
 
     // =====================================================
@@ -65,7 +49,6 @@ public class AppDbContext : DbContext
     // =====================================================
 
     public DbSet<AdminInvitation> AdminInvitations => Set<AdminInvitation>();
-
     public DbSet<AdminActionLog> AdminActionLogs => Set<AdminActionLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -77,22 +60,43 @@ public class AppDbContext : DbContext
         ConfigureMessage(modelBuilder);
         ConfigureListing(modelBuilder);
         ConfigureBooking(modelBuilder);
-
-
         ConfigureUniversity(modelBuilder);
         ConfigureDepartment(modelBuilder);
         ConfigureDistrict(modelBuilder);
         ConfigureNeighborhood(modelBuilder);
         ConfigureTeacherProfileEducation(modelBuilder);
-        ConfigureTeacherAvailability(modelBuilder);
         ConfigureTeacherCertificate(modelBuilder);
+        ConfigureTeacherAvailability(modelBuilder);
         ConfigureSubject(modelBuilder);
-
-
         ConfigureAdminInvitation(modelBuilder);
-
         ConfigureAdminActionLog(modelBuilder);
         ConfigureReport(modelBuilder);
+    }
+
+    private static void ConfigureUser(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.Property(x => x.FullName)
+                .IsRequired()
+                .HasMaxLength(150);
+
+            entity.Property(x => x.Email)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            entity.Property(x => x.PhoneNumber)
+                .HasMaxLength(30);
+
+            entity.HasOne(x => x.City)
+                .WithMany()
+                .HasForeignKey(x => x.CityId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(x => x.Email);
+
+            entity.HasIndex(x => x.CityId);
+        });
     }
 
     private static void ConfigureConversation(ModelBuilder modelBuilder)
@@ -350,6 +354,101 @@ public class AppDbContext : DbContext
         });
     }
 
+    private static void ConfigureTeacherCertificate(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<TeacherCertificate>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.HasOne(x => x.TeacherProfile)
+                .WithMany(x => x.Certificates)
+                .HasForeignKey(x => x.TeacherProfileId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.Property(x => x.Name)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            entity.Property(x => x.Organization)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            entity.Property(x => x.Year)
+                .IsRequired();
+
+            entity.Property(x => x.FileUrl)
+                .HasMaxLength(500);
+
+            entity.Property(x => x.FileName)
+                .HasMaxLength(255);
+
+            entity.Property(x => x.ContentType)
+                .HasMaxLength(100);
+
+            entity.HasIndex(x => x.TeacherProfileId);
+        });
+    }
+
+    private static void ConfigureTeacherAvailability(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<TeacherAvailability>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.HasOne(x => x.TeacherProfile)
+                .WithMany(x => x.Availabilities)
+                .HasForeignKey(x => x.TeacherProfileId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.Property(x => x.Day)
+                .IsRequired()
+                .HasMaxLength(30);
+
+            entity.Property(x => x.Start)
+                .IsRequired()
+                .HasMaxLength(20);
+
+            entity.Property(x => x.End)
+                .IsRequired()
+                .HasMaxLength(20);
+
+            entity.HasIndex(x => x.TeacherProfileId);
+        });
+    }
+
+    private static void ConfigureSubject(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Subject>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Code)
+                .IsRequired();
+
+            entity.Property(x => x.Name)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            entity.Property(x => x.Category)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(x => x.Level)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.Property(x => x.IsActive)
+                .IsRequired();
+
+            entity.HasIndex(x => x.Code)
+                .IsUnique();
+
+            entity.HasIndex(x => x.Category);
+
+            entity.HasIndex(x => x.Level);
+        });
+    }
+
     private static void ConfigureAdminInvitation(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<AdminInvitation>(entity =>
@@ -451,101 +550,6 @@ public class AppDbContext : DbContext
 
             entity.HasIndex(x => x.Status);
             entity.HasIndex(x => x.ReporterId);
-        });
-    }
-
-    private static void ConfigureTeacherCertificate(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<TeacherCertificate>(entity =>
-        {
-            entity.HasKey(x => x.Id);
-
-            entity.HasOne(x => x.TeacherProfile)
-                .WithMany(x => x.Certificates)
-                .HasForeignKey(x => x.TeacherProfileId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            entity.Property(x => x.Name)
-                .IsRequired()
-                .HasMaxLength(200);
-
-            entity.Property(x => x.Organization)
-                .IsRequired()
-                .HasMaxLength(200);
-
-            entity.Property(x => x.Year)
-                .IsRequired();
-
-            entity.Property(x => x.FileUrl)
-                .HasMaxLength(500);
-
-            entity.Property(x => x.FileName)
-                .HasMaxLength(255);
-
-            entity.Property(x => x.ContentType)
-                .HasMaxLength(100);
-
-            entity.HasIndex(x => x.TeacherProfileId);
-        });
-    }
-
-    private static void ConfigureTeacherAvailability(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<TeacherAvailability>(entity =>
-        {
-            entity.HasKey(x => x.Id);
-
-            entity.HasOne(x => x.TeacherProfile)
-                .WithMany(x => x.Availabilities)
-                .HasForeignKey(x => x.TeacherProfileId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            entity.Property(x => x.Day)
-                .IsRequired()
-                .HasMaxLength(30);
-
-            entity.Property(x => x.Start)
-                .IsRequired()
-                .HasMaxLength(20);
-
-            entity.Property(x => x.End)
-                .IsRequired()
-                .HasMaxLength(20);
-
-            entity.HasIndex(x => x.TeacherProfileId);
-        });
-    }
-    private static void ConfigureSubject(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<Subject>(entity =>
-        {
-            entity.HasKey(x => x.Id);
-
-            entity.Property(x => x.Code).IsRequired();
-            entity.Property(x => x.Name).IsRequired().HasMaxLength(200);
-            entity.Property(x => x.Category).IsRequired().HasMaxLength(100);
-            entity.Property(x => x.Level).IsRequired().HasMaxLength(50);
-            entity.Property(x => x.IsActive).IsRequired();
-
-            entity.HasIndex(x => x.Code).IsUnique();
-            entity.HasIndex(x => x.Category);
-            entity.HasIndex(x => x.Level);
-        });
-    }
-
-    private static void ConfigureUser(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<User>(entity =>
-        {
-            entity.HasOne(x => x.City)
-                .WithMany()
-                .HasForeignKey(x => x.CityId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            entity.HasIndex(x => x.CityId);
-
-            entity.Property(x => x.PhoneNumber)
-                .HasMaxLength(30);
         });
     }
 }
