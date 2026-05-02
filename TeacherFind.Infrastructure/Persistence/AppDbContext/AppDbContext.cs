@@ -72,10 +72,12 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
+        ConfigureUser(modelBuilder);
         ConfigureConversation(modelBuilder);
         ConfigureMessage(modelBuilder);
         ConfigureListing(modelBuilder);
         ConfigureBooking(modelBuilder);
+
 
         ConfigureUniversity(modelBuilder);
         ConfigureDepartment(modelBuilder);
@@ -528,6 +530,22 @@ public class AppDbContext : DbContext
             entity.HasIndex(x => x.Code).IsUnique();
             entity.HasIndex(x => x.Category);
             entity.HasIndex(x => x.Level);
+        });
+    }
+
+    private static void ConfigureUser(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.HasOne(x => x.City)
+                .WithMany()
+                .HasForeignKey(x => x.CityId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(x => x.CityId);
+
+            entity.Property(x => x.PhoneNumber)
+                .HasMaxLength(30);
         });
     }
 }

@@ -16,4 +16,8 @@ public class RegisterRequest
     public string Password { get; set; } = default!;
 
     public UserRole Role { get; set; } = UserRole.Student;
+
+    public string? PhoneNumber { get; set; }
+
+    public Guid? CityId { get; set; }
 }

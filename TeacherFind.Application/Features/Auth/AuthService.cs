@@ -39,10 +39,14 @@ public class AuthService : IAuthService
 
         var user = new User
         {
-            FullName = request.FullName,
-            Email = request.Email,
+            FullName = request.FullName.Trim(),
+            Email = request.Email.Trim(),
             PasswordHash = _passwordHasher.Hash(request.Password),
             Role = role,
+            PhoneNumber = string.IsNullOrWhiteSpace(request.PhoneNumber)
+        ? null
+        : request.PhoneNumber.Trim(),
+            CityId = request.CityId,
             IsActive = true,
             IsEmailVerified = false
         };
@@ -84,7 +88,10 @@ public class AuthService : IAuthService
             UserId = user.Id,
             FullName = user.FullName,
             Email = user.Email,
-            Role = user.Role.ToString()
+            Role = user.Role.ToString(),
+            PhoneNumber = user.PhoneNumber,
+            CityId = user.CityId,
+            CityName = user.City?.Name
         };
     }
 
