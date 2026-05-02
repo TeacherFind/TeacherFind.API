@@ -131,4 +131,21 @@ public class StudentService : IStudentService
 
         return true;
     }
+
+    public async Task<bool> UpdateAvatarAsync(
+        Guid studentUserId,
+        string profileImageUrl)
+    {
+        var user = await _userRepository.GetByIdAsync(studentUserId);
+
+        if (user is null)
+            return false;
+
+        user.ProfileImageUrl = profileImageUrl;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _userRepository.SaveChangesAsync();
+
+        return true;
+    }
 }

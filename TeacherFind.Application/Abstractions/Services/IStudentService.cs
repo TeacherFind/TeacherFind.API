@@ -16,4 +16,7 @@ public interface IStudentService
     Task<StudentProfileDto?> GetMyProfileAsync(Guid studentUserId);
 
     Task<bool> UpdateMyProfileAsync(Guid studentUserId, UpdateStudentProfileDto request);
+
+    Task<bool> UpdateAvatarAsync(Guid studentUserId, string profileImageUrl);
+
 }
