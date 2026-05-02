@@ -6,7 +6,7 @@ public class TutorFilterRequestDto
 {
     public string? Search { get; set; }
     public string? Category { get; set; }
-    public Guid? SubjectId { get; set; }
+    public int? SubjectId { get; set; }
     public Guid? CityId { get; set; }
     public Guid? DistrictId { get; set; }
     public Guid? NeighborhoodId { get; set; }

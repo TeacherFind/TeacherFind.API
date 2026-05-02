@@ -12,7 +12,7 @@ public class MyTutorListingDto
 
     public Guid TeacherProfileId { get; set; }
 
-    public Guid? SubjectId { get; set; }
+    public int? SubjectId { get; set; }
 
     public string? SubjectName { get; set; }
 

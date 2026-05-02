@@ -4,7 +4,7 @@ using TeacherFind.Domain.Entities;
 using TeacherFind.Domain.Enums;
 using TeacherFind.Infrastructure.Persistence;
 
-namespace TeacherFind.Infrastructure.Seeds;
+namespace TeacherFind.Infrastructure.Persistence.Seed;
 
 public static class SuperAdminSeed
 {

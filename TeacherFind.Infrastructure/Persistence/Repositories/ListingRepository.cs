@@ -161,7 +161,7 @@ public class ListingRepository : IListingRepository
 
     public async Task<bool> ExistsForTeacherBranchAsync(
     Guid teacherUserId,
-    Guid? subjectId,
+    int? subjectId,
     string category,
     string subCategory,
     Guid? excludeListingId = null)
