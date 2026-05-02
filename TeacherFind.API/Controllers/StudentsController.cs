@@ -7,34 +7,20 @@ namespace TeacherFind.API.Controllers;
 
 [ApiController]
 [Route("api/students")]
-[Authorize(Policy = "StudentOnly")]
+[Authorize]
 public class StudentsController : ControllerBase
 {
     private readonly IStudentService _studentService;
 
     public StudentsController(IStudentService studentService)
+        => _studentService = studentService;
+
+    // GET /api/students/lessons
+    [HttpGet("lessons")]
+    public async Task<IActionResult> GetLessonHistory()
     {
-        _studentService = studentService;
-    }
-
-    // GET /api/students/dashboard-stats
-    [HttpGet("dashboard-stats")]
-    public async Task<IActionResult> GetDashboardStats()
-    {
-        var currentUserId = GetRequiredCurrentUserId();
-
-        var result = await _studentService.GetDashboardStatsAsync(currentUserId);
-
-        return Ok(result);
-    }
-
-    private Guid GetRequiredCurrentUserId()
-    {
-        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (!Guid.TryParse(userIdValue, out var userId))
-            throw new UnauthorizedAccessException("Geçersiz kullanıcı tokenı.");
-
-        return userId;
+        var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        await _studentService.GetLessonHistoryAsync(userId);
+        return Ok();
     }
 }

@@ -14,15 +14,19 @@ public class ReviewRepository : IReviewRepository
         => await _context.Reviews.AddAsync(review);
 
     public async Task<List<Review>> GetByListingIdAsync(Guid listingId)
-        => await _context.Reviews.Where(x => x.ListingId == listingId).ToListAsync();
+        => await _context.Reviews
+            .Where(x => x.ListingId == listingId)
+            .ToListAsync();
 
-    // NEW — includes reviewer name, no N+1
     public async Task<List<Review>> GetByListingIdWithReviewerAsync(Guid listingId)
         => await _context.Reviews
             .Include(x => x.Reviewer)
             .Where(x => x.ListingId == listingId)
             .OrderByDescending(x => x.CreatedAt)
             .ToListAsync();
+
+    public async Task<bool> ExistsByBookingIdAsync(Guid bookingId)
+        => await _context.Reviews.AnyAsync(x => x.BookingId == bookingId);
 
     public async Task<double> GetAverageRatingAsync(Guid listingId)
         => await _context.Reviews
@@ -32,5 +36,6 @@ public class ReviewRepository : IReviewRepository
     public async Task<int> GetReviewCountAsync(Guid listingId)
         => await _context.Reviews.CountAsync(x => x.ListingId == listingId);
 
-    public async Task SaveChangesAsync() => await _context.SaveChangesAsync();
+    public async Task SaveChangesAsync()
+        => await _context.SaveChangesAsync();
 }

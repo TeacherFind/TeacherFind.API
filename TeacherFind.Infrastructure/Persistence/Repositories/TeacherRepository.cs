@@ -90,4 +90,29 @@ public class TeacherRepository : ITeacherRepository
     {
         _context.TeacherAvailabilities.Remove(availability);
     }
+    public async Task<TeacherProfile?> GetByIdAsync(Guid id)
+    {
+        return await _context.TeacherProfiles
+            .FirstOrDefaultAsync(x => x.Id == id);
+    }
+
+    public void Update(TeacherProfile profile)
+    {
+        _context.TeacherProfiles.Update(profile);
+    }
+    public Task UpdateAsync(TeacherProfile profile)
+    {
+        _context.TeacherProfiles.Update(profile);
+        return Task.CompletedTask;
+    }
+
+    public Task UpdateAsync(object profile)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void Update(object profile)
+    {
+        throw new NotImplementedException();
+    }
 }
