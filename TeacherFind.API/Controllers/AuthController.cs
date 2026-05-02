@@ -73,7 +73,10 @@ public class AuthController : ControllerBase
             FullName = user.FullName,
             Email = user.Email,
             Role = user.Role.ToString(),
-            AvatarUrl = user.ProfileImageUrl
+            AvatarUrl = user.ProfileImageUrl,
+            PhoneNumber = user.PhoneNumber,
+            CityId = user.CityId,
+            CityName = user.City?.Name
         });
     }
 
