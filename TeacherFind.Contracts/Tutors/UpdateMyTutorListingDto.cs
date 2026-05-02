@@ -9,7 +9,7 @@ namespace TeacherFind.Contracts.Tutors;
 
 public class UpdateMyTutorListingDto
 {
-    public Guid? SubjectId { get; set; }
+    public int? SubjectId { get; set; }
 
     public Guid? CityId { get; set; }
 

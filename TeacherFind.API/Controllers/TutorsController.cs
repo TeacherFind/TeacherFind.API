@@ -35,6 +35,7 @@ public class TutorsController : ControllerBase
     public async Task<IActionResult> GetTutors([FromQuery] TutorFilterRequestDto filter)
     {
         var result = await _tutorService.GetTutorsAsync(filter, GetCurrentUserId());
+
         return Ok(result);
     }
 
@@ -90,7 +91,8 @@ public class TutorsController : ControllerBase
     // POST /api/tutors/avatar
     [Authorize(Policy = "TutorOnly")]
     [HttpPost("avatar")]
-    public async Task<IActionResult> UploadAvatar([FromForm] IFormFile file)
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> UploadAvatar(IFormFile? file)
     {
         var currentUserId = GetRequiredCurrentUserId();
 
@@ -172,6 +174,7 @@ public class TutorsController : ControllerBase
         try
         {
             var result = await _tutorService.CreateMyListingAsync(currentUserId, request);
+
             return Ok(result);
         }
         catch (InvalidOperationException ex)
@@ -229,11 +232,12 @@ public class TutorsController : ControllerBase
     // POST /api/tutors/certificates
     [Authorize(Policy = "TutorOnly")]
     [HttpPost("certificates")]
+    [Consumes("multipart/form-data")]
     public async Task<IActionResult> AddCertificate(
         [FromForm] string name,
         [FromForm] string organization,
         [FromForm] int year,
-        [FromForm] IFormFile? file)
+        IFormFile? file)
     {
         var currentUserId = GetRequiredCurrentUserId();
 
@@ -246,16 +250,16 @@ public class TutorsController : ControllerBase
         if (year < 1950 || year > DateTime.UtcNow.Year + 1)
             return BadRequest(new { message = "Geçerli bir yıl giriniz." });
 
-        var certificateFile = await SaveCertificateFileAsync(currentUserId, file);
-
         try
         {
+            var certificateFile = await SaveCertificateFileAsync(currentUserId, file);
+
             var result = await _tutorService.AddMyCertificateAsync(
                 currentUserId,
                 new AddTutorCertificateDto
                 {
-                    Name = name,
-                    Organization = organization,
+                    Name = name.Trim(),
+                    Organization = organization.Trim(),
                     Year = year,
                     FileUrl = certificateFile.FileUrl,
                     FileName = certificateFile.FileName,
@@ -314,6 +318,7 @@ public class TutorsController : ControllerBase
         try
         {
             var result = await _tutorService.UpdateMyAvailabilityAsync(currentUserId, request);
+
             return Ok(result);
         }
         catch (InvalidOperationException ex)

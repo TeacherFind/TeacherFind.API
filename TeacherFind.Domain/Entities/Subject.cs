@@ -8,10 +8,10 @@ namespace TeacherFind.Domain.Entities;
 
 public class Subject
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
+    public int Id { get; set; }
 
     /// <summary>
-    /// Seed eşleştirmesi için sabit int kodu. DepartmentSeed.Code ile aynı mantık.
+    /// Seed eşleştirmesi için sabit int kodu.
     /// </summary>
     public int Code { get; set; }
 
