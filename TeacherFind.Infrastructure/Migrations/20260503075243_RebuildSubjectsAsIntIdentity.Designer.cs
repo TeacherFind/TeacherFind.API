@@ -12,8 +12,8 @@ using TeacherFind.Infrastructure.Persistence;
 namespace TeacherFind.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260502150904_FixSubjectCodeColumn")]
-    partial class FixSubjectCodeColumn
+    [Migration("20260503075243_RebuildSubjectsAsIntIdentity")]
+    partial class RebuildSubjectsAsIntIdentity
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
