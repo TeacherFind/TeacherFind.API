@@ -14,13 +14,16 @@ public class ReviewsController : ControllerBase
     private readonly IReviewService _reviewService;
 
     public ReviewsController(IReviewService reviewService)
-        => _reviewService = reviewService;
+    {
+        _reviewService = reviewService;
+    }
 
     // GET /api/reviews/{listingId}
     [HttpGet("{listingId:guid}")]
     public async Task<IActionResult> Get(Guid listingId)
     {
         var reviews = await _reviewService.GetReviewsAsync(listingId);
+
         return Ok(reviews);
     }
 
@@ -28,23 +31,29 @@ public class ReviewsController : ControllerBase
     [HttpGet("{listingId:guid}/average")]
     public async Task<IActionResult> GetAverage(Guid listingId)
     {
-        var avg = await _reviewService.GetAverageRatingAsync(listingId);
-        return Ok(avg);
+        var averageRating = await _reviewService.GetAverageRatingAsync(listingId);
+
+        return Ok(averageRating);
     }
 
-    // POST /api/reviews — booking tabanlı, güvenli yorum
+    // POST /api/reviews
+    // Booking tabanlı güvenli yorum endpoint'i.
     [HttpPost]
     [Authorize]
-    public async Task<IActionResult> CreateReview([FromBody] CreateReviewRequestDto dto)
+    public async Task<IActionResult> CreateReview([FromBody] CreateReviewRequestDto request)
     {
-        if (dto is null)
+        if (request is null)
             return BadRequest(new { message = "İstek boş olamaz." });
 
-        var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (!Guid.TryParse(userIdValue, out var userId))
+            return Unauthorized(new { message = "Geçersiz token." });
 
         try
         {
-            await _reviewService.CreateReviewAsync(userId, dto);
+            await _reviewService.CreateReviewAsync(userId, request);
+
             return Ok(new { message = "Yorumunuz başarıyla eklendi." });
         }
         catch (Exception ex)
@@ -53,14 +62,16 @@ public class ReviewsController : ControllerBase
         }
     }
 
-    // POST /api/reviews/{listingId} — eski endpoint, geriye dönük uyumluluk için korundu
+    // POST /api/reviews/{listingId}
+    // Eski endpoint kapatıldı. BookingId tabanlı POST /api/reviews kullanılmalı.
     [HttpPost("{listingId:guid}")]
     [Authorize]
-    [Obsolete("Bu endpoint kullanımdan kaldırılacak. POST /api/reviews (BookingId ile) kullanın.")]
-    public async Task<IActionResult> Add(Guid listingId, [FromBody] ReviewRequest request)
+    [Obsolete("Bu endpoint kapatıldı. POST /api/reviews endpointini BookingId ile kullanın.")]
+    public IActionResult Add(Guid listingId, [FromBody] ReviewRequest request)
     {
-        var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-        await _reviewService.AddReviewAsync(userId, listingId, request.Rating, request.Comment);
-        return Ok(new { message = "Yorum eklendi." });
+        return BadRequest(new
+        {
+            message = "Bu endpoint kullanımdan kaldırıldı. Yorum eklemek için POST /api/reviews endpointini BookingId ile kullanın."
+        });
     }
 }

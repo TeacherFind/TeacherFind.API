@@ -103,10 +103,7 @@ public class AppDbContext : DbContext
     {
         modelBuilder.Entity<Conversation>(entity =>
         {
-            entity.HasMany(x => x.Messages)
-                .WithOne(x => x.Conversation)
-                .HasForeignKey(x => x.ConversationId)
-                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasKey(x => x.Id);
 
             entity.HasIndex(x => new { x.User1Id, x.User2Id });
         });
@@ -116,10 +113,31 @@ public class AppDbContext : DbContext
     {
         modelBuilder.Entity<Message>(entity =>
         {
+            entity.HasKey(x => x.Id);
+
+            entity.HasOne(x => x.Conversation)
+                .WithMany(x => x.Messages)
+                .HasForeignKey(x => x.ConversationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.Sender)
+                .WithMany(x => x.SentMessages)
+                .HasForeignKey(x => x.SenderId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.Receiver)
+                .WithMany(x => x.ReceivedMessages)
+                .HasForeignKey(x => x.ReceiverId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.Property(x => x.Content)
+                .IsRequired()
+                .HasMaxLength(2000);
+
             entity.HasIndex(x => x.ConversationId);
-
+            entity.HasIndex(x => x.SenderId);
+            entity.HasIndex(x => x.ReceiverId);
             entity.HasIndex(x => new { x.ReceiverId, x.IsRead });
-
             entity.HasIndex(x => x.SentAt);
         });
     }

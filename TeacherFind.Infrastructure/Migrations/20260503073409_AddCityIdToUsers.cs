@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace TeacherFind.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class FixSubjectCodeColumn : Migration
+    public partial class AddCityIdToUsers : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -44,24 +44,6 @@ namespace TeacherFind.Infrastructure.Migrations
                 table: "Users",
                 type: "uniqueidentifier",
                 nullable: true);
-
-            migrationBuilder.AlterColumn<int>(
-                name: "SubjectId",
-                table: "TeacherListings",
-                type: "int",
-                nullable: true,
-                oldClrType: typeof(Guid),
-                oldType: "uniqueidentifier",
-                oldNullable: true);
-
-            migrationBuilder.AlterColumn<int>(
-                name: "Id",
-                table: "Subjects",
-                type: "int",
-                nullable: false,
-                oldClrType: typeof(Guid),
-                oldType: "uniqueidentifier")
-                .Annotation("SqlServer:Identity", "1, 1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_CityId",
@@ -128,24 +110,6 @@ namespace TeacherFind.Infrastructure.Migrations
                 oldClrType: typeof(string),
                 oldType: "nvarchar(200)",
                 oldMaxLength: 200);
-
-            migrationBuilder.AlterColumn<Guid>(
-                name: "SubjectId",
-                table: "TeacherListings",
-                type: "uniqueidentifier",
-                nullable: true,
-                oldClrType: typeof(int),
-                oldType: "int",
-                oldNullable: true);
-
-            migrationBuilder.AlterColumn<Guid>(
-                name: "Id",
-                table: "Subjects",
-                type: "uniqueidentifier",
-                nullable: false,
-                oldClrType: typeof(int),
-                oldType: "int")
-                .OldAnnotation("SqlServer:Identity", "1, 1");
         }
     }
 }

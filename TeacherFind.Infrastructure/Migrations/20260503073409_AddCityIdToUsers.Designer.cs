@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TeacherFind.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using TeacherFind.Infrastructure.Persistence;
 namespace TeacherFind.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260503073409_AddCityIdToUsers")]
+    partial class AddCityIdToUsers
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -346,8 +349,7 @@ namespace TeacherFind.Infrastructure.Migrations
 
                     b.Property<string>("Content")
                         .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid>("ConversationId")
                         .HasColumnType("uniqueidentifier");
@@ -364,15 +366,21 @@ namespace TeacherFind.Infrastructure.Migrations
                     b.Property<DateTime>("SentAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("UserId1")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ConversationId");
 
-                    b.HasIndex("ReceiverId");
-
-                    b.HasIndex("SenderId");
-
                     b.HasIndex("SentAt");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("UserId1");
 
                     b.HasIndex("ReceiverId", "IsRead");
 
@@ -1037,23 +1045,15 @@ namespace TeacherFind.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("TeacherFind.Domain.Entities.User", "Receiver")
+                    b.HasOne("TeacherFind.Domain.Entities.User", null)
                         .WithMany("ReceivedMessages")
-                        .HasForeignKey("ReceiverId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .HasForeignKey("UserId");
 
-                    b.HasOne("TeacherFind.Domain.Entities.User", "Sender")
+                    b.HasOne("TeacherFind.Domain.Entities.User", null)
                         .WithMany("SentMessages")
-                        .HasForeignKey("SenderId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .HasForeignKey("UserId1");
 
                     b.Navigation("Conversation");
-
-                    b.Navigation("Receiver");
-
-                    b.Navigation("Sender");
                 });
 
             modelBuilder.Entity("TeacherFind.Domain.Entities.Neighborhood", b =>
