@@ -20,6 +20,7 @@ public class AppDbContext : DbContext
     public DbSet<Booking> Bookings => Set<Booking>();
     public DbSet<TeacherCertificate> TeacherCertificates => Set<TeacherCertificate>();
     public DbSet<TeacherAvailability> TeacherAvailabilities => Set<TeacherAvailability>();
+    public DbSet<TeacherProfileSubject> TeacherProfileSubjects => Set<TeacherProfileSubject>();
 
     // =====================================================
     // Interaction Tables
@@ -55,6 +56,7 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
+
         ConfigureUser(modelBuilder);
         ConfigureConversation(modelBuilder);
         ConfigureMessage(modelBuilder);
@@ -71,6 +73,8 @@ public class AppDbContext : DbContext
         ConfigureAdminInvitation(modelBuilder);
         ConfigureAdminActionLog(modelBuilder);
         ConfigureReport(modelBuilder);
+        ConfigureTeacherProfileSubject(modelBuilder);
+
     }
 
     private static void ConfigureUser(ModelBuilder modelBuilder)
@@ -568,6 +572,25 @@ public class AppDbContext : DbContext
 
             entity.HasIndex(x => x.Status);
             entity.HasIndex(x => x.ReporterId);
+        });
+    }
+    private static void ConfigureTeacherProfileSubject(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<TeacherProfileSubject>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.HasOne(x => x.TeacherProfile)
+                .WithMany(x => x.Subjects)
+                .HasForeignKey(x => x.TeacherProfileId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.Subject)
+                .WithMany()
+                .HasForeignKey(x => x.SubjectId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(x => x.TeacherProfileId);
         });
     }
 }
