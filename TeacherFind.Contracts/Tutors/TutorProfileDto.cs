@@ -10,7 +10,6 @@ public class TutorProfileDto
 {
     public Guid UserId { get; set; }
     public Guid TeacherProfileId { get; set; }
-
     public string FullName { get; set; } = default!;
     public string Email { get; set; } = default!;
     public string? PhoneNumber { get; set; }
@@ -20,6 +19,7 @@ public class TutorProfileDto
     public string? Headline { get; set; }
     public string? Bio { get; set; }
     public string? City { get; set; }
+    public string? TeachingStyle { get; set; }
 
     public Guid? UniversityId { get; set; }
     public string? UniversityName { get; set; }
@@ -29,43 +29,43 @@ public class TutorProfileDto
 
     public string? EducationLevel { get; set; }
     public bool? IsStudent { get; set; }
-    public string? TeachingStyle { get; set; }
 
     public double Rating { get; set; }
     public int TotalReviews { get; set; }
 
     public List<TutorProfileCertificateDto> Certificates { get; set; } = new();
     public List<TutorProfileAvailabilityDto> Availabilities { get; set; } = new();
+    public List<TutorProfileSubjectDto> Subjects { get; set; } = new();
+}
+
+public class TutorProfileSubjectDto
+{
+    public Guid Id { get; set; }
+    public int? SubjectId { get; set; }
+    public string? Stage { get; set; }
+    public string? Category { get; set; }
+    public string? Name { get; set; }
+    public string? Level { get; set; }
 }
 
 public class TutorProfileCertificateDto
 {
     public Guid Id { get; set; }
-
     public string Name { get; set; } = default!;
-
     public string Organization { get; set; } = default!;
-
     public int Year { get; set; }
-
     public string? FileUrl { get; set; }
-
     public string? FileName { get; set; }
-
     public string? ContentType { get; set; }
 }
+
 public class AddTutorCertificateDto
 {
     public string Name { get; set; } = default!;
-
     public string Organization { get; set; } = default!;
-
     public int Year { get; set; }
-
     public string? FileUrl { get; set; }
-
     public string? FileName { get; set; }
-
     public string? ContentType { get; set; }
 }
 

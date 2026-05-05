@@ -4,12 +4,6 @@ using TeacherFind.Infrastructure.Persistence;
 
 namespace TeacherFind.Infrastructure.Persistence.Seed;
 
-/// <summary>
-/// Ders / konu referans verilerini seed eder.
-/// 
-/// Eşleştirme Id üzerinden değil, sabit Code üzerinden yapılır.
-/// Subject.Id int identity olduğu için seed içinde Id verilmez.
-/// </summary>
 public static class SubjectSeed
 {
     public static async Task SeedAsync(AppDbContext context)
@@ -23,11 +17,14 @@ public static class SubjectSeed
 
         foreach (var seed in GetSubjects())
         {
+            var stage = DeriveStage(seed.Level);
+
             if (existingByCodes.TryGetValue(seed.Code, out var subject))
             {
                 subject.Category = seed.Category;
                 subject.Name = seed.Name;
                 subject.Level = seed.Level;
+                subject.Stage = stage;
                 subject.IsActive = seed.IsActive;
                 continue;
             }
@@ -38,6 +35,7 @@ public static class SubjectSeed
                 Category = seed.Category,
                 Name = seed.Name,
                 Level = seed.Level,
+                Stage = stage,
                 IsActive = seed.IsActive
             };
 
@@ -47,6 +45,24 @@ public static class SubjectSeed
 
         await context.SaveChangesAsync();
     }
+
+    /// <summary>
+    /// Level değerinden Stage türetir.
+    /// İlkokul + Ortaokul → "İlk-Ortaöğretim"
+    /// Lise               → "Lise"
+    /// Üniversite         → "Üniversite"
+    /// Yetişkin           → "Yetişkin"
+    /// Her Seviye / diğer → "Her Seviye"
+    /// </summary>
+    private static string DeriveStage(string level) => level switch
+    {
+        "İlkokul" => "İlk-Ortaöğretim",
+        "Ortaokul" => "İlk-Ortaöğretim",
+        "Lise" => "Lise",
+        "Üniversite" => "Üniversite",
+        "Yetişkin" => "Yetişkin",
+        _ => "Her Seviye"
+    };
 
     private static List<SubjectSeedItem> GetSubjects()
     {
@@ -84,9 +100,6 @@ public static class SubjectSeed
         return subjects;
     }
 
-    // Buradan sonraki GetMatematik(), GetTurkiyeSinavlari()...
-    // metotlarını aynen bırak.
-
     private sealed record SubjectSeedItem(
         int Code,
         string Category,
@@ -102,18 +115,13 @@ public static class SubjectSeed
         const string C = "Matematik";
         return
         [
-            // İlkokul
             new( 1, C, "Genel Matematik",           "İlkokul",    true),
             new( 2, C, "Mental Aritmetik",           "İlkokul",    true),
             new( 3, C, "Sayılar ve Dört İşlem",     "İlkokul",    true),
-
-            // Ortaokul
             new( 4, C, "Genel Matematik",           "Ortaokul",   true),
             new( 5, C, "Geometri",                  "Ortaokul",   true),
             new( 6, C, "Olasılık ve İstatistik",   "Ortaokul",   true),
             new( 7, C, "Cebir",                     "Ortaokul",   true),
-
-            // Lise
             new( 8, C, "Genel Matematik",           "Lise",       true),
             new( 9, C, "Geometri",                  "Lise",       true),
             new(10, C, "Analitik Geometri",         "Lise",       true),
@@ -121,8 +129,6 @@ public static class SubjectSeed
             new(12, C, "Olasılık ve İstatistik",   "Lise",       true),
             new(13, C, "Calculus (Temel)",          "Lise",       true),
             new(14, C, "Sayılar Teorisi",           "Lise",       true),
-
-            // Üniversite
             new(15, C, "Calculus / Analiz",         "Üniversite", true),
             new(16, C, "Diferansiyel Denklemler",   "Üniversite", true),
             new(17, C, "Lineer Cebir",              "Üniversite", true),
@@ -141,15 +147,12 @@ public static class SubjectSeed
         const string C = "Türkiye Sınavları";
         return
         [
-            // Ortaokul sınavları
             new(100, C, "LGS – Genel Hazırlık",                    "Ortaokul",   true),
             new(101, C, "LGS – Matematik",                          "Ortaokul",   true),
             new(102, C, "LGS – Türkçe",                             "Ortaokul",   true),
             new(103, C, "LGS – Fen Bilimleri",                     "Ortaokul",   true),
             new(104, C, "LGS – İnkılap Tarihi ve Din Kültürü",    "Ortaokul",   true),
             new(105, C, "İOKBS – Bursluluk Sınavı",               "Ortaokul",   true),
-
-            // Lise sınavları (YKS)
             new(110, C, "YKS – Genel Hazırlık (TYT + AYT)",       "Lise",       true),
             new(111, C, "TYT – Temel Yeterlilik Testi",            "Lise",       true),
             new(112, C, "AYT – Sayısal",                            "Lise",       true),
@@ -158,8 +161,6 @@ public static class SubjectSeed
             new(115, C, "YDT – Yabancı Dil Testi",                "Lise",       true),
             new(116, C, "MSÜ – Milli Savunma Üniversitesi",       "Lise",       true),
             new(117, C, "Polis Akademisi Giriş Sınavı (PAFS)",     "Lise",       true),
-
-            // YDS – her dil ayrı (Üniversite)
             new(120, C, "YDS – İngilizce",                          "Üniversite", true),
             new(121, C, "YDS – Almanca",                            "Üniversite", true),
             new(122, C, "YDS – Fransızca",                          "Üniversite", true),
@@ -170,8 +171,6 @@ public static class SubjectSeed
             new(127, C, "YDS – Japonca",                            "Üniversite", true),
             new(128, C, "YDS – Çince",                              "Üniversite", true),
             new(129, C, "YDS – Portekizce",                         "Üniversite", true),
-
-            // YÖKDİL – her dil ayrı (Üniversite)
             new(130, C, "YÖKDİL – İngilizce",                       "Üniversite", true),
             new(131, C, "YÖKDİL – Almanca",                         "Üniversite", true),
             new(132, C, "YÖKDİL – Fransızca",                       "Üniversite", true),
@@ -182,16 +181,12 @@ public static class SubjectSeed
             new(137, C, "YÖKDİL – Japonca",                         "Üniversite", true),
             new(138, C, "YÖKDİL – Çince",                           "Üniversite", true),
             new(139, C, "YÖKDİL – Portekizce",                      "Üniversite", true),
-
-            // Yüksek Lisans & Akademik (Üniversite / Yetişkin)
             new(140, C, "ALES – Akademik Personel ve Lisansüstü",   "Üniversite", true),
             new(141, C, "DGS – Dikey Geçiş Sınavı",                "Üniversite", true),
             new(142, C, "TUS – Tıpta Uzmanlık Sınavı",             "Yetişkin",   true),
             new(143, C, "DUS – Diş Hekimliği Uzmanlık Sınavı",     "Yetişkin",   true),
             new(144, C, "Eczacılık Uzmanlık Sınavı",                "Yetişkin",   true),
             new(145, C, "AÖF – Açıköğretim Sınavları",             "Üniversite", true),
-
-            // Kamu & Kariyer (Yetişkin)
             new(150, C, "KPSS – Genel Yetenek / Genel Kültür",     "Yetişkin",   true),
             new(151, C, "KPSS – Eğitim Bilimleri",                  "Yetişkin",   true),
             new(152, C, "ÖABT – Öğretmenlik Alan Bilgisi",          "Yetişkin",   true),
@@ -203,8 +198,6 @@ public static class SubjectSeed
             new(158, C, "Subay / Astsubay Sınavları",               "Yetişkin",   true),
             new(159, C, "Vergi Müfettişi Sınavı",                   "Yetişkin",   true),
             new(160, C, "Gümrük Müfettişi Sınavı",                  "Yetişkin",   true),
-
-            // Mesleki Sertifikalar (Yetişkin)
             new(165, C, "SMMM – Serbest Muhasebeci Mali Müşavirlik","Yetişkin",   true),
             new(166, C, "YMM – Yeminli Mali Müşavirlik",            "Yetişkin",   true),
             new(167, C, "İSG – İş Sağlığı ve Güvenliği Uzmanlığı","Yetişkin",   true),
@@ -222,7 +215,6 @@ public static class SubjectSeed
         const string C = "Uluslararası Sınavlar";
         return
         [
-            // İngilizce Dil Sınavları
             new(200, C, "IELTS Academic",                   "Her Seviye", true),
             new(201, C, "IELTS General Training",           "Her Seviye", true),
             new(202, C, "TOEFL iBT",                        "Her Seviye", true),
@@ -234,16 +226,12 @@ public static class SubjectSeed
             new(208, C, "TOEIC – İş İngilizcesi",          "Yetişkin",   true),
             new(209, C, "OET – Occupational English Test",  "Yetişkin",   true),
             new(210, C, "ITEP",                             "Her Seviye", true),
-
-            // Üniversite Giriş
             new(215, C, "SAT – Matematik + Okuma-Yazma",   "Lise",       true),
             new(216, C, "ACT",                              "Lise",       true),
             new(217, C, "GRE – Graduate Record Exam",      "Üniversite", true),
             new(218, C, "GMAT – İşletme Yüksek Lisans",   "Üniversite", true),
             new(219, C, "LSAT – Hukuk Okulu Giriş",       "Üniversite", true),
             new(220, C, "MCAT – Tıp Okulu Giriş",         "Üniversite", true),
-
-            // Uluslararası Müfredat
             new(225, C, "IB – International Baccalaureate","Lise",       true),
             new(226, C, "IGCSE",                           "Lise",       true),
             new(227, C, "A-Levels",                        "Lise",       true),
@@ -259,19 +247,14 @@ public static class SubjectSeed
         const string C = "Almanca Sınavları";
         return
         [
-            // Goethe-Institut
             new(250, C, "Goethe A1 – Start Deutsch 1",                             "Her Seviye", true),
             new(251, C, "Goethe A2",                                                "Her Seviye", true),
             new(252, C, "Goethe B1",                                                "Her Seviye", true),
             new(253, C, "Goethe B2",                                                "Her Seviye", true),
             new(254, C, "Goethe C1",                                                "Her Seviye", true),
             new(255, C, "Goethe C2 – Großes Deutsches Sprachdiplom",               "Her Seviye", true),
-
-            // Üniversite
             new(260, C, "TestDaF – Test Deutsch als Fremdsprache",                  "Üniversite", true),
             new(261, C, "DSH – Deutsche Sprachprüfung für den Hochschulzugang",    "Üniversite", true),
-
-            // Telc
             new(265, C, "Telc Deutsch A1",                                          "Her Seviye", true),
             new(266, C, "Telc Deutsch A2",                                          "Her Seviye", true),
             new(267, C, "Telc Deutsch B1",                                          "Her Seviye", true),
@@ -279,8 +262,6 @@ public static class SubjectSeed
             new(269, C, "Telc Deutsch C1",                                          "Her Seviye", true),
             new(270, C, "Telc Deutsch B1+ Beruf – İş Almancası",                  "Yetişkin",   true),
             new(271, C, "Telc Deutsch B2+ Beruf – İş Almancası",                  "Yetişkin",   true),
-
-            // Diğer
             new(275, C, "ÖSD – Österreichisches Sprachdiplom Deutsch",             "Her Seviye", true),
             new(276, C, "DSD – Deutsches Sprachdiplom (Okul)",                     "Lise",       true),
             new(277, C, "Abitur Hazırlık",                                          "Lise",       true),
@@ -296,51 +277,32 @@ public static class SubjectSeed
         const string C = "Dil Sertifika Sınavları";
         return
         [
-            // Fransızca
             new(300, C, "DELF A1 – A2 (Fransızca)",                "Her Seviye", true),
             new(301, C, "DELF B1 – B2 (Fransızca)",                "Her Seviye", true),
             new(302, C, "DALF C1 – C2 (Fransızca)",                "Her Seviye", true),
             new(303, C, "TCF – Test de Connaissance du Français",   "Her Seviye", true),
             new(304, C, "TEF – Test d'Évaluation de Français",     "Her Seviye", true),
-
-            // İspanyolca
             new(310, C, "DELE A1 – A2 (İspanyolca)",               "Her Seviye", true),
             new(311, C, "DELE B1 – B2 (İspanyolca)",               "Her Seviye", true),
             new(312, C, "DELE C1 – C2 (İspanyolca)",               "Her Seviye", true),
             new(313, C, "SIELE – İspanyolca Çevrimiçi",            "Her Seviye", true),
-
-            // İtalyanca
             new(318, C, "CILS – Certificazione İtalyanca",          "Her Seviye", true),
             new(319, C, "CELI – Certificato İtalyanca",             "Her Seviye", true),
             new(320, C, "PLIDA – İtalyanca Yeterlilik",             "Her Seviye", true),
-
-            // Portekizce
             new(325, C, "CELPE-BRAS (Portekizce – Brezilya)",       "Her Seviye", true),
-
-            // Japonca – JLPT
             new(330, C, "JLPT N5 – Japonca Başlangıç",             "Her Seviye", true),
             new(331, C, "JLPT N4 – Japonca",                       "Her Seviye", true),
             new(332, C, "JLPT N3 – Japonca",                       "Her Seviye", true),
             new(333, C, "JLPT N2 – Japonca",                       "Her Seviye", true),
             new(334, C, "JLPT N1 – Japonca İleri",                 "Her Seviye", true),
-
-            // Çince – HSK
             new(338, C, "HSK 1 – 2 (Çince Başlangıç)",            "Her Seviye", true),
             new(339, C, "HSK 3 – 4 (Çince Orta)",                 "Her Seviye", true),
             new(340, C, "HSK 5 – 6 (Çince İleri)",               "Her Seviye", true),
             new(341, C, "HSKK – Çince Konuşma Sınavı",            "Her Seviye", true),
-
-            // Korece – TOPIK
             new(345, C, "TOPIK I (Korece 1–2. Seviye)",            "Her Seviye", true),
             new(346, C, "TOPIK II (Korece 3–6. Seviye)",           "Her Seviye", true),
-
-            // Rusça
             new(350, C, "TRKI / TORFL – Rusça Yeterlilik",         "Her Seviye", true),
-
-            // Arapça
             new(354, C, "ALPT – Arapça Dil Yeterlilik Sınavı",     "Her Seviye", true),
-
-            // Çocuk İngilizcesi
             new(358, C, "Cambridge YLE – Çocuklar İçin İngilizce", "İlkokul",    true),
             new(359, C, "Trinity College London – İngilizce",       "Her Seviye", true),
         ];
@@ -493,13 +455,11 @@ public static class SubjectSeed
             new(550, "Sosyal Bilgiler", "Sosyal Bilgiler",                  "Ortaokul",   true),
             new(551, "Sosyal Bilgiler", "Vatandaşlık Bilgisi",              "Ortaokul",   true),
             new(552, "Sosyal Bilgiler", "Hayat Bilgisi",                    "İlkokul",    true),
-
             new(560, "Tarih",           "Türk Tarihi",                      "Lise",       true),
             new(561, "Tarih",           "Dünya Tarihi",                     "Lise",       true),
             new(562, "Tarih",           "Osmanlı Tarihi",                   "Lise",       true),
             new(563, "Tarih",           "İnkılap Tarihi ve Atatürkçülük",  "Lise",       true),
             new(564, "Tarih",           "Türk Tarihi",                      "Üniversite", true),
-
             new(570, "Coğrafya",        "Genel Coğrafya",                   "Lise",       true),
             new(571, "Coğrafya",        "Fiziki Coğrafya",                  "Lise",       true),
             new(572, "Coğrafya",        "Beşeri ve İktisadi Coğrafya",     "Lise",       true),
@@ -519,7 +479,6 @@ public static class SubjectSeed
             new(582, "Felsefe",   "Etik (Ahlak Felsefesi)", "Lise",       true),
             new(583, "Felsefe",   "Genel Felsefe",          "Üniversite", true),
             new(584, "Felsefe",   "Epistemoloji",           "Üniversite", true),
-
             new(590, "Psikoloji", "Genel Psikoloji",        "Lise",       true),
             new(591, "Psikoloji", "Genel Psikoloji",        "Üniversite", true),
             new(592, "Psikoloji", "Sosyal Psikoloji",       "Üniversite", true),
@@ -540,7 +499,6 @@ public static class SubjectSeed
             new(602, "İstatistik",       "Olasılık Teorisi",             "Üniversite", true),
             new(603, "İstatistik",       "SPSS",                         "Üniversite", true),
             new(604, "İstatistik",       "Veri Analizi",                 "Üniversite", true),
-
             new(610, "Ekonomi ve Hukuk", "Mikroekonomi",                 "Üniversite", true),
             new(611, "Ekonomi ve Hukuk", "Makroekonomi",                 "Üniversite", true),
             new(612, "Ekonomi ve Hukuk", "Ekonometri",                   "Üniversite", true),
@@ -874,8 +832,4 @@ public static class SubjectSeed
             new(1256, C, "Güzel Sanatlar Sınavına Hazırlık",  "Lise",       true),
         ];
     }
-
-    // ───────────────────────────────────────────────────────────────────
-    //  PRIVATE RECORD — DepartmentSeedItem ile aynı pattern
-    // ───────────────────────────────────────────────────────────────────
 }
