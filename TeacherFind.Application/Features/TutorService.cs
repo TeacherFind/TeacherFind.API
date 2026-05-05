@@ -1,8 +1,12 @@
-﻿using TeacherFind.Application.Abstractions.Repositories;
+﻿using Microsoft.AspNetCore.Http;
+using System;
+using System.Linq;
+using TeacherFind.Application.Abstractions.Repositories;
 using TeacherFind.Application.Abstractions.Services;
 using TeacherFind.Contracts.Common;
 using TeacherFind.Contracts.Tutors;
 using TeacherFind.Domain.Entities;
+
 
 namespace TeacherFind.Application.Features.Tutors;
 
@@ -15,11 +19,11 @@ public class TutorService : ITutorService
     private readonly IBookingRepository _bookingRepository;
 
     public TutorService(
-    IListingRepository listingRepository,
-    IFavoriteRepository favoriteRepository,
-    IReviewRepository reviewRepository,
-    ITeacherRepository teacherRepository,
-    IBookingRepository bookingRepository)
+        IListingRepository listingRepository,
+        IFavoriteRepository favoriteRepository,
+        IReviewRepository reviewRepository,
+        ITeacherRepository teacherRepository,
+        IBookingRepository bookingRepository)
     {
         _listingRepository = listingRepository;
         _favoriteRepository = favoriteRepository;
@@ -47,17 +51,28 @@ public class TutorService : ITutorService
             Id = x.Id,
             TeacherProfileId = x.TeacherProfileId,
             TeacherName = x.TeacherProfile.User.FullName,
+            PhoneNumber = x.TeacherProfile.User.PhoneNumber,
             Title = x.Title,
             Description = x.Description,
             Price = x.Price,
-            ServiceType = x.ServiceType.ToString(),
             City = x.City?.Name,
             District = x.District?.Name,
             Neighborhood = x.Neighborhood?.Name,
             Subject = x.Subject?.Name,
             Rating = x.TeacherProfile.Rating,
             ReviewCount = x.TeacherProfile.TotalReviews,
-            IsFavorite = favoriteIds.Contains(x.Id)
+            IsFavorite = favoriteIds.Contains(x.Id),
+
+            Photos = x.Photos
+                .OrderByDescending(p => p.IsMain)
+                .ThenBy(p => p.CreatedAt)
+                .Select(p => new ListingPhotoDto
+                {
+                    Id = p.Id,
+                    PhotoUrl = p.PhotoUrl,
+                    IsMain = p.IsMain
+                })
+                .ToList()
         }).ToList();
 
         return new PagedResultDto<TutorListItemDto>
@@ -94,27 +109,41 @@ public class TutorService : ITutorService
             Id = listing.Id,
             TeacherProfileId = listing.TeacherProfileId,
             TeacherName = profile.User.FullName,
+            PhoneNumber = profile.User.PhoneNumber,
             AvatarUrl = profile.User.ProfileImageUrl,
+
             Title = listing.Title,
-            Headline = profile.Headline,
-            Bio = profile.Bio,
-            TeachingStyle = profile.TeachingStyle,
+            Bio = listing.Description,
             Price = listing.Price,
             LessonDuration = listing.LessonDuration,
-            ServiceType = listing.ServiceType.ToString(),
+
             Subject = listing.Subject?.Name,
             Category = listing.Category,
             City = listing.City?.Name,
             District = listing.District?.Name,
             Neighborhood = listing.Neighborhood?.Name,
+
             University = profile.University?.Name,
             Department = profile.DepartmentEntity?.Name,
+
             Rating = Math.Round(averageRating, 1),
             ReviewCount = reviews.Count,
             ViewCount = listing.ViewCount,
             Status = listing.Status,
             CreatedAt = listing.CreatedAt,
             UpdatedAt = listing.UpdatedAt,
+
+            Photos = listing.Photos
+                .OrderByDescending(p => p.IsMain)
+                .ThenBy(p => p.CreatedAt)
+                .Select(p => new ListingPhotoDto
+                {
+                    Id = p.Id,
+                    PhotoUrl = p.PhotoUrl,
+                    IsMain = p.IsMain
+                })
+                .ToList(),
+
             Reviews = reviews.Select(x => new TutorReviewDto
             {
                 Id = x.Id,
@@ -124,12 +153,18 @@ public class TutorService : ITutorService
                 Comment = x.Comment,
                 CreatedAt = x.CreatedAt
             }).ToList(),
-            Availability = profile.Availabilities.Select(x => new TutorAvailabilityDto
-            {
-                Day = x.Day,
-                Start = x.Start,
-                End = x.End
-            }).ToList(),
+
+            Availability = profile.Availabilities
+                .OrderBy(x => GetDayOrder(x.Day))
+                .ThenBy(x => x.Start)
+                .Select(x => new TutorAvailabilityDto
+                {
+                    Day = x.Day,
+                    Start = x.Start,
+                    End = x.End
+                })
+                .ToList(),
+
             Documents = profile.Certificates.Select(x => new TutorCertificateDto
             {
                 Name = x.Name,
@@ -158,9 +193,6 @@ public class TutorService : ITutorService
             await _teacherRepository.AddAsync(profile);
         }
 
-        profile.Headline = request.Headline?.Trim();
-        profile.Bio = request.Bio?.Trim();
-        profile.TeachingStyle = request.TeachingStyle?.Trim();
         profile.City = request.City?.Trim();
         profile.UniversityId = request.UniversityId;
         profile.DepartmentId = request.DepartmentId;
@@ -175,7 +207,9 @@ public class TutorService : ITutorService
     {
         var listings = await _listingRepository.GetByTeacherUserIdAsync(currentUserId);
 
-        return listings.Select(MapToMyTutorListingDto).ToList();
+        return listings
+            .Select(MapToMyTutorListingDto)
+            .ToList();
     }
 
     public async Task<MyTutorListingDto> CreateMyListingAsync(
@@ -196,6 +230,8 @@ public class TutorService : ITutorService
         if (branchAlreadyExists)
             throw new InvalidOperationException("Bu branş için zaten bir ilanınız var.");
 
+        var normalizedPrice = NormalizePrice(request.Price);
+
         var listing = new TeacherListing
         {
             TeacherProfileId = profile.Id,
@@ -203,14 +239,15 @@ public class TutorService : ITutorService
             CityId = request.CityId,
             DistrictId = request.DistrictId,
             NeighborhoodId = request.NeighborhoodId,
-            Headline = request.Headline?.Trim(),
+
             Title = request.Title.Trim(),
             Description = request.Description.Trim(),
             Category = request.Category.Trim(),
             SubCategory = request.SubCategory.Trim(),
-            ServiceType = request.ServiceType,
+
             LessonDuration = request.LessonDuration,
-            Price = request.Price,
+            Price = normalizedPrice,
+
             IsActive = true,
             IsApproved = false,
             Status = "Pending",
@@ -245,18 +282,20 @@ public class TutorService : ITutorService
         if (branchAlreadyExists)
             throw new InvalidOperationException("Bu branş için zaten başka bir ilanınız var.");
 
+        var normalizedPrice = NormalizePrice(request.Price);
+
         listing.SubjectId = request.SubjectId;
         listing.CityId = request.CityId;
         listing.DistrictId = request.DistrictId;
         listing.NeighborhoodId = request.NeighborhoodId;
-        listing.Headline = request.Headline?.Trim();
+
         listing.Title = request.Title.Trim();
         listing.Description = request.Description.Trim();
         listing.Category = request.Category.Trim();
         listing.SubCategory = request.SubCategory.Trim();
-        listing.ServiceType = request.ServiceType;
+
         listing.LessonDuration = request.LessonDuration;
-        listing.Price = request.Price;
+        listing.Price = normalizedPrice;
         listing.IsActive = request.IsActive;
         listing.UpdatedAt = DateTime.UtcNow;
 
@@ -288,20 +327,32 @@ public class TutorService : ITutorService
             NeighborhoodId = listing.NeighborhoodId,
             NeighborhoodName = listing.Neighborhood?.Name,
 
-            Headline = listing.Headline,
             Title = listing.Title,
             Description = listing.Description,
             Category = listing.Category,
             SubCategory = listing.SubCategory,
-            ServiceType = listing.ServiceType.ToString(),
+
             LessonDuration = listing.LessonDuration,
             Price = listing.Price,
+
             Status = listing.Status,
             IsActive = listing.IsActive,
             IsApproved = listing.IsApproved,
             ViewCount = listing.ViewCount,
+
             CreatedAt = listing.CreatedAt,
-            UpdatedAt = listing.UpdatedAt
+            UpdatedAt = listing.UpdatedAt,
+
+            Photos = listing.Photos
+                .OrderByDescending(p => p.IsMain)
+                .ThenBy(p => p.CreatedAt)
+                .Select(p => new ListingPhotoDto
+                {
+                    Id = p.Id,
+                    PhotoUrl = p.PhotoUrl,
+                    IsMain = p.IsMain
+                })
+                .ToList()
         };
     }
 
@@ -350,8 +401,6 @@ public class TutorService : ITutorService
             ProfileImageUrl = profile.User.ProfileImageUrl,
 
             Title = profile.Title,
-            Headline = profile.Headline,
-            Bio = profile.Bio,
             City = profile.City,
 
             UniversityId = profile.UniversityId,
@@ -362,7 +411,6 @@ public class TutorService : ITutorService
 
             EducationLevel = profile.EducationLevel,
             IsStudent = profile.IsStudent,
-            TeachingStyle = profile.TeachingStyle,
 
             Rating = profile.Rating,
             TotalReviews = profile.TotalReviews,
@@ -378,13 +426,17 @@ public class TutorService : ITutorService
                 ContentType = c.ContentType
             }).ToList(),
 
-            Availabilities = profile.Availabilities.Select(a => new TutorProfileAvailabilityDto
-            {
-                Id = a.Id,
-                Day = a.Day,
-                Start = a.Start,
-                End = a.End
-            }).ToList()
+            Availabilities = profile.Availabilities
+                .OrderBy(a => GetDayOrder(a.Day))
+                .ThenBy(a => a.Start)
+                .Select(a => new TutorProfileAvailabilityDto
+                {
+                    Id = a.Id,
+                    Day = a.Day,
+                    Start = a.Start,
+                    End = a.End
+                })
+                .ToList()
         };
     }
 
@@ -538,6 +590,18 @@ public class TutorService : ITutorService
         return true;
     }
 
+    private static decimal NormalizePrice(decimal price)
+    {
+        var normalizedPrice = Math.Round(
+            price / 50m,
+            MidpointRounding.AwayFromZero) * 50m;
+
+        if (normalizedPrice < 300 || normalizedPrice > 5000)
+            throw new InvalidOperationException("Fiyat 300 TL ile 5000 TL arasında olmalıdır.");
+
+        return normalizedPrice;
+    }
+
     private static int GetDayOrder(string day)
     {
         return day.Trim().ToLowerInvariant() switch
@@ -551,5 +615,79 @@ public class TutorService : ITutorService
             "sunday" or "pazar" => 7,
             _ => 99
         };
+    }
+
+    public async Task<List<ListingPhotoDto>> UploadListingPhotosAsync(
+    Guid currentUserId,
+    Guid listingId,
+    List<IFormFile> files)
+    {
+        if (files is null || files.Count == 0)
+            throw new InvalidOperationException("En az bir fotoğraf yüklenmelidir.");
+
+        var listing = await _listingRepository.GetByIdForTeacherUserAsync(
+            listingId,
+            currentUserId);
+
+        if (listing is null)
+            throw new InvalidOperationException("İlan bulunamadı veya bu ilana erişim yetkiniz yok.");
+
+        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+        const long maxFileSize = 5 * 1024 * 1024;
+
+        var uploadedPhotos = new List<ListingPhotoDto>();
+
+        var uploadsFolder = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "wwwroot",
+            "uploads",
+            "listings");
+
+        Directory.CreateDirectory(uploadsFolder);
+
+        foreach (var file in files)
+        {
+            if (file is null || file.Length == 0)
+                continue;
+
+            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+
+            if (!allowedExtensions.Contains(extension))
+                throw new InvalidOperationException("Sadece .jpg, .jpeg, .png veya .webp fotoğraf yüklenebilir.");
+
+            if (file.Length > maxFileSize)
+                throw new InvalidOperationException("Her fotoğraf en fazla 5 MB olabilir.");
+
+            var storedFileName = $"{listingId}_{Guid.NewGuid():N}{extension}";
+            var filePath = Path.Combine(uploadsFolder, storedFileName);
+
+            await using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            var photo = new ListingPhoto
+            {
+                ListingId = listingId,
+                PhotoUrl = $"/uploads/listings/{storedFileName}",
+                IsMain = !listing.Photos.Any()
+            };
+
+            listing.Photos.Add(photo);
+
+            uploadedPhotos.Add(new ListingPhotoDto
+            {
+                Id = photo.Id,
+                PhotoUrl = photo.PhotoUrl,
+                IsMain = photo.IsMain
+            });
+        }
+
+        if (uploadedPhotos.Count == 0)
+            throw new InvalidOperationException("Geçerli fotoğraf bulunamadı.");
+
+        await _listingRepository.SaveChangesAsync();
+
+        return uploadedPhotos;
     }
 }

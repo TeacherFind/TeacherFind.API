@@ -27,4 +27,5 @@ public class TeacherListing : AuditableEntity
     public decimal Price { get; set; }
     public string Status { get; set; } = "Pending";
     public int ViewCount { get; set; } = 0;
+    public ICollection<ListingPhoto> Photos { get; set; } = new List<ListingPhoto>();
 }

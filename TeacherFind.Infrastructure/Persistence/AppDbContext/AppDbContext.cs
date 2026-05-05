@@ -20,6 +20,7 @@ public class AppDbContext : DbContext
     public DbSet<Booking> Bookings => Set<Booking>();
     public DbSet<TeacherCertificate> TeacherCertificates => Set<TeacherCertificate>();
     public DbSet<TeacherAvailability> TeacherAvailabilities => Set<TeacherAvailability>();
+    public DbSet<ListingPhoto> ListingPhotos => Set<ListingPhoto>();
 
     // =====================================================
     // Interaction Tables
@@ -569,5 +570,23 @@ public class AppDbContext : DbContext
             entity.HasIndex(x => x.Status);
             entity.HasIndex(x => x.ReporterId);
         });
+
+        modelBuilder.Entity<ListingPhoto>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.PhotoUrl)
+                .IsRequired()
+                .HasMaxLength(500);
+
+            entity.HasOne(x => x.Listing)
+                .WithMany(x => x.Photos)
+                .HasForeignKey(x => x.ListingId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(x => x.ListingId);
+        });
     }
+
+
 }

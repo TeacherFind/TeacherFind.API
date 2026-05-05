@@ -213,6 +213,34 @@ public class TutorsController : ControllerBase
         }
     }
 
+    // POST /api/tutors/my-listings/{listingId}/photos
+    [Authorize(Policy = "TutorOnly")]
+    [HttpPost("my-listings/{listingId:guid}/photos")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> UploadListingPhotos(
+        Guid listingId,
+        List<IFormFile> files)
+    {
+        var currentUserId = GetRequiredCurrentUserId();
+
+        if (files is null || files.Count == 0)
+            return BadRequest(new { message = "En az bir fotoğraf yüklenmelidir." });
+
+        try
+        {
+            var result = await _tutorService.UploadListingPhotosAsync(
+                currentUserId,
+                listingId,
+                files);
+
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     // =====================================================
     // Tutor Certificates
     // =====================================================

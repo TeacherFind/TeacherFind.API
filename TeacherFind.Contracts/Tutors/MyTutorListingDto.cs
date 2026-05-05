@@ -55,4 +55,5 @@ public class MyTutorListingDto
     public DateTime CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
+    public List<ListingPhotoDto> Photos { get; set; }
 }

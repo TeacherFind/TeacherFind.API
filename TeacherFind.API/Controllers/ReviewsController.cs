@@ -74,4 +74,4 @@ public class ReviewsController : ControllerBase
             message = "Bu endpoint kullanımdan kaldırıldı. Yorum eklemek için POST /api/reviews endpointini BookingId ile kullanın."
         });
     }
-}
+}   
