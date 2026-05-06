@@ -1,12 +1,9 @@
 ﻿using Microsoft.AspNetCore.Http;
-using System;
-using System.Linq;
 using TeacherFind.Application.Abstractions.Repositories;
 using TeacherFind.Application.Abstractions.Services;
 using TeacherFind.Contracts.Common;
 using TeacherFind.Contracts.Tutors;
 using TeacherFind.Domain.Entities;
-
 
 namespace TeacherFind.Application.Features.Tutors;
 
@@ -32,6 +29,10 @@ public class TutorService : ITutorService
         _bookingRepository = bookingRepository;
     }
 
+    // =====================================================
+    // Public Tutor Listing Endpoints
+    // =====================================================
+
     public async Task<PagedResultDto<TutorListItemDto>> GetTutorsAsync(
         TutorFilterRequestDto filter,
         Guid? currentUserId)
@@ -52,27 +53,21 @@ public class TutorService : ITutorService
             TeacherProfileId = x.TeacherProfileId,
             TeacherName = x.TeacherProfile.User.FullName,
             PhoneNumber = x.TeacherProfile.User.PhoneNumber,
+
             Title = x.Title,
             Description = x.Description,
             Price = x.Price,
+
             City = x.City?.Name,
             District = x.District?.Name,
             Neighborhood = x.Neighborhood?.Name,
             Subject = x.Subject?.Name,
+
             Rating = x.TeacherProfile.Rating,
             ReviewCount = x.TeacherProfile.TotalReviews,
             IsFavorite = favoriteIds.Contains(x.Id),
 
-            Photos = x.Photos
-                .OrderByDescending(p => p.IsMain)
-                .ThenBy(p => p.CreatedAt)
-                .Select(p => new ListingPhotoDto
-                {
-                    Id = p.Id,
-                    PhotoUrl = p.PhotoUrl,
-                    IsMain = p.IsMain
-                })
-                .ToList()
+            Photos = MapPhotos(x.Photos)
         }).ToList();
 
         return new PagedResultDto<TutorListItemDto>
@@ -133,16 +128,7 @@ public class TutorService : ITutorService
             CreatedAt = listing.CreatedAt,
             UpdatedAt = listing.UpdatedAt,
 
-            Photos = listing.Photos
-                .OrderByDescending(p => p.IsMain)
-                .ThenBy(p => p.CreatedAt)
-                .Select(p => new ListingPhotoDto
-                {
-                    Id = p.Id,
-                    PhotoUrl = p.PhotoUrl,
-                    IsMain = p.IsMain
-                })
-                .ToList(),
+            Photos = MapPhotos(listing.Photos),
 
             Reviews = reviews.Select(x => new TutorReviewDto
             {
@@ -174,218 +160,13 @@ public class TutorService : ITutorService
         };
     }
 
-    public async Task<bool> UpdateMyProfileAsync(
-        Guid currentUserId,
-        UpdateTutorProfileDto request)
-    {
-        var profile = await _teacherRepository.GetByUserIdAsync(currentUserId);
-
-        if (profile is null)
-        {
-            profile = new TeacherProfile
-            {
-                UserId = currentUserId,
-                Rating = 0,
-                TotalReviews = 0,
-                IsStudent = false
-            };
-
-            await _teacherRepository.AddAsync(profile);
-        }
-
-        profile.City = request.City?.Trim();
-        profile.UniversityId = request.UniversityId;
-        profile.DepartmentId = request.DepartmentId;
-        profile.UpdatedAt = DateTime.UtcNow;
-
-        await _teacherRepository.SaveChangesAsync();
-
-        return true;
-    }
-
-    public async Task<List<MyTutorListingDto>> GetMyListingsAsync(Guid currentUserId)
-    {
-        var listings = await _listingRepository.GetByTeacherUserIdAsync(currentUserId);
-
-        return listings
-            .Select(MapToMyTutorListingDto)
-            .ToList();
-    }
-
-    public async Task<MyTutorListingDto> CreateMyListingAsync(
-        Guid currentUserId,
-        CreateMyTutorListingDto request)
-    {
-        var profile = await _teacherRepository.GetByUserIdAsync(currentUserId);
-
-        if (profile is null)
-            throw new InvalidOperationException("Öğretmen profili bulunamadı.");
-
-        var branchAlreadyExists = await _listingRepository.ExistsForTeacherBranchAsync(
-            currentUserId,
-            request.SubjectId,
-            request.Category,
-            request.SubCategory);
-
-        if (branchAlreadyExists)
-            throw new InvalidOperationException("Bu branş için zaten bir ilanınız var.");
-
-        var normalizedPrice = NormalizePrice(request.Price);
-
-        var listing = new TeacherListing
-        {
-            TeacherProfileId = profile.Id,
-            SubjectId = request.SubjectId,
-            CityId = request.CityId,
-            DistrictId = request.DistrictId,
-            NeighborhoodId = request.NeighborhoodId,
-
-            Title = request.Title.Trim(),
-            Description = request.Description.Trim(),
-            Category = request.Category.Trim(),
-            SubCategory = request.SubCategory.Trim(),
-
-            LessonDuration = request.LessonDuration,
-            Price = normalizedPrice,
-
-            IsActive = true,
-            IsApproved = false,
-            Status = "Pending",
-            ViewCount = 0
-        };
-
-        await _listingRepository.AddAsync(listing);
-        await _listingRepository.SaveChangesAsync();
-
-        return MapToMyTutorListingDto(listing);
-    }
-
-    public async Task<MyTutorListingDto?> UpdateMyListingAsync(
-        Guid currentUserId,
-        Guid listingId,
-        UpdateMyTutorListingDto request)
-    {
-        var listing = await _listingRepository.GetByIdForTeacherUserAsync(
-            listingId,
-            currentUserId);
-
-        if (listing is null)
-            return null;
-
-        var branchAlreadyExists = await _listingRepository.ExistsForTeacherBranchAsync(
-            currentUserId,
-            request.SubjectId,
-            request.Category,
-            request.SubCategory,
-            listing.Id);
-
-        if (branchAlreadyExists)
-            throw new InvalidOperationException("Bu branş için zaten başka bir ilanınız var.");
-
-        var normalizedPrice = NormalizePrice(request.Price);
-
-        listing.SubjectId = request.SubjectId;
-        listing.CityId = request.CityId;
-        listing.DistrictId = request.DistrictId;
-        listing.NeighborhoodId = request.NeighborhoodId;
-
-        listing.Title = request.Title.Trim();
-        listing.Description = request.Description.Trim();
-        listing.Category = request.Category.Trim();
-        listing.SubCategory = request.SubCategory.Trim();
-
-        listing.LessonDuration = request.LessonDuration;
-        listing.Price = normalizedPrice;
-        listing.IsActive = request.IsActive;
-        listing.UpdatedAt = DateTime.UtcNow;
-
-        // İlan değişince tekrar admin onayına düşer.
-        listing.IsApproved = false;
-        listing.Status = "Pending";
-
-        await _listingRepository.SaveChangesAsync();
-
-        return MapToMyTutorListingDto(listing);
-    }
-
-    private static MyTutorListingDto MapToMyTutorListingDto(TeacherListing listing)
-    {
-        return new MyTutorListingDto
-        {
-            Id = listing.Id,
-            TeacherProfileId = listing.TeacherProfileId,
-
-            SubjectId = listing.SubjectId,
-            SubjectName = listing.Subject?.Name,
-
-            CityId = listing.CityId,
-            CityName = listing.City?.Name,
-
-            DistrictId = listing.DistrictId,
-            DistrictName = listing.District?.Name,
-
-            NeighborhoodId = listing.NeighborhoodId,
-            NeighborhoodName = listing.Neighborhood?.Name,
-
-            Title = listing.Title,
-            Description = listing.Description,
-            Category = listing.Category,
-            SubCategory = listing.SubCategory,
-
-            LessonDuration = listing.LessonDuration,
-            Price = listing.Price,
-
-            Status = listing.Status,
-            IsActive = listing.IsActive,
-            IsApproved = listing.IsApproved,
-            ViewCount = listing.ViewCount,
-
-            CreatedAt = listing.CreatedAt,
-            UpdatedAt = listing.UpdatedAt,
-
-            Photos = listing.Photos
-                .OrderByDescending(p => p.IsMain)
-                .ThenBy(p => p.CreatedAt)
-                .Select(p => new ListingPhotoDto
-                {
-                    Id = p.Id,
-                    PhotoUrl = p.PhotoUrl,
-                    IsMain = p.IsMain
-                })
-                .ToList()
-        };
-    }
-
-    public async Task<List<MyStudentDto>> GetMyStudentsAsync(Guid currentUserId)
-    {
-        var completedBookings = await _bookingRepository.GetCompletedByTutorUserIdAsync(currentUserId);
-
-        return completedBookings
-            .GroupBy(x => x.StudentUserId)
-            .Select(group =>
-            {
-                var lastBooking = group
-                    .OrderByDescending(x => x.StartTime)
-                    .First();
-
-                return new MyStudentDto
-                {
-                    StudentId = lastBooking.StudentUserId,
-                    StudentName = lastBooking.StudentUser.FullName,
-                    TeacherListingId = lastBooking.TeacherListingId,
-                    LessonTitle = lastBooking.TeacherListing.Title,
-                    LastLessonDate = lastBooking.StartTime,
-                    Source = lastBooking.Source.ToString(),
-                    CompletedLessonCount = group.Count()
-                };
-            })
-            .OrderByDescending(x => x.LastLessonDate)
-            .ToList();
-    }
+    // =====================================================
+    // Tutor Profile
+    // =====================================================
 
     public async Task<TutorProfileDto?> GetMyProfileAsync(Guid userId)
     {
-        var profile = await _listingRepository.GetTeacherProfileByUserIdAsync(userId);
+        var profile = await _teacherRepository.GetByUserIdWithFullDetailsAsync(userId);
 
         if (profile is null)
             return null;
@@ -401,7 +182,10 @@ public class TutorService : ITutorService
             ProfileImageUrl = profile.User.ProfileImageUrl,
 
             Title = profile.Title,
+            Headline = profile.Headline,
+            Bio = profile.Bio,
             City = profile.City,
+            TeachingStyle = profile.TeachingStyle,
 
             UniversityId = profile.UniversityId,
             UniversityName = profile.University?.Name,
@@ -436,203 +220,182 @@ public class TutorService : ITutorService
                     Start = a.Start,
                     End = a.End
                 })
-                .ToList()
-        };
-    }
+                .ToList(),
 
-    public async Task<List<TutorProfileCertificateDto>> GetMyCertificatesAsync(Guid currentUserId)
-    {
-        var profile = await _teacherRepository.GetByUserIdWithCertificatesAsync(currentUserId);
-
-        if (profile is null)
-            return new List<TutorProfileCertificateDto>();
-
-        return profile.Certificates
-            .OrderByDescending(x => x.Year)
-            .Select(x => new TutorProfileCertificateDto
+            Subjects = profile.Subjects.Select(s => new TutorProfileSubjectDto
             {
-                Id = x.Id,
-                Name = x.Name,
-                Organization = x.Organization,
-                Year = x.Year,
-                FileUrl = x.FileUrl,
-                FileName = x.FileName,
-                ContentType = x.ContentType
-            })
-            .ToList();
+                Id = s.Id,
+                SubjectId = s.SubjectId,
+                Stage = s.Stage ?? s.Subject?.Stage,
+                Category = s.Category ?? s.Subject?.Category,
+                Name = s.Name ?? s.Subject?.Name,
+                Level = s.Level ?? s.Subject?.Level
+            }).ToList()
+        };
     }
 
-    public async Task<TutorProfileCertificateDto> AddMyCertificateAsync(
-        Guid currentUserId,
-        AddTutorCertificateDto request)
+    public async Task<bool> UpdateMyProfileAsync(
+        Guid userId,
+        UpdateTutorProfileDto request)
     {
-        var profile = await _teacherRepository.GetByUserIdAsync(currentUserId);
+        var profile = await _teacherRepository.GetByUserIdAsync(userId);
 
         if (profile is null)
-            throw new InvalidOperationException("Öğretmen profili bulunamadı.");
-
-        var certificate = new TeacherCertificate
-        {
-            TeacherProfileId = profile.Id,
-            Name = request.Name.Trim(),
-            Organization = request.Organization.Trim(),
-            Year = request.Year,
-            FileUrl = request.FileUrl,
-            FileName = request.FileName,
-            ContentType = request.ContentType
-        };
-
-        await _teacherRepository.AddCertificateAsync(certificate);
-        await _teacherRepository.SaveChangesAsync();
-
-        return new TutorProfileCertificateDto
-        {
-            Id = certificate.Id,
-            Name = certificate.Name,
-            Organization = certificate.Organization,
-            Year = certificate.Year,
-            FileUrl = certificate.FileUrl,
-            FileName = certificate.FileName,
-            ContentType = certificate.ContentType
-        };
-    }
-
-    public async Task<bool> DeleteMyCertificateAsync(Guid currentUserId, Guid certificateId)
-    {
-        var certificate = await _teacherRepository.GetCertificateForUserAsync(
-            currentUserId,
-            certificateId);
-
-        if (certificate is null)
             return false;
 
-        _teacherRepository.RemoveCertificate(certificate);
-        await _teacherRepository.SaveChangesAsync();
+        if (request.Headline is not null)
+            profile.Headline = request.Headline.Trim();
 
-        return true;
-    }
+        if (request.Bio is not null)
+            profile.Bio = request.Bio.Trim();
 
-    public async Task<List<TutorProfileAvailabilityDto>> GetMyAvailabilityAsync(Guid currentUserId)
-    {
-        var profile = await _teacherRepository.GetByUserIdWithAvailabilitiesAsync(currentUserId);
+        if (request.TeachingStyle is not null)
+            profile.TeachingStyle = request.TeachingStyle.Trim();
 
-        if (profile is null)
-            return new List<TutorProfileAvailabilityDto>();
+        if (request.City is not null)
+            profile.City = request.City.Trim();
 
-        return profile.Availabilities
-            .OrderBy(x => GetDayOrder(x.Day))
-            .ThenBy(x => x.Start)
-            .Select(x => new TutorProfileAvailabilityDto
-            {
-                Id = x.Id,
-                Day = x.Day,
-                Start = x.Start,
-                End = x.End
-            })
-            .ToList();
-    }
+        if (request.UniversityId is not null)
+            profile.UniversityId = request.UniversityId;
 
-    public async Task<List<TutorProfileAvailabilityDto>> UpdateMyAvailabilityAsync(
-        Guid currentUserId,
-        UpdateTutorAvailabilityDto request)
-    {
-        var profile = await _teacherRepository.GetByUserIdAsync(currentUserId);
-
-        if (profile is null)
-            throw new InvalidOperationException("Öğretmen profili bulunamadı.");
-
-        var availabilities = request.Items
-            .Where(x =>
-                !string.IsNullOrWhiteSpace(x.Day) &&
-                !string.IsNullOrWhiteSpace(x.Start) &&
-                !string.IsNullOrWhiteSpace(x.End))
-            .Select(x => new TeacherAvailability
-            {
-                TeacherProfileId = profile.Id,
-                Day = x.Day.Trim(),
-                Start = x.Start.Trim(),
-                End = x.End.Trim()
-            })
-            .ToList();
-
-        await _teacherRepository.ReplaceAvailabilitiesAsync(profile.Id, availabilities);
+        if (request.DepartmentId is not null)
+            profile.DepartmentId = request.DepartmentId;
 
         profile.UpdatedAt = DateTime.UtcNow;
 
-        await _teacherRepository.SaveChangesAsync();
-
-        return availabilities
-            .OrderBy(x => GetDayOrder(x.Day))
-            .ThenBy(x => x.Start)
-            .Select(x => new TutorProfileAvailabilityDto
-            {
-                Id = x.Id,
-                Day = x.Day,
-                Start = x.Start,
-                End = x.End
-            })
-            .ToList();
-    }
-
-    public async Task<bool> DeleteMyAvailabilityAsync(Guid currentUserId, Guid availabilityId)
-    {
-        var availability = await _teacherRepository.GetAvailabilityForUserAsync(
-            currentUserId,
-            availabilityId);
-
-        if (availability is null)
-            return false;
-
-        _teacherRepository.RemoveAvailability(availability);
-
+        _teacherRepository.Update(profile);
         await _teacherRepository.SaveChangesAsync();
 
         return true;
     }
 
-    private static decimal NormalizePrice(decimal price)
+    // =====================================================
+    // Tutor Listings
+    // =====================================================
+
+    public async Task<List<MyTutorListingDto>> GetMyListingsAsync(Guid userId)
     {
-        var normalizedPrice = Math.Round(
-            price / 50m,
-            MidpointRounding.AwayFromZero) * 50m;
+        var listings = await _listingRepository.GetByTeacherUserIdAsync(userId);
 
-        if (normalizedPrice < 300 || normalizedPrice > 5000)
-            throw new InvalidOperationException("Fiyat 300 TL ile 5000 TL arasında olmalıdır.");
-
-        return normalizedPrice;
+        return listings
+            .Select(MapToMyTutorListingDto)
+            .ToList();
     }
 
-    private static int GetDayOrder(string day)
+    public async Task<MyTutorListingDto> CreateMyListingAsync(
+        Guid userId,
+        CreateMyTutorListingDto request)
     {
-        return day.Trim().ToLowerInvariant() switch
+        var profile = await _teacherRepository.GetByUserIdAsync(userId);
+
+        if (profile is null)
+            throw new InvalidOperationException("Öğretmen profili bulunamadı.");
+
+        var branchAlreadyExists = await _listingRepository.ExistsForTeacherBranchAsync(
+            userId,
+            request.SubjectId,
+            request.Category,
+            request.SubCategory);
+
+        if (branchAlreadyExists)
+            throw new InvalidOperationException("Bu branş için zaten bir ilanınız var.");
+
+        var normalizedPrice = NormalizePrice(request.Price);
+
+        var listing = new TeacherListing
         {
-            "monday" or "pazartesi" => 1,
-            "tuesday" or "salı" => 2,
-            "wednesday" or "çarşamba" => 3,
-            "thursday" or "perşembe" => 4,
-            "friday" or "cuma" => 5,
-            "saturday" or "cumartesi" => 6,
-            "sunday" or "pazar" => 7,
-            _ => 99
+            TeacherProfileId = profile.Id,
+            SubjectId = request.SubjectId,
+            CityId = request.CityId,
+            DistrictId = request.DistrictId,
+            NeighborhoodId = request.NeighborhoodId,
+
+            Title = request.Title.Trim(),
+            Description = request.Description.Trim(),
+            Category = request.Category.Trim(),
+            SubCategory = request.SubCategory.Trim(),
+
+            LessonDuration = request.LessonDuration,
+            Price = normalizedPrice,
+
+            Status = "Pending",
+            IsActive = true,
+            IsApproved = false,
+            ViewCount = 0
         };
+
+        await _listingRepository.AddAsync(listing);
+        await _listingRepository.SaveChangesAsync();
+
+        return MapToMyTutorListingDto(listing);
+    }
+
+    public async Task<MyTutorListingDto?> UpdateMyListingAsync(
+        Guid userId,
+        Guid listingId,
+        UpdateMyTutorListingDto request)
+    {
+        var listing = await _listingRepository.GetByIdForOwnerAsync(listingId, userId);
+
+        if (listing is null)
+            return null;
+
+        var branchAlreadyExists = await _listingRepository.ExistsForTeacherBranchAsync(
+            userId,
+            request.SubjectId,
+            request.Category,
+            request.SubCategory,
+            listing.Id);
+
+        if (branchAlreadyExists)
+            throw new InvalidOperationException("Bu branş için zaten başka bir ilanınız var.");
+
+        var normalizedPrice = NormalizePrice(request.Price);
+
+        listing.SubjectId = request.SubjectId;
+        listing.CityId = request.CityId;
+        listing.DistrictId = request.DistrictId;
+        listing.NeighborhoodId = request.NeighborhoodId;
+
+        listing.Title = request.Title.Trim();
+        listing.Description = request.Description.Trim();
+        listing.Category = request.Category.Trim();
+        listing.SubCategory = request.SubCategory.Trim();
+
+        listing.LessonDuration = request.LessonDuration;
+        listing.Price = normalizedPrice;
+        listing.IsActive = request.IsActive;
+        listing.UpdatedAt = DateTime.UtcNow;
+
+        listing.IsApproved = false;
+        listing.Status = "Pending";
+
+        await _listingRepository.SaveChangesAsync();
+
+        return MapToMyTutorListingDto(listing);
     }
 
     public async Task<List<ListingPhotoDto>> UploadListingPhotosAsync(
-    Guid currentUserId,
-    Guid listingId,
-    List<IFormFile> files)
+        Guid userId,
+        Guid listingId,
+        List<IFormFile> files)
     {
         if (files is null || files.Count == 0)
             throw new InvalidOperationException("En az bir fotoğraf yüklenmelidir.");
 
-        var listing = await _listingRepository.GetByIdForTeacherUserAsync(
-            listingId,
-            currentUserId);
+        var listing = await _listingRepository.GetByIdForOwnerAsync(listingId, userId);
 
         if (listing is null)
             throw new InvalidOperationException("İlan bulunamadı veya bu ilana erişim yetkiniz yok.");
 
-        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+        var allowedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".webp"
+        };
+
         const long maxFileSize = 5 * 1024 * 1024;
 
         var uploadedPhotos = new List<ListingPhotoDto>();
@@ -650,7 +413,7 @@ public class TutorService : ITutorService
             if (file is null || file.Length == 0)
                 continue;
 
-            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            var extension = Path.GetExtension(file.FileName);
 
             if (!allowedExtensions.Contains(extension))
                 throw new InvalidOperationException("Sadece .jpg, .jpeg, .png veya .webp fotoğraf yüklenebilir.");
@@ -689,5 +452,278 @@ public class TutorService : ITutorService
         await _listingRepository.SaveChangesAsync();
 
         return uploadedPhotos;
+    }
+
+    private static MyTutorListingDto MapToMyTutorListingDto(TeacherListing listing)
+    {
+        return new MyTutorListingDto
+        {
+            Id = listing.Id,
+            TeacherProfileId = listing.TeacherProfileId,
+
+            SubjectId = listing.SubjectId,
+            SubjectName = listing.Subject?.Name,
+
+            CityId = listing.CityId,
+            CityName = listing.City?.Name,
+
+            DistrictId = listing.DistrictId,
+            DistrictName = listing.District?.Name,
+
+            NeighborhoodId = listing.NeighborhoodId,
+            NeighborhoodName = listing.Neighborhood?.Name,
+
+            Title = listing.Title,
+            Description = listing.Description,
+            Category = listing.Category,
+            SubCategory = listing.SubCategory,
+
+            LessonDuration = listing.LessonDuration,
+            Price = listing.Price,
+
+            Status = listing.Status,
+            IsActive = listing.IsActive,
+            IsApproved = listing.IsApproved,
+            ViewCount = listing.ViewCount,
+
+            CreatedAt = listing.CreatedAt,
+            UpdatedAt = listing.UpdatedAt,
+
+            Photos = MapPhotos(listing.Photos)
+        };
+    }
+
+    // =====================================================
+    // Tutor Certificates
+    // =====================================================
+
+    public async Task<List<TutorProfileCertificateDto>> GetMyCertificatesAsync(Guid userId)
+    {
+        var profile = await _teacherRepository.GetByUserIdWithCertificatesAsync(userId);
+
+        if (profile is null)
+            return new List<TutorProfileCertificateDto>();
+
+        return profile.Certificates
+            .OrderByDescending(c => c.Year)
+            .Select(c => new TutorProfileCertificateDto
+            {
+                Id = c.Id,
+                Name = c.Name,
+                Organization = c.Organization,
+                Year = c.Year,
+                FileUrl = c.FileUrl,
+                FileName = c.FileName,
+                ContentType = c.ContentType
+            })
+            .ToList();
+    }
+
+    public async Task<TutorProfileCertificateDto> AddMyCertificateAsync(
+        Guid userId,
+        AddTutorCertificateDto request)
+    {
+        var profile = await _teacherRepository.GetByUserIdAsync(userId);
+
+        if (profile is null)
+            throw new InvalidOperationException("Öğretmen profili bulunamadı.");
+
+        var certificate = new TeacherCertificate
+        {
+            TeacherProfileId = profile.Id,
+            Name = request.Name.Trim(),
+            Organization = request.Organization.Trim(),
+            Year = request.Year,
+            FileUrl = request.FileUrl,
+            FileName = request.FileName,
+            ContentType = request.ContentType
+        };
+
+        await _teacherRepository.AddCertificateAsync(certificate);
+        await _teacherRepository.SaveChangesAsync();
+
+        return new TutorProfileCertificateDto
+        {
+            Id = certificate.Id,
+            Name = certificate.Name,
+            Organization = certificate.Organization,
+            Year = certificate.Year,
+            FileUrl = certificate.FileUrl,
+            FileName = certificate.FileName,
+            ContentType = certificate.ContentType
+        };
+    }
+
+    public async Task<bool> DeleteMyCertificateAsync(
+        Guid userId,
+        Guid certificateId)
+    {
+        var certificate = await _teacherRepository.GetCertificateForUserAsync(
+            userId,
+            certificateId);
+
+        if (certificate is null)
+            return false;
+
+        _teacherRepository.RemoveCertificate(certificate);
+        await _teacherRepository.SaveChangesAsync();
+
+        return true;
+    }
+
+    // =====================================================
+    // Tutor Availability
+    // =====================================================
+
+    public async Task<List<TutorProfileAvailabilityDto>> GetMyAvailabilityAsync(Guid userId)
+    {
+        var profile = await _teacherRepository.GetByUserIdWithAvailabilitiesAsync(userId);
+
+        if (profile is null)
+            return new List<TutorProfileAvailabilityDto>();
+
+        return profile.Availabilities
+            .OrderBy(a => GetDayOrder(a.Day))
+            .ThenBy(a => a.Start)
+            .Select(a => new TutorProfileAvailabilityDto
+            {
+                Id = a.Id,
+                Day = a.Day,
+                Start = a.Start,
+                End = a.End
+            })
+            .ToList();
+    }
+
+    public async Task<List<TutorProfileAvailabilityDto>> UpdateMyAvailabilityAsync(
+        Guid userId,
+        UpdateTutorAvailabilityDto request)
+    {
+        var profile = await _teacherRepository.GetByUserIdAsync(userId);
+
+        if (profile is null)
+            throw new InvalidOperationException("Öğretmen profili bulunamadı.");
+
+        var availabilities = request.Items
+            .Where(i =>
+                !string.IsNullOrWhiteSpace(i.Day) &&
+                !string.IsNullOrWhiteSpace(i.Start) &&
+                !string.IsNullOrWhiteSpace(i.End))
+            .Select(i => new TeacherAvailability
+            {
+                TeacherProfileId = profile.Id,
+                Day = i.Day.Trim(),
+                Start = i.Start.Trim(),
+                End = i.End.Trim()
+            })
+            .ToList();
+
+        await _teacherRepository.ReplaceAvailabilitiesAsync(profile.Id, availabilities);
+        await _teacherRepository.SaveChangesAsync();
+
+        return availabilities
+            .OrderBy(a => GetDayOrder(a.Day))
+            .ThenBy(a => a.Start)
+            .Select(a => new TutorProfileAvailabilityDto
+            {
+                Id = a.Id,
+                Day = a.Day,
+                Start = a.Start,
+                End = a.End
+            })
+            .ToList();
+    }
+
+    public async Task<bool> DeleteMyAvailabilityAsync(
+        Guid userId,
+        Guid availabilityId)
+    {
+        var availability = await _teacherRepository.GetAvailabilityForUserAsync(
+            userId,
+            availabilityId);
+
+        if (availability is null)
+            return false;
+
+        _teacherRepository.RemoveAvailability(availability);
+        await _teacherRepository.SaveChangesAsync();
+
+        return true;
+    }
+
+    // =====================================================
+    // Tutor Students
+    // =====================================================
+
+    public async Task<List<MyStudentDto>> GetMyStudentsAsync(Guid userId)
+    {
+        var bookings = await _bookingRepository.GetCompletedByTutorUserIdAsync(userId);
+
+        return bookings
+            .GroupBy(b => b.StudentUserId)
+            .Select(group =>
+            {
+                var lastBooking = group
+                    .OrderByDescending(b => b.StartTime)
+                    .First();
+
+                return new MyStudentDto
+                {
+                    StudentId = group.Key,
+                    StudentName = lastBooking.StudentUser?.FullName ?? "Bilinmiyor",
+                    TeacherListingId = lastBooking.TeacherListingId,
+                    LessonTitle = lastBooking.TeacherListing?.Title ?? "Ders",
+                    LastLessonDate = lastBooking.StartTime,
+                    Source = lastBooking.Source.ToString(),
+                    CompletedLessonCount = group.Count()
+                };
+            })
+            .OrderByDescending(x => x.LastLessonDate)
+            .ToList();
+    }
+
+    // =====================================================
+    // Helpers
+    // =====================================================
+
+    private static List<ListingPhotoDto> MapPhotos(IEnumerable<ListingPhoto>? photos)
+    {
+        return photos?
+            .OrderByDescending(p => p.IsMain)
+            .ThenBy(p => p.CreatedAt)
+            .Select(p => new ListingPhotoDto
+            {
+                Id = p.Id,
+                PhotoUrl = p.PhotoUrl,
+                IsMain = p.IsMain
+            })
+            .ToList() ?? new List<ListingPhotoDto>();
+    }
+
+    private static decimal NormalizePrice(decimal price)
+    {
+        var normalizedPrice = Math.Round(
+            price / 50m,
+            MidpointRounding.AwayFromZero) * 50m;
+
+        if (normalizedPrice < 300 || normalizedPrice > 5000)
+            throw new InvalidOperationException("Fiyat 300 TL ile 5000 TL arasında olmalıdır.");
+
+        return normalizedPrice;
+    }
+
+    private static int GetDayOrder(string day)
+    {
+        return day.Trim().ToLowerInvariant() switch
+        {
+            "monday" or "pazartesi" => 1,
+            "tuesday" or "salı" => 2,
+            "wednesday" or "çarşamba" => 3,
+            "thursday" or "perşembe" => 4,
+            "friday" or "cuma" => 5,
+            "saturday" or "cumartesi" => 6,
+            "sunday" or "pazar" => 7,
+            _ => 99
+        };
     }
 }

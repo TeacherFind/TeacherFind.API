@@ -20,6 +20,7 @@ public class AppDbContext : DbContext
     public DbSet<Booking> Bookings => Set<Booking>();
     public DbSet<TeacherCertificate> TeacherCertificates => Set<TeacherCertificate>();
     public DbSet<TeacherAvailability> TeacherAvailabilities => Set<TeacherAvailability>();
+    public DbSet<TeacherProfileSubject> TeacherProfileSubjects => Set<TeacherProfileSubject>();
     public DbSet<ListingPhoto> ListingPhotos => Set<ListingPhoto>();
 
     // =====================================================
@@ -72,6 +73,8 @@ public class AppDbContext : DbContext
         ConfigureAdminInvitation(modelBuilder);
         ConfigureAdminActionLog(modelBuilder);
         ConfigureReport(modelBuilder);
+        ConfigureTeacherProfileSubject(modelBuilder);
+        ConfigureListingPhoto(modelBuilder);
     }
 
     private static void ConfigureUser(ModelBuilder modelBuilder)
@@ -95,7 +98,6 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasIndex(x => x.Email);
-
             entity.HasIndex(x => x.CityId);
         });
     }
@@ -105,7 +107,6 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Conversation>(entity =>
         {
             entity.HasKey(x => x.Id);
-
             entity.HasIndex(x => new { x.User1Id, x.User2Id });
         });
     }
@@ -463,7 +464,6 @@ public class AppDbContext : DbContext
                 .IsUnique();
 
             entity.HasIndex(x => x.Category);
-
             entity.HasIndex(x => x.Level);
         });
     }
@@ -570,7 +570,30 @@ public class AppDbContext : DbContext
             entity.HasIndex(x => x.Status);
             entity.HasIndex(x => x.ReporterId);
         });
+    }
 
+    private static void ConfigureTeacherProfileSubject(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<TeacherProfileSubject>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.HasOne(x => x.TeacherProfile)
+                .WithMany(x => x.Subjects)
+                .HasForeignKey(x => x.TeacherProfileId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.Subject)
+                .WithMany()
+                .HasForeignKey(x => x.SubjectId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(x => x.TeacherProfileId);
+        });
+    }
+
+    private static void ConfigureListingPhoto(ModelBuilder modelBuilder)
+    {
         modelBuilder.Entity<ListingPhoto>(entity =>
         {
             entity.HasKey(x => x.Id);
@@ -587,6 +610,4 @@ public class AppDbContext : DbContext
             entity.HasIndex(x => x.ListingId);
         });
     }
-
-
 }
