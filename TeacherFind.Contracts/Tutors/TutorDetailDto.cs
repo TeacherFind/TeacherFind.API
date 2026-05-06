@@ -26,6 +26,9 @@ public class TutorDetailDto
     public string Status { get; set; } = default!;
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
+    public string? PhoneNumber { get; set; }
+
+    public List<ListingPhotoDto> Photos { get; set; } = new();
 
     public List<TutorReviewDto> Reviews { get; set; } = new();
     public List<TutorAvailabilityDto> Availability { get; set; } = new();

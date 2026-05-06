@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TeacherFind.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using TeacherFind.Infrastructure.Persistence;
 namespace TeacherFind.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260506094915_AddListingPhotos")]
+    partial class AddListingPhotos
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -597,10 +600,6 @@ namespace TeacherFind.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<string>("Stage")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.HasKey("Id");
 
                     b.HasIndex("Category");
@@ -847,39 +846,6 @@ namespace TeacherFind.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("TeacherProfiles");
-                });
-
-            modelBuilder.Entity("TeacherFind.Domain.Entities.TeacherProfileSubject", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Category")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Level")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Stage")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("SubjectId")
-                        .HasColumnType("int");
-
-                    b.Property<Guid>("TeacherProfileId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SubjectId");
-
-                    b.HasIndex("TeacherProfileId");
-
-                    b.ToTable("TeacherProfileSubjects");
                 });
 
             modelBuilder.Entity("TeacherFind.Domain.Entities.University", b =>
@@ -1274,24 +1240,6 @@ namespace TeacherFind.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("TeacherFind.Domain.Entities.TeacherProfileSubject", b =>
-                {
-                    b.HasOne("TeacherFind.Domain.Entities.Subject", "Subject")
-                        .WithMany()
-                        .HasForeignKey("SubjectId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("TeacherFind.Domain.Entities.TeacherProfile", "TeacherProfile")
-                        .WithMany("Subjects")
-                        .HasForeignKey("TeacherProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Subject");
-
-                    b.Navigation("TeacherProfile");
-                });
-
             modelBuilder.Entity("TeacherFind.Domain.Entities.User", b =>
                 {
                     b.HasOne("TeacherFind.Domain.Entities.City", "City")
@@ -1338,8 +1286,6 @@ namespace TeacherFind.Infrastructure.Migrations
                     b.Navigation("Availabilities");
 
                     b.Navigation("Certificates");
-
-                    b.Navigation("Subjects");
                 });
 
             modelBuilder.Entity("TeacherFind.Domain.Entities.University", b =>
