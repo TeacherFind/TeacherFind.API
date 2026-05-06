@@ -1,4 +1,5 @@
-﻿using TeacherFind.Contracts.Listings;
+﻿using Microsoft.EntityFrameworkCore;
+using TeacherFind.Contracts.Listings;
 using TeacherFind.Contracts.Tutors;
 using TeacherFind.Domain.Entities;
 
@@ -9,12 +10,14 @@ public interface IListingRepository
     Task<List<TeacherListing>> GetAllAsync();
     Task<TeacherListing?> GetByIdAsync(Guid id);
     Task<TeacherListing?> GetByIdWithDetailsAsync(Guid id);
-    Task<TeacherListing?> GetByIdWithFullDetailsAsync(Guid id);          // NEW — Task 6
+    Task<TeacherListing?> GetByIdWithFullDetailsAsync(Guid id);         
     Task<TeacherListing?> GetByIdForOwnerAsync(Guid id, Guid userId);
     Task<TeacherProfile?> GetTeacherProfileByUserIdAsync(Guid userId);
 
     Task<List<TeacherListing>> GetByTeacherUserIdAsync(Guid userId);
     Task<TeacherListing?> GetByIdForTeacherUserAsync(Guid listingId, Guid userId);
+    Task<List<ListingPhoto>> GetPhotosByListingIdAsync(Guid listingId);
+    Task RemovePhotoAsync(ListingPhoto photo);
 
     IQueryable<TeacherListing> Query();
 

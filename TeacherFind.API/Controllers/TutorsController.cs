@@ -546,4 +546,63 @@ public class TutorsController : ControllerBase
 
         public string? ContentType { get; set; }
     }
+    // GET /api/tutors/earnings-report?from=2026-05-01&to=2026-05-31
+    [HttpGet("earnings-report")]
+    [Authorize(Policy = "TutorOnly")]
+    public async Task<IActionResult> GetEarningsReport(
+        [FromQuery] DateTime from,
+        [FromQuery] DateTime to)
+    {
+        if (from > to)
+            return BadRequest(new { message = "Başlangıç tarihi bitiş tarihinden büyük olamaz." });
+
+        var result = await _tutorService.GetEarningsReportAsync(GetRequiredCurrentUserId(), from, to);
+        return Ok(result);
+    }
+    // PUT /api/tutors/my-listings/{listingId}/photos/{photoId}/main
+    [HttpPut("my-listings/{listingId:guid}/photos/{photoId:guid}/main")]
+    [Authorize(Policy = "TutorOnly")]
+    public async Task<IActionResult> SetMainPhoto(Guid listingId, Guid photoId)
+    {
+        var result = await _tutorService.SetMainListingPhotoAsync(
+            GetRequiredCurrentUserId(), listingId, photoId);
+
+        if (!result)
+            return NotFound(new { message = "İlan veya fotoğraf bulunamadı." });
+
+        return Ok(new { message = "Kapak fotoğrafı güncellendi." });
+    }
+
+    // PUT /api/tutors/my-listings/{listingId}/photos/sort-order
+    [HttpPut("my-listings/{listingId:guid}/photos/sort-order")]
+    [Authorize(Policy = "TutorOnly")]
+    public async Task<IActionResult> UpdatePhotoSortOrder(
+        Guid listingId,
+        [FromBody] UpdateListingPhotoSortOrderDto request)
+    {
+        if (request is null || request.PhotoIds.Count == 0)
+            return BadRequest(new { message = "Fotoğraf listesi boş olamaz." });
+
+        var result = await _tutorService.UpdateListingPhotoSortOrderAsync(
+            GetRequiredCurrentUserId(), listingId, request);
+
+        if (!result)
+            return NotFound(new { message = "İlan bulunamadı." });
+
+        return Ok(new { message = "Fotoğraf sırası güncellendi." });
+    }
+
+    // DELETE /api/tutors/my-listings/{listingId}/photos/{photoId}
+    [HttpDelete("my-listings/{listingId:guid}/photos/{photoId:guid}")]
+    [Authorize(Policy = "TutorOnly")]
+    public async Task<IActionResult> DeletePhoto(Guid listingId, Guid photoId)
+    {
+        var result = await _tutorService.DeleteListingPhotoAsync(
+            GetRequiredCurrentUserId(), listingId, photoId);
+
+        if (!result)
+            return NotFound(new { message = "İlan veya fotoğraf bulunamadı." });
+
+        return Ok(new { message = "Fotoğraf silindi." });
+    }
 }

@@ -15,6 +15,7 @@ public class MeResponse
     public string Email { get; set; } = default!;
 
     public string Role { get; set; } = default!;
+    public int RoleValue { get; set; }
 
     public string? AvatarUrl { get; set; }
 

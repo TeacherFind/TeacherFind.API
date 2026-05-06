@@ -191,6 +191,15 @@ public class ListingRepository : IListingRepository
 
         return await query.AnyAsync();
     }
+    public async Task<List<ListingPhoto>> GetPhotosByListingIdAsync(Guid listingId)
+    => await _context.Set<ListingPhoto>()
+        .Where(p => p.ListingId == listingId)
+        .ToListAsync();
 
+    public Task RemovePhotoAsync(ListingPhoto photo)
+    {
+        _context.Set<ListingPhoto>().Remove(photo);
+        return Task.CompletedTask;
+    }
 
 }
