@@ -15,6 +15,8 @@ public class RegisterRequest
     public UserRole Role { get; set; } = UserRole.Student;
     public string? PhoneNumber { get; set; }
     public Guid? CityId { get; set; }
+    public Guid? DistrictId { get; set; }  
+    public Guid? NeighborhoodId { get; set; }   
 
     // Tutor-only fields
     public Guid? UniversityId { get; set; }

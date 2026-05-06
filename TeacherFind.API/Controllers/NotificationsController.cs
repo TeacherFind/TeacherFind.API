@@ -45,4 +45,12 @@ public class NotificationsController : ControllerBase
 
     private Guid GetUserId()
         => Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+    // GET /api/notifications/unread
+    [HttpGet("unread")]
+    public async Task<IActionResult> GetUnread()
+    {
+        var all = await _notificationService.GetMyNotificationsAsync(GetUserId());
+        var unread = all.Where(x => !x.IsRead).ToList();
+        return Ok(unread);
+    }
 }

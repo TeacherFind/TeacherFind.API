@@ -57,4 +57,11 @@ public interface ITutorService
     Task<bool> DeleteMyAvailabilityAsync(
         Guid currentUserId,
         Guid availabilityId);
+    Task<TutorEarningsReportDto> GetEarningsReportAsync(
+    Guid tutorUserId,
+    DateTime from,
+    DateTime to);
+    Task<bool> SetMainListingPhotoAsync(Guid tutorUserId, Guid listingId, Guid photoId);
+    Task<bool> UpdateListingPhotoSortOrderAsync(Guid tutorUserId, Guid listingId, UpdateListingPhotoSortOrderDto request);
+    Task<bool> DeleteListingPhotoAsync(Guid tutorUserId, Guid listingId, Guid photoId);
 }

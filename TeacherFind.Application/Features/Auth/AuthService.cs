@@ -135,6 +135,7 @@ public class AuthService : IAuthService
             FullName = user.FullName,
             Email = user.Email,
             Role = user.Role.ToString(),
+            RoleValue = (int)user.Role,
             PhoneNumber = user.PhoneNumber,
             CityId = user.CityId,
             CityName = user.City?.Name
