@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TeacherFind.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using TeacherFind.Infrastructure.Persistence;
 namespace TeacherFind.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260505133434_AddStageToSubjects")]
+    partial class AddStageToSubjects
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -336,39 +339,6 @@ namespace TeacherFind.Infrastructure.Migrations
                     b.HasIndex("ListingId");
 
                     b.ToTable("Favorites");
-                });
-
-            modelBuilder.Entity("TeacherFind.Domain.Entities.ListingPhoto", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsMain")
-                        .HasColumnType("bit");
-
-                    b.Property<Guid>("ListingId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("PhotoUrl")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ListingId");
-
-                    b.ToTable("ListingPhotos");
                 });
 
             modelBuilder.Entity("TeacherFind.Domain.Entities.Message", b =>
@@ -1099,17 +1069,6 @@ namespace TeacherFind.Infrastructure.Migrations
                     b.Navigation("Listing");
                 });
 
-            modelBuilder.Entity("TeacherFind.Domain.Entities.ListingPhoto", b =>
-                {
-                    b.HasOne("TeacherFind.Domain.Entities.TeacherListing", "Listing")
-                        .WithMany("Photos")
-                        .HasForeignKey("ListingId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Listing");
-                });
-
             modelBuilder.Entity("TeacherFind.Domain.Entities.Message", b =>
                 {
                     b.HasOne("TeacherFind.Domain.Entities.Conversation", "Conversation")
@@ -1326,11 +1285,6 @@ namespace TeacherFind.Infrastructure.Migrations
             modelBuilder.Entity("TeacherFind.Domain.Entities.District", b =>
                 {
                     b.Navigation("Neighborhoods");
-                });
-
-            modelBuilder.Entity("TeacherFind.Domain.Entities.TeacherListing", b =>
-                {
-                    b.Navigation("Photos");
                 });
 
             modelBuilder.Entity("TeacherFind.Domain.Entities.TeacherProfile", b =>

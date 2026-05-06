@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TeacherFind.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using TeacherFind.Infrastructure.Persistence;
 namespace TeacherFind.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260505132727_TutorProfileSubjectsAndSubjectStage")]
+    partial class TutorProfileSubjectsAndSubjectStage
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -338,39 +341,6 @@ namespace TeacherFind.Infrastructure.Migrations
                     b.ToTable("Favorites");
                 });
 
-            modelBuilder.Entity("TeacherFind.Domain.Entities.ListingPhoto", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsMain")
-                        .HasColumnType("bit");
-
-                    b.Property<Guid>("ListingId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("PhotoUrl")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ListingId");
-
-                    b.ToTable("ListingPhotos");
-                });
-
             modelBuilder.Entity("TeacherFind.Domain.Entities.Message", b =>
                 {
                     b.Property<Guid>("Id")
@@ -596,10 +566,6 @@ namespace TeacherFind.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("Stage")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
@@ -849,39 +815,6 @@ namespace TeacherFind.Infrastructure.Migrations
                     b.ToTable("TeacherProfiles");
                 });
 
-            modelBuilder.Entity("TeacherFind.Domain.Entities.TeacherProfileSubject", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Category")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Level")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Stage")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("SubjectId")
-                        .HasColumnType("int");
-
-                    b.Property<Guid>("TeacherProfileId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SubjectId");
-
-                    b.HasIndex("TeacherProfileId");
-
-                    b.ToTable("TeacherProfileSubjects");
-                });
-
             modelBuilder.Entity("TeacherFind.Domain.Entities.University", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1099,17 +1032,6 @@ namespace TeacherFind.Infrastructure.Migrations
                     b.Navigation("Listing");
                 });
 
-            modelBuilder.Entity("TeacherFind.Domain.Entities.ListingPhoto", b =>
-                {
-                    b.HasOne("TeacherFind.Domain.Entities.TeacherListing", "Listing")
-                        .WithMany("Photos")
-                        .HasForeignKey("ListingId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Listing");
-                });
-
             modelBuilder.Entity("TeacherFind.Domain.Entities.Message", b =>
                 {
                     b.HasOne("TeacherFind.Domain.Entities.Conversation", "Conversation")
@@ -1274,24 +1196,6 @@ namespace TeacherFind.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("TeacherFind.Domain.Entities.TeacherProfileSubject", b =>
-                {
-                    b.HasOne("TeacherFind.Domain.Entities.Subject", "Subject")
-                        .WithMany()
-                        .HasForeignKey("SubjectId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("TeacherFind.Domain.Entities.TeacherProfile", "TeacherProfile")
-                        .WithMany("Subjects")
-                        .HasForeignKey("TeacherProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Subject");
-
-                    b.Navigation("TeacherProfile");
-                });
-
             modelBuilder.Entity("TeacherFind.Domain.Entities.User", b =>
                 {
                     b.HasOne("TeacherFind.Domain.Entities.City", "City")
@@ -1328,18 +1232,11 @@ namespace TeacherFind.Infrastructure.Migrations
                     b.Navigation("Neighborhoods");
                 });
 
-            modelBuilder.Entity("TeacherFind.Domain.Entities.TeacherListing", b =>
-                {
-                    b.Navigation("Photos");
-                });
-
             modelBuilder.Entity("TeacherFind.Domain.Entities.TeacherProfile", b =>
                 {
                     b.Navigation("Availabilities");
 
                     b.Navigation("Certificates");
-
-                    b.Navigation("Subjects");
                 });
 
             modelBuilder.Entity("TeacherFind.Domain.Entities.University", b =>

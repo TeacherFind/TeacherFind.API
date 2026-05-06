@@ -106,4 +106,15 @@ public class TeacherRepository : ITeacherRepository
         return Task.CompletedTask;
     }
 
+    public async Task<TeacherProfile?> GetByUserIdWithFullDetailsAsync(Guid userId)
+    {
+        return await _context.TeacherProfiles
+            .Include(x => x.User)
+            .Include(x => x.University)
+            .Include(x => x.DepartmentEntity)
+            .Include(x => x.Certificates)
+            .Include(x => x.Availabilities)
+            .Include(x => x.Subjects).ThenInclude(s => s.Subject)
+            .FirstOrDefaultAsync(x => x.UserId == userId);
+    }
 }
