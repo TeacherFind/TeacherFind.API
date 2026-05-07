@@ -34,7 +34,8 @@ public interface ITutorService
     Task<List<ListingPhotoDto>> UploadListingPhotosAsync(
         Guid currentUserId,
         Guid listingId,
-        List<IFormFile> files);
+        List<IFormFile> files,
+        bool isMain = false);
 
     Task<List<MyStudentDto>> GetMyStudentsAsync(Guid currentUserId);
 

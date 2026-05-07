@@ -219,7 +219,8 @@ public class TutorsController : ControllerBase
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> UploadListingPhotos(
         Guid listingId,
-        List<IFormFile> files)
+        IFormFileCollection files,
+        [FromForm] bool isMain = false)
     {
         var currentUserId = GetRequiredCurrentUserId();
 
@@ -229,9 +230,7 @@ public class TutorsController : ControllerBase
         try
         {
             var result = await _tutorService.UploadListingPhotosAsync(
-                currentUserId,
-                listingId,
-                files);
+                currentUserId, listingId, files.ToList(), isMain);
 
             return Ok(result);
         }
@@ -354,6 +353,60 @@ public class TutorsController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+    // PUT /api/tutors/profile/availability — alias for frontend compatibility
+    [HttpPut("profile/availability")]
+    [Authorize(Policy = "TutorOnly")]
+    public async Task<IActionResult> UpdateProfileAvailability(
+        [FromBody] Dictionary<string, string> availability)
+    {
+        var currentUserId = GetRequiredCurrentUserId();
+
+        var dto = new UpdateTutorAvailabilityDto
+        {
+            Items = availability.Select(x =>
+            {
+                var parts = x.Key.Split('-', 2, StringSplitOptions.TrimEntries);
+                var day = parts.Length > 0 ? parts[0] : x.Key;
+                var slot = parts.Length > 1 ? parts[1] : "Sabah";
+
+                return new UpdateAvailabilityItemDto
+                {
+                    Day = day,
+                    Start = ResolveSlotStart(slot),
+                    End = ResolveSlotEnd(slot)
+                };
+            }).ToList()
+        };
+
+        var result = await _tutorService.UpdateMyAvailabilityAsync(currentUserId, dto);
+        return Ok(result);
+    }
+
+    private static string ResolveSlotStart(string slot) => slot.ToLower() switch
+    {
+        "sabah" => "09:00",
+        "öğle" => "12:00",
+        "ogle" => "12:00",
+        "akşamüstü" => "15:00",
+        "aksamustu" => "15:00",
+        "öğledensonra" => "15:00",
+        "akşam" => "18:00",
+        "aksam" => "18:00",
+        _ => "09:00"
+    };
+
+    private static string ResolveSlotEnd(string slot) => slot.ToLower() switch
+    {
+        "sabah" => "12:00",
+        "öğle" => "15:00",
+        "ogle" => "15:00",
+        "akşamüstü" => "18:00",
+        "aksamustu" => "18:00",
+        "öğledensonra" => "18:00",
+        "akşam" => "21:00",
+        "aksam" => "21:00",
+        _ => "12:00"
+    };
 
     // DELETE /api/tutors/availability/{id}
     [Authorize(Policy = "TutorOnly")]
