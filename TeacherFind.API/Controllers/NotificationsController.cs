@@ -23,6 +23,14 @@ public class NotificationsController : ControllerBase
         return Ok(result);
     }
 
+    // GET /api/notifications/unread
+    [HttpGet("unread")]
+    public async Task<IActionResult> GetUnread()
+    {
+        var result = await _notificationService.GetMyUnreadNotificationsAsync(GetUserId());
+        return Ok(result);
+    }
+
     // PUT /api/notifications/{id}/read
     [HttpPut("{id:guid}/read")]
     public async Task<IActionResult> MarkAsRead(Guid id)
@@ -45,12 +53,4 @@ public class NotificationsController : ControllerBase
 
     private Guid GetUserId()
         => Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-    // GET /api/notifications/unread
-    [HttpGet("unread")]
-    public async Task<IActionResult> GetUnread()
-    {
-        var all = await _notificationService.GetMyNotificationsAsync(GetUserId());
-        var unread = all.Where(x => !x.IsRead).ToList();
-        return Ok(unread);
-    }
 }

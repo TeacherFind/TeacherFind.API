@@ -586,8 +586,15 @@ public class TutorService : ITutorService
         if (listing is null) return false;
 
         var photos = await _listingRepository.GetPhotosByListingIdAsync(listingId);
-        foreach (var p in photos)
-            p.IsMain = p.Id == photoId;
+
+        if (!photos.Any(p => p.Id == photoId))
+            return false;
+
+        foreach (var photo in photos)
+        {
+            photo.IsMain = photo.Id == photoId;
+            photo.UpdatedAt = DateTime.UtcNow;
+        }
 
         await _listingRepository.SaveChangesAsync();
         return true;
@@ -600,11 +607,15 @@ public class TutorService : ITutorService
         if (listing is null) return false;
 
         var photos = await _listingRepository.GetPhotosByListingIdAsync(listingId);
-        for (int i = 0; i < request.PhotoIds.Count; i++)
+
+        for (var i = 0; i < request.PhotoIds.Count; i++)
         {
             var photo = photos.FirstOrDefault(p => p.Id == request.PhotoIds[i]);
             if (photo is not null)
-                photo.UpdatedAt = DateTime.UtcNow.AddSeconds(i);
+            {
+                photo.SortOrder = i;
+                photo.UpdatedAt = DateTime.UtcNow;
+            }
         }
 
         await _listingRepository.SaveChangesAsync();
@@ -621,7 +632,7 @@ public class TutorService : ITutorService
         var photo = photos.FirstOrDefault(p => p.Id == photoId);
         if (photo is null) return false;
 
-      
+        await _listingRepository.RemovePhotoAsync(photo);
         await _listingRepository.SaveChangesAsync();
         return true;
     }
