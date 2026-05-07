@@ -8,88 +8,139 @@ namespace TeacherFind.API.Controllers.Admin;
 
 [ApiController]
 [Route("api/admin/dashboard")]
-[Authorize(Roles = "Admin,SuperAdmin")]
+[Authorize(Policy = "AdminOnly")]
 public class AdminDashboardController : ControllerBase
 {
     private readonly AppDbContext _context;
 
-    public AdminDashboardController(AppDbContext context) => _context = context;
+    public AdminDashboardController(AppDbContext context)
+    {
+        _context = context;
+    }
 
     [HttpGet]
     public async Task<IActionResult> GetStats()
     {
         var now = DateTime.UtcNow;
-        var last30 = now.AddDays(-30).Date;
+        var last30Days = now.AddDays(-30).Date;
+        var previous30DaysStart = now.AddDays(-60).Date;
 
         var totalUsers = await _context.Users.CountAsync();
-        var totalTutors = await _context.Users.CountAsync(u => u.Role == UserRole.Tutor);
-        var totalStudents = await _context.Users.CountAsync(u => u.Role == UserRole.Student);
-        var totalListings = await _context.TeacherListings.CountAsync();
-        var activeListings = await _context.TeacherListings.CountAsync(x => x.IsActive && x.IsApproved);
-        var pendingListings = await _context.TeacherListings.CountAsync(x => x.IsActive && !x.IsApproved);
+        var totalTutors = await _context.Users.CountAsync(x => x.Role == UserRole.Tutor);
+        var totalStudents = await _context.Users.CountAsync(x => x.Role == UserRole.Student);
+
+        var totalMessages = await _context.Messages.CountAsync();
         var totalReviews = await _context.Reviews.CountAsync();
-        var totalReports = await _context.Reports.CountAsync();
-        var pendingReports = await _context.Reports.CountAsync(r => r.Status == "Pending");
+
+        var pendingListings = await _context.TeacherListings.CountAsync(x =>
+            !x.IsApproved &&
+            x.IsActive &&
+            (x.Status == "PendingApproval" || x.Status == "Pending"));
+
+        var activeListings = await _context.TeacherListings.CountAsync(x =>
+            x.IsApproved &&
+            x.IsActive &&
+            (x.Status == "Active" || x.Status == "Approved"));
+
+        var revenue = await _context.Bookings
+            .Where(x => x.Status == BookingStatus.Completed)
+            .Include(x => x.TeacherListing)
+            .SumAsync(x => x.TeacherListing.Price);
+
+        var currentPeriodUsers = await _context.Users.CountAsync(x =>
+            x.CreatedAt >= last30Days);
+
+        var previousPeriodUsers = await _context.Users.CountAsync(x =>
+            x.CreatedAt >= previous30DaysStart &&
+            x.CreatedAt < last30Days);
+
+        double monthlyGrowth;
+
+        if (previousPeriodUsers == 0)
+        {
+            monthlyGrowth = currentPeriodUsers > 0 ? 100 : 0;
+        }
+        else
+        {
+            monthlyGrowth = Math.Round(
+                ((currentPeriodUsers - previousPeriodUsers) / (double)previousPeriodUsers) * 100,
+                2);
+        }
 
         var registrations = await _context.Users
-            .Where(u => u.CreatedAt >= last30)
-            .GroupBy(u => u.CreatedAt.Date)
-            .Select(g => new { Date = g.Key, Count = g.Count() })
+            .Where(x => x.CreatedAt >= last30Days)
+            .GroupBy(x => x.CreatedAt.Date)
+            .Select(x => new
+            {
+                Date = x.Key,
+                Count = x.Count()
+            })
             .OrderBy(x => x.Date)
             .ToListAsync();
 
-        var registrationSeries = Enumerable.Range(0, 30)
-            .Select(i => last30.AddDays(i))
+        var registrationsLast30Days = Enumerable.Range(0, 30)
+            .Select(i => last30Days.AddDays(i))
             .Select(date => new
             {
                 Date = date.ToString("yyyy-MM-dd"),
-                Count = registrations.FirstOrDefault(r => r.Date == date)?.Count ?? 0
-            }).ToList();
+                Count = registrations.FirstOrDefault(x => x.Date == date)?.Count ?? 0
+            })
+            .ToList();
 
-        var messages = await _context.Messages
-            .Where(m => m.SentAt >= last30)
-            .GroupBy(m => m.SentAt.Date)
-            .Select(g => new { Date = g.Key, Count = g.Count() })
+        var messageTraffic = await _context.Messages
+            .Where(x => x.SentAt >= last30Days)
+            .GroupBy(x => x.SentAt.Date)
+            .Select(x => new
+            {
+                Date = x.Key,
+                Count = x.Count()
+            })
             .OrderBy(x => x.Date)
             .ToListAsync();
 
-        var messageSeries = Enumerable.Range(0, 30)
-            .Select(i => last30.AddDays(i))
+        var messageTrafficLast30Days = Enumerable.Range(0, 30)
+            .Select(i => last30Days.AddDays(i))
             .Select(date => new
             {
                 Date = date.ToString("yyyy-MM-dd"),
-                Count = messages.FirstOrDefault(m => m.Date == date)?.Count ?? 0
-            }).ToList();
+                Count = messageTraffic.FirstOrDefault(x => x.Date == date)?.Count ?? 0
+            })
+            .ToList();
 
-        var listings = await _context.TeacherListings
-            .Where(l => l.CreatedAt >= last30)
-            .GroupBy(l => l.CreatedAt.Date)
-            .Select(g => new { Date = g.Key, Count = g.Count() })
+        var newListings = await _context.TeacherListings
+            .Where(x => x.CreatedAt >= last30Days)
+            .GroupBy(x => x.CreatedAt.Date)
+            .Select(x => new
+            {
+                Date = x.Key,
+                Count = x.Count()
+            })
             .OrderBy(x => x.Date)
             .ToListAsync();
 
-        var listingSeries = Enumerable.Range(0, 30)
-            .Select(i => last30.AddDays(i))
+        var newListingsLast30Days = Enumerable.Range(0, 30)
+            .Select(i => last30Days.AddDays(i))
             .Select(date => new
             {
                 Date = date.ToString("yyyy-MM-dd"),
-                Count = listings.FirstOrDefault(l => l.Date == date)?.Count ?? 0
-            }).ToList();
+                Count = newListings.FirstOrDefault(x => x.Date == date)?.Count ?? 0
+            })
+            .ToList();
 
         return Ok(new
         {
-            TotalUsers = totalUsers,
-            TotalTutors = totalTutors,
-            TotalStudents = totalStudents,
-            TotalListings = totalListings,
-            ActiveListings = activeListings,
-            PendingListings = pendingListings,
-            TotalReviews = totalReviews,
-            TotalReports = totalReports,
-            PendingReports = pendingReports,
-            RegistrationsLast30Days = registrationSeries,
-            MessageTrafficLast30Days = messageSeries,
-            NewListingsLast30Days = listingSeries
+            totalUsers,
+            totalTutors,
+            totalStudents,
+            pendingListings,
+            activeListings,
+            totalMessages,
+            totalReviews,
+            revenue,
+            monthlyGrowth,
+            registrationsLast30Days,
+            messageTrafficLast30Days,
+            newListingsLast30Days
         });
     }
-}
+} 
