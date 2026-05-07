@@ -277,7 +277,7 @@ public class TutorService : ITutorService
             SubCategory = request.SubCategory.Trim(),
             LessonDuration = request.LessonDuration,
             Price = normalizedPrice,
-            Status = "Pending",
+            Status = "PendingApproval",
             IsActive = true,
             IsApproved = false,
             ViewCount = 0
@@ -644,6 +644,7 @@ public class TutorService : ITutorService
     {
         return photos?
             .OrderByDescending(p => p.IsMain)
+            .ThenBy(p => p.SortOrder)
             .ThenBy(p => p.CreatedAt)
             .Select(p => new ListingPhotoDto
             {
