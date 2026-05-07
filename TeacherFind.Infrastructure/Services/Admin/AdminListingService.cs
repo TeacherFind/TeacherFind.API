@@ -10,6 +10,7 @@ public class AdminListingService : IAdminListingService
     private const string PendingApprovalStatus = "PendingApproval";
     private const string ActiveStatus = "Active";
     private const string RejectedStatus = "Rejected";
+    private readonly INotificationService _notificationService;
 
     private readonly AppDbContext _context;
     private readonly IAdminActionLogService _adminActionLogService;
@@ -34,7 +35,7 @@ public class AdminListingService : IAdminListingService
             .Where(x =>
                 !x.IsApproved &&
                 x.IsActive &&
-                (x.Status == PendingApprovalStatus || x.Status == "Pending"))
+                x.Status == PendingApprovalStatus)
             .AsQueryable();
 
         var totalCount = await query.CountAsync();
@@ -136,6 +137,14 @@ public class AdminListingService : IAdminListingService
         listing.IsApproved = true;
         listing.IsActive = true;
         listing.Status = ActiveStatus;
+        await _notificationService.SendNotificationAsync(
+    listing.TeacherProfile.UserId,
+    "İlanınız onaylandı",
+    $"{listing.Title} başlıklı ilanınız onaylandı ve yayına alındı.",
+    "Listing",
+    adminUserId,
+    "Admin",
+    $"/tutor/listings/{listing.Id}");
         listing.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
@@ -168,6 +177,16 @@ public class AdminListingService : IAdminListingService
         listing.IsApproved = false;
         listing.IsActive = false;
         listing.Status = RejectedStatus;
+        await _notificationService.SendNotificationAsync(
+    listing.TeacherProfile.UserId,
+    "İlanınız reddedildi",
+    string.IsNullOrWhiteSpace(reason)
+        ? $"{listing.Title} başlıklı ilanınız reddedildi."
+        : $"{listing.Title} başlıklı ilanınız reddedildi. Sebep: {reason}",
+    "Listing",
+    adminUserId,
+    "Admin",
+    $"/tutor/listings/{listing.Id}");
         listing.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();

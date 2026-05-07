@@ -276,6 +276,7 @@ public class TutorService : ITutorService
             Category = request.Category.Trim(),
             SubCategory = request.SubCategory.Trim(),
             LessonDuration = request.LessonDuration,
+            ServiceType = request.ServiceType,
             Price = normalizedPrice,
             Status = "PendingApproval",
             IsActive = true,
@@ -312,11 +313,20 @@ public class TutorService : ITutorService
         listing.Category = request.Category.Trim();
         listing.SubCategory = request.SubCategory.Trim();
         listing.LessonDuration = request.LessonDuration;
+        listing.ServiceType = request.ServiceType;
         listing.Price = normalizedPrice;
         listing.IsActive = request.IsActive;
         listing.UpdatedAt = DateTime.UtcNow;
-        listing.IsApproved = false;
-        listing.Status = "Pending";
+
+        if (!request.IsActive)
+        {
+            listing.Status = "Passive";
+        }
+        else
+        {
+            listing.IsApproved = false;
+            listing.Status = "PendingApproval";
+        }
 
         await _listingRepository.SaveChangesAsync();
 
@@ -324,7 +334,10 @@ public class TutorService : ITutorService
     }
 
     public async Task<List<ListingPhotoDto>> UploadListingPhotosAsync(
-        Guid userId, Guid listingId, List<IFormFile> files)
+        Guid userId,
+        Guid listingId,
+        List<IFormFile> files,
+        bool isMain = false)
     {
         if (files is null || files.Count == 0)
             throw new InvalidOperationException("En az bir fotoğraf yüklenmelidir.");
@@ -343,6 +356,11 @@ public class TutorService : ITutorService
             Directory.GetCurrentDirectory(), "wwwroot", "uploads", "listings");
 
         Directory.CreateDirectory(uploadsFolder);
+        if (isMain)
+        {
+            foreach (var existingPhoto in listing.Photos)
+                existingPhoto.IsMain = false;
+        }
 
         foreach (var file in files)
         {
@@ -366,7 +384,8 @@ public class TutorService : ITutorService
             {
                 ListingId = listingId,
                 PhotoUrl = $"/uploads/listings/{storedFileName}",
-                IsMain = !listing.Photos.Any()
+                IsMain = isMain || !listing.Photos.Any(),
+                SortOrder = listing.Photos.Count
             };
 
             listing.Photos.Add(photo);
@@ -376,6 +395,7 @@ public class TutorService : ITutorService
                 PhotoUrl = photo.PhotoUrl,
                 IsMain = photo.IsMain
             });
+
         }
 
         if (uploadedPhotos.Count == 0)

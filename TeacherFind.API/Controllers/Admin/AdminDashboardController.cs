@@ -32,15 +32,9 @@ public class AdminDashboardController : ControllerBase
         var totalMessages = await _context.Messages.CountAsync();
         var totalReviews = await _context.Reviews.CountAsync();
 
-        var pendingListings = await _context.TeacherListings.CountAsync(x =>
-            !x.IsApproved &&
-            x.IsActive &&
-            (x.Status == "PendingApproval" || x.Status == "Pending"));
+        var pendingListings = await _context.TeacherListings.CountAsync(x => x.Status == "PendingApproval");
 
-        var activeListings = await _context.TeacherListings.CountAsync(x =>
-            x.IsApproved &&
-            x.IsActive &&
-            (x.Status == "Active" || x.Status == "Approved"));
+        var activeListings = await _context.TeacherListings.CountAsync(x => x.Status == "Active");
 
         var revenue = await _context.Bookings
             .Where(x => x.Status == BookingStatus.Completed)

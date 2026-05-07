@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TeacherFind.Domain.Enums;
 using System.ComponentModel.DataAnnotations;
+using TeacherFind.Domain.Enums;
 
 namespace TeacherFind.Contracts.Tutors;
 
@@ -30,6 +31,8 @@ public class CreateMyTutorListingDto : IValidatableObject
     [Required(ErrorMessage = "Alt kategori zorunludur.")]
     [MaxLength(100)]
     public string SubCategory { get; set; } = default!;
+    [Range(1, 3, ErrorMessage = "Geçerli bir ders türü seçiniz.")]
+    public ServiceType ServiceType { get; set; } = ServiceType.Both;
 
     [Range(1, int.MaxValue, ErrorMessage = "Ders süresi 0'dan büyük olmalıdır.")]
     public int LessonDuration { get; set; }
