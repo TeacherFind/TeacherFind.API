@@ -52,6 +52,7 @@ public class AppDbContext : DbContext
 
     public DbSet<AdminInvitation> AdminInvitations => Set<AdminInvitation>();
     public DbSet<AdminActionLog> AdminActionLogs => Set<AdminActionLog>();
+    public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -75,6 +76,7 @@ public class AppDbContext : DbContext
         ConfigureReport(modelBuilder);
         ConfigureTeacherProfileSubject(modelBuilder);
         ConfigureListingPhoto(modelBuilder);
+        ConfigureSystemSetting(modelBuilder);
     }
 
     private static void ConfigureUser(ModelBuilder modelBuilder)
@@ -611,6 +613,34 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasIndex(x => x.ListingId);
+        });
+    }
+
+    private static void ConfigureSystemSetting(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<SystemSetting>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.SiteTitle)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            entity.Property(x => x.ContactEmail)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            entity.Property(x => x.MaintenanceMode)
+                .IsRequired();
+
+            entity.Property(x => x.CommissionRate)
+                .IsRequired();
+
+            entity.Property(x => x.MinWithdrawal)
+                .HasColumnType("decimal(18,2)");
+
+            entity.Property(x => x.SocialLinksJson)
+                .IsRequired();
         });
     }
 }
