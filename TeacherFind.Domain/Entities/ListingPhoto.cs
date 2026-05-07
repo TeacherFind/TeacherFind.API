@@ -16,4 +16,7 @@ public class ListingPhoto : AuditableEntity
     public string PhotoUrl { get; set; } = default!;
 
     public bool IsMain { get; set; }
+
+    public int SortOrder { get; set; }
+
 }

@@ -602,6 +602,9 @@ public class AppDbContext : DbContext
                 .IsRequired()
                 .HasMaxLength(500);
 
+            entity.Property(x => x.SortOrder)
+                .IsRequired();
+
             entity.HasOne(x => x.Listing)
                 .WithMany(x => x.Photos)
                 .HasForeignKey(x => x.ListingId)
