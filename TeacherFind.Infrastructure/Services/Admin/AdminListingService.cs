@@ -7,6 +7,10 @@ namespace TeacherFind.Infrastructure.Services.Admin;
 
 public class AdminListingService : IAdminListingService
 {
+    private const string PendingApprovalStatus = "PendingApproval";
+    private const string ActiveStatus = "Active";
+    private const string RejectedStatus = "Rejected";
+
     private readonly AppDbContext _context;
     private readonly IAdminActionLogService _adminActionLogService;
 
@@ -27,7 +31,10 @@ public class AdminListingService : IAdminListingService
 
         var query = _context.TeacherListings
             .AsNoTracking()
-            .Where(x => !x.IsApproved || x.Status == "Pending")
+            .Where(x =>
+                !x.IsApproved &&
+                x.IsActive &&
+                (x.Status == PendingApprovalStatus || x.Status == "Pending"))
             .AsQueryable();
 
         var totalCount = await query.CountAsync();
@@ -39,7 +46,7 @@ public class AdminListingService : IAdminListingService
             .Include(x => x.City)
             .Include(x => x.District)
             .Include(x => x.Neighborhood)
-            .OrderByDescending(x => x.Id)
+            .OrderByDescending(x => x.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Select(x => new AdminListingDto
@@ -128,7 +135,8 @@ public class AdminListingService : IAdminListingService
 
         listing.IsApproved = true;
         listing.IsActive = true;
-        listing.Status = "Approved";
+        listing.Status = ActiveStatus;
+        listing.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
 
@@ -137,7 +145,7 @@ public class AdminListingService : IAdminListingService
             "ApproveListing",
             "TeacherListing",
             listing.Id,
-            "Admin approved listing.",
+            "Admin ilanın durumunu Active yaptı.",
             ipAddress,
             userAgent);
 
@@ -159,7 +167,8 @@ public class AdminListingService : IAdminListingService
 
         listing.IsApproved = false;
         listing.IsActive = false;
-        listing.Status = "Rejected";
+        listing.Status = RejectedStatus;
+        listing.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
 
@@ -169,8 +178,8 @@ public class AdminListingService : IAdminListingService
             "TeacherListing",
             listing.Id,
             string.IsNullOrWhiteSpace(reason)
-                ? "Admin rejected listing."
-                : $"Admin rejected listing. Reason: {reason}",
+                ? "Admin ilanın durumunu Rejected yaptı."
+                : $"Admin ilanın durumunu Rejected yaptı. Sebep: {reason}",
             ipAddress,
             userAgent);
 
