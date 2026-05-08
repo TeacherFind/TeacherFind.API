@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using TeacherFind.Domain.Enums;
 
 namespace TeacherFind.Contracts.Tutors;
 
@@ -27,7 +26,10 @@ public class UpdateMyTutorListingDto : IValidatableObject
     public decimal Price { get; set; }
 
     public bool IsActive { get; set; } = true;
-    public ServiceType ServiceType { get; set; }
+
+    [Range(1, 3, ErrorMessage = "Geçerli bir ders türü seçiniz. 1: Online, 2: FaceToFace, 3: Both")]
+    public int ServiceType { get; set; } = 3;
+
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
