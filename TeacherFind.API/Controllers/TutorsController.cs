@@ -30,16 +30,13 @@ public class TutorsController : ControllerBase
     // Public Tutor Endpoints
     // =====================================================
 
-    // GET /api/tutors
     [HttpGet]
     public async Task<IActionResult> GetTutors([FromQuery] TutorFilterRequestDto filter)
     {
         var result = await _tutorService.GetTutorsAsync(filter, GetCurrentUserId());
-
         return Ok(result);
     }
 
-    // GET /api/tutors/{id}
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetTutor(Guid id)
     {
@@ -55,7 +52,6 @@ public class TutorsController : ControllerBase
     // Tutor Profile
     // =====================================================
 
-    // GET /api/tutors/profile
     [Authorize(Policy = "TutorOnly")]
     [HttpGet("profile")]
     public async Task<IActionResult> GetMyProfile()
@@ -70,7 +66,6 @@ public class TutorsController : ControllerBase
         return Ok(profile);
     }
 
-    // PUT /api/tutors/profile
     [Authorize(Policy = "TutorOnly")]
     [HttpPut("profile")]
     public async Task<IActionResult> UpdateMyProfile([FromBody] UpdateTutorProfileDto request)
@@ -88,7 +83,6 @@ public class TutorsController : ControllerBase
         return Ok(new { message = "Profil başarıyla güncellendi." });
     }
 
-    // POST /api/tutors/avatar
     [Authorize(Policy = "TutorOnly")]
     [HttpPost("avatar")]
     [Consumes("multipart/form-data")]
@@ -149,7 +143,6 @@ public class TutorsController : ControllerBase
     // Tutor Listings
     // =====================================================
 
-    // GET /api/tutors/my-listings
     [Authorize(Policy = "TutorOnly")]
     [HttpGet("my-listings")]
     public async Task<IActionResult> GetMyListings()
@@ -161,7 +154,6 @@ public class TutorsController : ControllerBase
         return Ok(result);
     }
 
-    // POST /api/tutors/my-listings
     [Authorize(Policy = "TutorOnly")]
     [HttpPost("my-listings")]
     public async Task<IActionResult> CreateMyListing([FromBody] CreateMyTutorListingDto request)
@@ -169,12 +161,14 @@ public class TutorsController : ControllerBase
         if (request is null)
             return BadRequest(new { message = "İlan bilgileri gönderilmedi." });
 
+        if (!ModelState.IsValid)
+            return BadRequest(CreateValidationErrorResponse());
+
         var currentUserId = GetRequiredCurrentUserId();
 
         try
         {
             var result = await _tutorService.CreateMyListingAsync(currentUserId, request);
-
             return Ok(result);
         }
         catch (InvalidOperationException ex)
@@ -183,7 +177,6 @@ public class TutorsController : ControllerBase
         }
     }
 
-    // PUT /api/tutors/my-listings/{id}
     [Authorize(Policy = "TutorOnly")]
     [HttpPut("my-listings/{id:guid}")]
     public async Task<IActionResult> UpdateMyListing(
@@ -194,29 +187,9 @@ public class TutorsController : ControllerBase
             return BadRequest(new { message = "İlan bilgileri gönderilmedi." });
 
         if (!ModelState.IsValid)
-        {
-            var errors = ModelState
-                .Where(x => x.Value?.Errors.Count > 0)
-                .ToDictionary(
-                    x => x.Key,
-                    x => x.Value!.Errors.Select(e => e.ErrorMessage).ToList());
-
-            return BadRequest(new { message = "İlan bilgileri doğrulanamadı.", errors });
-        }
+            return BadRequest(CreateValidationErrorResponse());
 
         var currentUserId = GetRequiredCurrentUserId();
-
-        if (!ModelState.IsValid)
-        {
-            var errors = ModelState
-                .Where(x => x.Value?.Errors.Count > 0)
-                .ToDictionary(
-                    x => x.Key,
-                    x => x.Value!.Errors.Select(e => e.ErrorMessage).ToList());
-
-            return BadRequest(new { message = "İlan bilgileri doğrulanamadı.", errors });
-        }
-
 
         try
         {
@@ -236,13 +209,12 @@ public class TutorsController : ControllerBase
         }
     }
 
-    // POST /api/tutors/my-listings/{listingId}/photos
     [Authorize(Policy = "TutorOnly")]
     [HttpPost("my-listings/{listingId:guid}/photos")]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> UploadListingPhotos(
         Guid listingId,
-        IFormFileCollection files,
+        [FromForm] IFormFileCollection files,
         [FromForm] bool isMain = false)
     {
         var currentUserId = GetRequiredCurrentUserId();
@@ -253,7 +225,10 @@ public class TutorsController : ControllerBase
         try
         {
             var result = await _tutorService.UploadListingPhotosAsync(
-                currentUserId, listingId, files.ToList(), isMain);
+                currentUserId,
+                listingId,
+                files.ToList(),
+                isMain);
 
             return Ok(result);
         }
@@ -263,11 +238,60 @@ public class TutorsController : ControllerBase
         }
     }
 
+    [Authorize(Policy = "TutorOnly")]
+    [HttpPut("my-listings/{listingId:guid}/photos/{photoId:guid}/main")]
+    public async Task<IActionResult> SetMainPhoto(Guid listingId, Guid photoId)
+    {
+        var result = await _tutorService.SetMainListingPhotoAsync(
+            GetRequiredCurrentUserId(),
+            listingId,
+            photoId);
+
+        if (!result)
+            return NotFound(new { message = "İlan veya fotoğraf bulunamadı." });
+
+        return Ok(new { message = "Kapak fotoğrafı güncellendi." });
+    }
+
+    [Authorize(Policy = "TutorOnly")]
+    [HttpPut("my-listings/{listingId:guid}/photos/sort-order")]
+    public async Task<IActionResult> UpdatePhotoSortOrder(
+        Guid listingId,
+        [FromBody] UpdateListingPhotoSortOrderDto request)
+    {
+        if (request is null || request.PhotoIds.Count == 0)
+            return BadRequest(new { message = "Fotoğraf listesi boş olamaz." });
+
+        var result = await _tutorService.UpdateListingPhotoSortOrderAsync(
+            GetRequiredCurrentUserId(),
+            listingId,
+            request);
+
+        if (!result)
+            return NotFound(new { message = "İlan bulunamadı." });
+
+        return Ok(new { message = "Fotoğraf sırası güncellendi." });
+    }
+
+    [Authorize(Policy = "TutorOnly")]
+    [HttpDelete("my-listings/{listingId:guid}/photos/{photoId:guid}")]
+    public async Task<IActionResult> DeletePhoto(Guid listingId, Guid photoId)
+    {
+        var result = await _tutorService.DeleteListingPhotoAsync(
+            GetRequiredCurrentUserId(),
+            listingId,
+            photoId);
+
+        if (!result)
+            return NotFound(new { message = "İlan veya fotoğraf bulunamadı." });
+
+        return Ok(new { message = "Fotoğraf silindi." });
+    }
+
     // =====================================================
     // Tutor Certificates
     // =====================================================
 
-    // GET /api/tutors/certificates
     [Authorize(Policy = "TutorOnly")]
     [HttpGet("certificates")]
     public async Task<IActionResult> GetMyCertificates()
@@ -279,7 +303,6 @@ public class TutorsController : ControllerBase
         return Ok(result);
     }
 
-    // POST /api/tutors/certificates
     [Authorize(Policy = "TutorOnly")]
     [HttpPost("certificates")]
     [Consumes("multipart/form-data")]
@@ -324,7 +347,6 @@ public class TutorsController : ControllerBase
         }
     }
 
-    // DELETE /api/tutors/certificates/{id}
     [Authorize(Policy = "TutorOnly")]
     [HttpDelete("certificates/{id:guid}")]
     public async Task<IActionResult> DeleteCertificate(Guid id)
@@ -343,7 +365,6 @@ public class TutorsController : ControllerBase
     // Tutor Availability
     // =====================================================
 
-    // GET /api/tutors/availability
     [Authorize(Policy = "TutorOnly")]
     [HttpGet("availability")]
     public async Task<IActionResult> GetMyAvailability()
@@ -355,7 +376,6 @@ public class TutorsController : ControllerBase
         return Ok(result);
     }
 
-    // PUT /api/tutors/availability
     [Authorize(Policy = "TutorOnly")]
     [HttpPut("availability")]
     public async Task<IActionResult> UpdateMyAvailability([FromBody] UpdateTutorAvailabilityDto request)
@@ -368,7 +388,6 @@ public class TutorsController : ControllerBase
         try
         {
             var result = await _tutorService.UpdateMyAvailabilityAsync(currentUserId, request);
-
             return Ok(result);
         }
         catch (InvalidOperationException ex)
@@ -376,12 +395,15 @@ public class TutorsController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
-    // PUT /api/tutors/profile/availability — alias for frontend compatibility
-    [HttpPut("profile/availability")]
+
     [Authorize(Policy = "TutorOnly")]
+    [HttpPut("profile/availability")]
     public async Task<IActionResult> UpdateProfileAvailability(
         [FromBody] Dictionary<string, string> availability)
     {
+        if (availability is null || availability.Count == 0)
+            return BadRequest(new { message = "En az bir müsaitlik aralığı gönderilmelidir." });
+
         var currentUserId = GetRequiredCurrentUserId();
 
         var dto = new UpdateTutorAvailabilityDto
@@ -402,36 +424,10 @@ public class TutorsController : ControllerBase
         };
 
         var result = await _tutorService.UpdateMyAvailabilityAsync(currentUserId, dto);
+
         return Ok(result);
     }
 
-    private static string ResolveSlotStart(string slot) => slot.ToLower() switch
-    {
-        "sabah" => "09:00",
-        "öğle" => "12:00",
-        "ogle" => "12:00",
-        "akşamüstü" => "15:00",
-        "aksamustu" => "15:00",
-        "öğledensonra" => "15:00",
-        "akşam" => "18:00",
-        "aksam" => "18:00",
-        _ => "09:00"
-    };
-
-    private static string ResolveSlotEnd(string slot) => slot.ToLower() switch
-    {
-        "sabah" => "12:00",
-        "öğle" => "15:00",
-        "ogle" => "15:00",
-        "akşamüstü" => "18:00",
-        "aksamustu" => "18:00",
-        "öğledensonra" => "18:00",
-        "akşam" => "21:00",
-        "aksam" => "21:00",
-        _ => "12:00"
-    };
-
-    // DELETE /api/tutors/availability/{id}
     [Authorize(Policy = "TutorOnly")]
     [HttpDelete("availability/{id:guid}")]
     public async Task<IActionResult> DeleteMyAvailability(Guid id)
@@ -450,7 +446,6 @@ public class TutorsController : ControllerBase
     // Tutor Bookings
     // =====================================================
 
-    // GET /api/tutors/my-bookings
     [Authorize(Policy = "TutorOnly")]
     [HttpGet("my-bookings")]
     public async Task<IActionResult> GetMyBookings()
@@ -462,7 +457,6 @@ public class TutorsController : ControllerBase
         return Ok(result);
     }
 
-    // PUT /api/tutors/my-bookings/{id}/approve
     [Authorize(Policy = "TutorOnly")]
     [HttpPut("my-bookings/{id:guid}/approve")]
     public async Task<IActionResult> ApproveBooking(Guid id)
@@ -484,7 +478,6 @@ public class TutorsController : ControllerBase
         }
     }
 
-    // PUT /api/tutors/my-bookings/{id}/reject
     [Authorize(Policy = "TutorOnly")]
     [HttpPut("my-bookings/{id:guid}/reject")]
     public async Task<IActionResult> RejectBooking(
@@ -511,7 +504,6 @@ public class TutorsController : ControllerBase
         }
     }
 
-    // PUT /api/tutors/my-bookings/{id}/complete
     [Authorize(Policy = "TutorOnly")]
     [HttpPut("my-bookings/{id:guid}/complete")]
     public async Task<IActionResult> CompleteBooking(Guid id)
@@ -534,10 +526,9 @@ public class TutorsController : ControllerBase
     }
 
     // =====================================================
-    // Tutor Students
+    // Tutor Students / Earnings
     // =====================================================
 
-    // GET /api/tutors/my-students
     [Authorize(Policy = "TutorOnly")]
     [HttpGet("my-students")]
     public async Task<IActionResult> GetMyStudents()
@@ -545,6 +536,23 @@ public class TutorsController : ControllerBase
         var currentUserId = GetRequiredCurrentUserId();
 
         var result = await _tutorService.GetMyStudentsAsync(currentUserId);
+
+        return Ok(result);
+    }
+
+    [Authorize(Policy = "TutorOnly")]
+    [HttpGet("earnings-report")]
+    public async Task<IActionResult> GetEarningsReport(
+        [FromQuery] DateTime from,
+        [FromQuery] DateTime to)
+    {
+        if (from > to)
+            return BadRequest(new { message = "Başlangıç tarihi bitiş tarihinden büyük olamaz." });
+
+        var result = await _tutorService.GetEarningsReportAsync(
+            GetRequiredCurrentUserId(),
+            from,
+            to);
 
         return Ok(result);
     }
@@ -571,6 +579,49 @@ public class TutorsController : ControllerBase
 
         return userId;
     }
+
+    private object CreateValidationErrorResponse()
+    {
+        var errors = ModelState
+            .Where(x => x.Value?.Errors.Count > 0)
+            .ToDictionary(
+                x => x.Key,
+                x => x.Value!.Errors.Select(e => e.ErrorMessage).ToList());
+
+        return new
+        {
+            message = "İlan bilgileri doğrulanamadı.",
+            errors
+        };
+    }
+
+    private static string ResolveSlotStart(string slot) => slot.ToLowerInvariant() switch
+    {
+        "sabah" => "09:00",
+        "öğle" => "12:00",
+        "ogle" => "12:00",
+        "akşamüstü" => "15:00",
+        "aksamustu" => "15:00",
+        "öğledensonra" => "15:00",
+        "ogledensonra" => "15:00",
+        "akşam" => "18:00",
+        "aksam" => "18:00",
+        _ => "09:00"
+    };
+
+    private static string ResolveSlotEnd(string slot) => slot.ToLowerInvariant() switch
+    {
+        "sabah" => "12:00",
+        "öğle" => "15:00",
+        "ogle" => "15:00",
+        "akşamüstü" => "18:00",
+        "aksamustu" => "18:00",
+        "öğledensonra" => "18:00",
+        "ogledensonra" => "18:00",
+        "akşam" => "21:00",
+        "aksam" => "21:00",
+        _ => "12:00"
+    };
 
     private static async Task<UploadedFileResult> SaveCertificateFileAsync(
         Guid currentUserId,
@@ -621,64 +672,5 @@ public class TutorsController : ControllerBase
         public string? FileName { get; set; }
 
         public string? ContentType { get; set; }
-    }
-    // GET /api/tutors/earnings-report?from=2026-05-01&to=2026-05-31
-    [HttpGet("earnings-report")]
-    [Authorize(Policy = "TutorOnly")]
-    public async Task<IActionResult> GetEarningsReport(
-        [FromQuery] DateTime from,
-        [FromQuery] DateTime to)
-    {
-        if (from > to)
-            return BadRequest(new { message = "Başlangıç tarihi bitiş tarihinden büyük olamaz." });
-
-        var result = await _tutorService.GetEarningsReportAsync(GetRequiredCurrentUserId(), from, to);
-        return Ok(result);
-    }
-    // PUT /api/tutors/my-listings/{listingId}/photos/{photoId}/main
-    [HttpPut("my-listings/{listingId:guid}/photos/{photoId:guid}/main")]
-    [Authorize(Policy = "TutorOnly")]
-    public async Task<IActionResult> SetMainPhoto(Guid listingId, Guid photoId)
-    {
-        var result = await _tutorService.SetMainListingPhotoAsync(
-            GetRequiredCurrentUserId(), listingId, photoId);
-
-        if (!result)
-            return NotFound(new { message = "İlan veya fotoğraf bulunamadı." });
-
-        return Ok(new { message = "Kapak fotoğrafı güncellendi." });
-    }
-
-    // PUT /api/tutors/my-listings/{listingId}/photos/sort-order
-    [HttpPut("my-listings/{listingId:guid}/photos/sort-order")]
-    [Authorize(Policy = "TutorOnly")]
-    public async Task<IActionResult> UpdatePhotoSortOrder(
-        Guid listingId,
-        [FromBody] UpdateListingPhotoSortOrderDto request)
-    {
-        if (request is null || request.PhotoIds.Count == 0)
-            return BadRequest(new { message = "Fotoğraf listesi boş olamaz." });
-
-        var result = await _tutorService.UpdateListingPhotoSortOrderAsync(
-            GetRequiredCurrentUserId(), listingId, request);
-
-        if (!result)
-            return NotFound(new { message = "İlan bulunamadı." });
-
-        return Ok(new { message = "Fotoğraf sırası güncellendi." });
-    }
-
-    // DELETE /api/tutors/my-listings/{listingId}/photos/{photoId}
-    [HttpDelete("my-listings/{listingId:guid}/photos/{photoId:guid}")]
-    [Authorize(Policy = "TutorOnly")]
-    public async Task<IActionResult> DeletePhoto(Guid listingId, Guid photoId)
-    {
-        var result = await _tutorService.DeleteListingPhotoAsync(
-            GetRequiredCurrentUserId(), listingId, photoId);
-
-        if (!result)
-            return NotFound(new { message = "İlan veya fotoğraf bulunamadı." });
-
-        return Ok(new { message = "Fotoğraf silindi." });
     }
 }
