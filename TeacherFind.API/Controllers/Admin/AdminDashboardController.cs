@@ -26,15 +26,26 @@ public class AdminDashboardController : ControllerBase
         var previous30DaysStart = now.AddDays(-60).Date;
 
         var totalUsers = await _context.Users.CountAsync();
-        var totalTutors = await _context.Users.CountAsync(x => x.Role == UserRole.Tutor);
-        var totalStudents = await _context.Users.CountAsync(x => x.Role == UserRole.Student);
+
+        var totalTutors = await _context.Users.CountAsync(x =>
+            x.Role == UserRole.Tutor);
+
+        var totalStudents = await _context.Users.CountAsync(x =>
+            x.Role == UserRole.Student);
 
         var totalMessages = await _context.Messages.CountAsync();
+
         var totalReviews = await _context.Reviews.CountAsync();
 
-        var pendingListings = await _context.TeacherListings.CountAsync(x => x.Status == "PendingApproval");
+        var pendingListings = await _context.TeacherListings.CountAsync(x =>
+            !x.IsApproved &&
+            x.IsActive &&
+            x.Status == "PendingApproval");
 
-        var activeListings = await _context.TeacherListings.CountAsync(x => x.Status == "Active");
+        var activeListings = await _context.TeacherListings.CountAsync(x =>
+            x.IsApproved &&
+            x.IsActive &&
+            x.Status == "Active");
 
         var revenue = await _context.Bookings
             .Where(x => x.Status == BookingStatus.Completed)
@@ -137,4 +148,4 @@ public class AdminDashboardController : ControllerBase
             newListingsLast30Days
         });
     }
-} 
+}
