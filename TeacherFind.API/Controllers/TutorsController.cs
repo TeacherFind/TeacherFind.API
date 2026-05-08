@@ -193,7 +193,30 @@ public class TutorsController : ControllerBase
         if (request is null)
             return BadRequest(new { message = "İlan bilgileri gönderilmedi." });
 
+        if (!ModelState.IsValid)
+        {
+            var errors = ModelState
+                .Where(x => x.Value?.Errors.Count > 0)
+                .ToDictionary(
+                    x => x.Key,
+                    x => x.Value!.Errors.Select(e => e.ErrorMessage).ToList());
+
+            return BadRequest(new { message = "İlan bilgileri doğrulanamadı.", errors });
+        }
+
         var currentUserId = GetRequiredCurrentUserId();
+
+        if (!ModelState.IsValid)
+        {
+            var errors = ModelState
+                .Where(x => x.Value?.Errors.Count > 0)
+                .ToDictionary(
+                    x => x.Key,
+                    x => x.Value!.Errors.Select(e => e.ErrorMessage).ToList());
+
+            return BadRequest(new { message = "İlan bilgileri doğrulanamadı.", errors });
+        }
+
 
         try
         {

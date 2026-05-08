@@ -5,6 +5,7 @@ using TeacherFind.Application.Abstractions.Services;
 using TeacherFind.Contracts.Common;
 using TeacherFind.Contracts.Tutors;
 using TeacherFind.Domain.Entities;
+using TeacherFind.Domain.Enums;
 
 namespace TeacherFind.Application.Features.Tutors;
 
@@ -276,7 +277,7 @@ public class TutorService : ITutorService
             Category = request.Category.Trim(),
             SubCategory = request.SubCategory.Trim(),
             LessonDuration = request.LessonDuration,
-            ServiceType = request.ServiceType,
+            ServiceType = (ServiceType)request.ServiceType,
             Price = normalizedPrice,
             Status = "PendingApproval",
             IsActive = true,
@@ -313,7 +314,7 @@ public class TutorService : ITutorService
         listing.Category = request.Category.Trim();
         listing.SubCategory = request.SubCategory.Trim();
         listing.LessonDuration = request.LessonDuration;
-        listing.ServiceType = request.ServiceType;
+        listing.ServiceType = (ServiceType)request.ServiceType;
         listing.Price = normalizedPrice;
         listing.IsActive = request.IsActive;
         listing.UpdatedAt = DateTime.UtcNow;
@@ -355,12 +356,15 @@ public class TutorService : ITutorService
         var uploadsFolder = Path.Combine(
             Directory.GetCurrentDirectory(), "wwwroot", "uploads", "listings");
 
+
         Directory.CreateDirectory(uploadsFolder);
         if (isMain)
         {
             foreach (var existingPhoto in listing.Photos)
                 existingPhoto.IsMain = false;
         }
+
+        var shouldSetFirstUploadedAsMain = isMain || !listing.Photos.Any();
 
         foreach (var file in files)
         {
@@ -384,7 +388,7 @@ public class TutorService : ITutorService
             {
                 ListingId = listingId,
                 PhotoUrl = $"/uploads/listings/{storedFileName}",
-                IsMain = isMain || !listing.Photos.Any(),
+                IsMain = shouldSetFirstUploadedAsMain && uploadedPhotos.Count == 0,
                 SortOrder = listing.Photos.Count
             };
 

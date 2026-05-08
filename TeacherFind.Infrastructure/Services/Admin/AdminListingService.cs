@@ -17,10 +17,12 @@ public class AdminListingService : IAdminListingService
 
     public AdminListingService(
         AppDbContext context,
-        IAdminActionLogService adminActionLogService)
+        IAdminActionLogService adminActionLogService,
+        INotificationService notificationService)
     {
         _context = context;
         _adminActionLogService = adminActionLogService;
+        _notificationService = notificationService;
     }
 
     public async Task<AdminPagedResponse<AdminListingDto>> GetPendingListingsAsync(
@@ -129,6 +131,7 @@ public class AdminListingService : IAdminListingService
         string? userAgent)
     {
         var listing = await _context.TeacherListings
+            .Include(x => x.TeacherProfile)
             .FirstOrDefaultAsync(x => x.Id == listingId);
 
         if (listing is null)
@@ -169,6 +172,7 @@ public class AdminListingService : IAdminListingService
         string? userAgent)
     {
         var listing = await _context.TeacherListings
+            .Include(x => x.TeacherProfile)
             .FirstOrDefaultAsync(x => x.Id == listingId);
 
         if (listing is null)
