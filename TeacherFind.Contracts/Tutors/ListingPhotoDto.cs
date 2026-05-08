@@ -13,4 +13,6 @@ public class ListingPhotoDto
     public string PhotoUrl { get; set; } = default!;
 
     public bool IsMain { get; set; }
+
+    public int SortOrder { get; set; }
 }

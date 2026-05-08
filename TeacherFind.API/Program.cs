@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using System.Text.Json.Serialization;
 using TeacherFind.API.Hubs;
 using TeacherFind.Application.Abstractions.Identity;
 using TeacherFind.Application.Abstractions.Repositories;
@@ -23,8 +25,6 @@ using TeacherFind.Infrastructure.Persistence.Repositories;
 using TeacherFind.Infrastructure.Persistence.Seed;
 using TeacherFind.Infrastructure.Services.Admin;
 using TeacherFind.Infrastructure.Services.Education;
-using System.Text.Json.Serialization;
-
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -134,6 +134,25 @@ builder.Services.AddControllers()
     {
         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
     });
+
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var errors = context.ModelState
+            .Where(x => x.Value?.Errors.Count > 0)
+            .ToDictionary(
+                x => x.Key,
+                x => x.Value!.Errors.Select(e => e.ErrorMessage).ToList());
+
+        return new BadRequestObjectResult(new
+        {
+            message = "İlan bilgileri doğrulanamadı.",
+            errors
+        });
+    };
+});
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSignalR();
 
@@ -209,8 +228,6 @@ builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IEducationService, EducationService>();
 builder.Services.AddScoped<IStudentService, StudentService>();
-
-
 
 // =====================================================
 // Dependency Injection - Admin Services
