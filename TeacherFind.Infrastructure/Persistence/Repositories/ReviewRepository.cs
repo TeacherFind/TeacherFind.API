@@ -47,4 +47,10 @@ public class ReviewRepository : IReviewRepository
 
     public async Task SaveChangesAsync()
         => await _context.SaveChangesAsync();
+
+    public async Task<bool> ExistsByUserAndListingIdAsync(Guid userId, Guid listingId)
+    {
+        return await _context.Reviews
+            .AnyAsync(x => x.UserId == userId && x.ListingId == listingId);
+    }
 }

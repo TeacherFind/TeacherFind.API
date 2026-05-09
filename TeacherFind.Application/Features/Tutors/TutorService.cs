@@ -433,7 +433,8 @@ public class TutorService : ITutorService
             {
                 Id = photo.Id,
                 PhotoUrl = photo.PhotoUrl,
-                IsMain = photo.IsMain
+                IsMain = photo.IsMain,
+                SortOrder = photo.SortOrder
             });
         }
 
@@ -724,7 +725,25 @@ public class TutorService : ITutorService
         if (photo is null)
             return false;
 
+        var wasMain = photo.IsMain;
+
         await _listingRepository.RemovePhotoAsync(photo);
+
+        if (wasMain)
+        {
+            var nextMainPhoto = photos
+                .Where(p => p.Id != photoId)
+                .OrderBy(p => p.SortOrder)
+                .ThenBy(p => p.CreatedAt)
+                .FirstOrDefault();
+
+            if (nextMainPhoto is not null)
+            {
+                nextMainPhoto.IsMain = true;
+                nextMainPhoto.UpdatedAt = DateTime.UtcNow;
+            }
+        }
+
         await _listingRepository.SaveChangesAsync();
 
         return true;
@@ -746,7 +765,6 @@ public class TutorService : ITutorService
                 PhotoUrl = p.PhotoUrl,
                 IsMain = p.IsMain,
                 SortOrder = p.SortOrder
-
             }).ToList() ?? new List<ListingPhotoDto>();
     }
 
