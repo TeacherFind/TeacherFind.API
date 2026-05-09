@@ -357,51 +357,45 @@ public class TutorService : ITutorService
     }
 
     public async Task<List<ListingPhotoDto>> UploadListingPhotosAsync(
-        Guid userId,
-        Guid listingId,
-        List<IFormFile> files,
-        bool isMain = false)
+    Guid userId,
+    Guid listingId,
+    List<IFormFile> files,
+    bool isMain = false)
     {
         if (files is null || files.Count == 0)
             throw new InvalidOperationException("En az bir fotoğraf yüklenmelidir.");
 
+        // Verify ownership — but don't track the listing entity
         var listing = await _listingRepository.GetByIdForOwnerAsync(listingId, userId)
             ?? throw new InvalidOperationException("İlan bulunamadı veya bu ilana erişim yetkiniz yok.");
 
         var allowedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            ".jpg",
-            ".jpeg",
-            ".png",
-            ".webp"
-        };
+        { ".jpg", ".jpeg", ".png", ".webp" };
 
         const long maxFileSize = 5 * 1024 * 1024;
 
         var uploadedPhotos = new List<ListingPhotoDto>();
 
         var uploadsFolder = Path.Combine(
-            Directory.GetCurrentDirectory(),
-            "wwwroot",
-            "uploads",
-            "listings");
+            Directory.GetCurrentDirectory(), "wwwroot", "uploads", "listings");
 
         Directory.CreateDirectory(uploadsFolder);
 
+        // Load existing photos separately to avoid touching the parent entity
+        var existingPhotos = await _listingRepository.GetPhotosByListingIdAsync(listingId);
+
+        // If isMain requested, clear existing main flags directly
         if (isMain)
         {
-            foreach (var existingPhoto in listing.Photos)
-            {
+            foreach (var existingPhoto in existingPhotos)
                 existingPhoto.IsMain = false;
-            }
         }
 
-        var shouldSetFirstUploadedAsMain = isMain || !listing.Photos.Any();
+        var shouldSetFirstAsMain = isMain || !existingPhotos.Any();
 
         foreach (var file in files)
         {
-            if (file is null || file.Length == 0)
-                continue;
+            if (file is null || file.Length == 0) continue;
 
             var extension = Path.GetExtension(file.FileName);
 
@@ -415,19 +409,18 @@ public class TutorService : ITutorService
             var filePath = Path.Combine(uploadsFolder, storedFileName);
 
             await using (var stream = new FileStream(filePath, FileMode.Create))
-            {
                 await file.CopyToAsync(stream);
-            }
 
             var photo = new ListingPhoto
             {
                 ListingId = listingId,
                 PhotoUrl = $"/uploads/listings/{storedFileName}",
-                IsMain = shouldSetFirstUploadedAsMain && uploadedPhotos.Count == 0,
-                SortOrder = listing.Photos.Count
+                IsMain = shouldSetFirstAsMain && uploadedPhotos.Count == 0,
+                SortOrder = existingPhotos.Count + uploadedPhotos.Count
             };
 
-            listing.Photos.Add(photo);
+            // Add directly — do NOT go through listing.Photos.Add()
+            await _listingRepository.AddPhotoAsync(photo);
 
             uploadedPhotos.Add(new ListingPhotoDto
             {

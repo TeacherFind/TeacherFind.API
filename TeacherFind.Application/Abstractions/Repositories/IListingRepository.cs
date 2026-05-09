@@ -32,4 +32,5 @@ public interface IListingRepository
     Task<List<TeacherListing>> FilterAsync(ListingFilterRequestDto filter);
     Task<(List<TeacherListing> Items, int TotalCount)> FilterTutorsAsync(TutorFilterRequestDto filter); // NEW — Task 5
     Task SaveChangesAsync();
+    Task AddPhotoAsync(ListingPhoto photo);
 }

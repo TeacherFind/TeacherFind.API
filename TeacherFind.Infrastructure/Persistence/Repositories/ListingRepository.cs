@@ -302,4 +302,6 @@ public class ListingRepository : IListingRepository
     {
         await _context.SaveChangesAsync();
     }
+    public async Task AddPhotoAsync(ListingPhoto photo)
+    => await _context.Set<ListingPhoto>().AddAsync(photo);
 }
