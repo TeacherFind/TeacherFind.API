@@ -66,10 +66,12 @@ public class ReviewService : IReviewService
             throw new Exception("Sadece tamamlanmış dersler için yorum yapılabilir.");
 
         // 5. Daha önce yorum yapılmış mı?
-        var alreadyReviewed = await _reviewRepository.ExistsByBookingIdAsync(dto.BookingId);
-        if (alreadyReviewed)
-            throw new Exception("Bu ders için zaten bir yorum bıraktınız.");
+        var alreadyReviewedThisListing = await _reviewRepository.ExistsByUserAndListingIdAsync(
+            userId,
+            booking.TeacherListingId);
 
+        if (alreadyReviewedThisListing)
+            throw new Exception("Bu ilana daha önce yorum yaptınız.");
         // 6. Review oluştur
         var teacherProfileId = booking.TeacherListing?.TeacherProfileId;
 

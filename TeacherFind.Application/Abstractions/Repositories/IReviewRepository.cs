@@ -9,6 +9,7 @@ public interface IReviewRepository
     Task<List<Review>> GetByListingIdAsync(Guid listingId);
     Task<List<Review>> GetByListingIdWithReviewerAsync(Guid listingId);
     Task<bool> ExistsByBookingIdAsync(Guid bookingId);
+    Task<bool> ExistsByUserAndListingIdAsync(Guid userId, Guid listingId);
     Task<double> GetAverageRatingAsync(Guid listingId);
     Task<int> GetReviewCountAsync(Guid listingId);
     Task<double> GetAverageRatingByTeacherProfileIdAsync(Guid teacherProfileId);
