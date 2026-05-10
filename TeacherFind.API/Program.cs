@@ -26,6 +26,7 @@ using TeacherFind.Infrastructure.Persistence.Repositories;
 using TeacherFind.Infrastructure.Persistence.Seed;
 using TeacherFind.Infrastructure.Services.Admin;
 using TeacherFind.Infrastructure.Services.Education;
+using TeacherFind.API.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -258,6 +259,7 @@ if (app.Environment.IsDevelopment())
 // Middleware Pipeline
 // =====================================================
 
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseHttpsRedirection();
 
 app.UseStaticFiles();
@@ -291,6 +293,8 @@ using (var scope = app.Services.CreateScope())
         await DistrictSeed.SeedAsync(db);
         await NeighborhoodSeed.SeedAsync(db);
         await SubjectSeed.SeedAsync(db);
+        await UniversitySeed.SeedAsync(db); 
+        await DepartmentSeed.SeedAsync(db);
 
         await SuperAdminSeed.SeedAsync(db, builder.Configuration);
 
