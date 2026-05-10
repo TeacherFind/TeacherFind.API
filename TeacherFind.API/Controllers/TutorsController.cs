@@ -420,7 +420,8 @@ public class TutorsController : ControllerBase
                 {
                     Day = day,
                     Start = ResolveSlotStart(slot),
-                    End = ResolveSlotEnd(slot)
+                    End = ResolveSlotEnd(slot),
+                    Type = x.Value   // "online", "inperson", "both"
                 };
             }).ToList()
         };

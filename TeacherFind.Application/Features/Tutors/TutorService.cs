@@ -139,7 +139,8 @@ public class TutorService : ITutorService
                 {
                     Day = x.Day,
                     Start = x.Start,
-                    End = x.End
+                    End = x.End,
+                    Type = x.Type
                 }).ToList(),
 
             Documents = profile.Certificates.Select(x => new TutorCertificateDto
@@ -536,7 +537,9 @@ public class TutorService : ITutorService
                 Id = a.Id,
                 Day = a.Day,
                 Start = a.Start,
-                End = a.End
+                End = a.End,
+                Type = a.Type
+
             }).ToList();
     }
 
@@ -557,7 +560,9 @@ public class TutorService : ITutorService
                 TeacherProfileId = profile.Id,
                 Day = i.Day.Trim(),
                 Start = i.Start.Trim(),
-                End = i.End.Trim()
+                End = i.End.Trim(),
+                Type = i.Type?.Trim()
+
             }).ToList();
 
         await _teacherRepository.ReplaceAvailabilitiesAsync(profile.Id, availabilities);
