@@ -14,19 +14,22 @@ public class AuthService : IAuthService
     private readonly IPasswordHasher _passwordHasher;
     private readonly IVerificationRepository _verificationRepository;
     private readonly ITeacherRepository _teacherRepository;
+    private readonly IEmailService _emailService;
 
     public AuthService(
         IUserRepository userRepository,
         IJwtProvider jwtProvider,
         IPasswordHasher passwordHasher,
         IVerificationRepository verificationRepository,
-        ITeacherRepository teacherRepository)
+        ITeacherRepository teacherRepository,
+        IEmailService emailService)
     {
         _userRepository = userRepository;
         _jwtProvider = jwtProvider;
         _passwordHasher = passwordHasher;
         _verificationRepository = verificationRepository;
         _teacherRepository = teacherRepository;
+        _emailService = emailService;
     }
 
     public async Task<User> RegisterAsync(RegisterRequest request)
@@ -46,8 +49,7 @@ public class AuthService : IAuthService
             PasswordHash = _passwordHasher.Hash(request.Password),
             Role = role,
             PhoneNumber = string.IsNullOrWhiteSpace(request.PhoneNumber)
-                           ? null
-                           : request.PhoneNumber.Trim(),
+                              ? null : request.PhoneNumber.Trim(),
             CityId = request.CityId,
             IsActive = true,
             IsEmailVerified = false
@@ -56,7 +58,6 @@ public class AuthService : IAuthService
         await _userRepository.AddAsync(user);
         await _userRepository.SaveChangesAsync();
 
-        // Create TeacherProfile for Tutor registrations
         if (role == UserRole.Tutor)
         {
             var teacherProfile = new TeacherProfile
@@ -71,7 +72,6 @@ public class AuthService : IAuthService
                 IsStudent = false
             };
 
-            // Certificates
             foreach (var cert in request.Certificates)
             {
                 teacherProfile.Certificates.Add(new TeacherCertificate
@@ -79,11 +79,10 @@ public class AuthService : IAuthService
                     Name = cert.Name.Trim(),
                     Organization = cert.Organization?.Trim() ?? string.Empty,
                     Year = cert.Year ?? DateTime.UtcNow.Year,
-                    FileUrl = cert.FileUrl,
+                    FileUrl = cert.FileUrl
                 });
             }
 
-            // Subjects
             foreach (var sub in request.Subjects)
             {
                 teacherProfile.Subjects.Add(new TeacherProfileSubject
@@ -100,18 +99,29 @@ public class AuthService : IAuthService
             await _teacherRepository.SaveChangesAsync();
         }
 
-        var code = new VerificationCode
+        // Email verification code
+        var emailCode = new VerificationCode
         {
             UserId = user.Id,
-            Code = new Random().Next(100000, 999999).ToString(),
+            Code = Random.Shared.Next(100000, 999999).ToString(),
             Type = "Email",
-            ExpireAt = DateTime.UtcNow.AddMinutes(5)
+            ExpireAt = DateTime.UtcNow.AddMinutes(15),
+            IsUsed = false
         };
 
-        await _verificationRepository.AddAsync(code);
+        await _verificationRepository.AddAsync(emailCode);
         await _verificationRepository.SaveChangesAsync();
 
-        Console.WriteLine($"[VERIFICATION CODE] {user.Email} -> {code.Code}");
+        await _emailService.SendAsync(
+            user.Email,
+            "Özel Ders Burada E-posta Doğrulama Kodunuz",
+            $"""
+            <h2>E-posta Doğrulama</h2>
+            <p>Merhaba,</p>
+            <p>Özel Ders Burada hesabınızı doğrulamak için aşağıdaki kodu kullanın:</p>
+            <h1>{emailCode.Code}</h1>
+            <p>Bu kod 15 dakika geçerlidir.</p>
+            """);
 
         return user;
     }
@@ -119,12 +129,8 @@ public class AuthService : IAuthService
     public async Task<LoginResponse?> LoginAsync(string email, string password)
     {
         var user = await _userRepository.GetByEmailAsync(email);
-
-        if (user == null || !user.IsActive)
-            return null;
-
-        if (!_passwordHasher.Verify(password, user.PasswordHash))
-            return null;
+        if (user == null || !user.IsActive) return null;
+        if (!_passwordHasher.Verify(password, user.PasswordHash)) return null;
 
         var token = _jwtProvider.GenerateToken(user);
 
@@ -146,9 +152,7 @@ public class AuthService : IAuthService
     {
         var user = await _userRepository.GetByIdAsync(userId);
         if (user == null) return false;
-
-        if (!_passwordHasher.Verify(currentPassword, user.PasswordHash))
-            return false;
+        if (!_passwordHasher.Verify(currentPassword, user.PasswordHash)) return false;
 
         user.PasswordHash = _passwordHasher.Hash(newPassword);
         await _userRepository.SaveChangesAsync();

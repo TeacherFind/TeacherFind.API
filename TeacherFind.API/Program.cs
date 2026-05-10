@@ -27,6 +27,7 @@ using TeacherFind.Infrastructure.Persistence.Seed;
 using TeacherFind.Infrastructure.Services.Admin;
 using TeacherFind.Infrastructure.Services.Education;
 using TeacherFind.API.Middleware;
+using TeacherFind.Infrastructure.Services.Email;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -225,6 +226,11 @@ builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IEducationService, EducationService>();
 builder.Services.AddScoped<IStudentService, StudentService>();
+// Email
+builder.Services.Configure<EmailOptions>(
+    builder.Configuration.GetSection("Email"));
+
+builder.Services.AddHttpClient<IEmailService, BrevoEmailService>();
 
 // =====================================================
 // Dependency Injection - Admin Services
