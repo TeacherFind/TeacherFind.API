@@ -98,6 +98,7 @@ public class TutorService : ITutorService
         {
             Id = listing.Id,
             TeacherProfileId = listing.TeacherProfileId,
+            TeacherUserId = profile.UserId,
             TeacherName = profile.User.FullName,
             PhoneNumber = profile.User.PhoneNumber,
             AvatarUrl = profile.User.ProfileImageUrl,
@@ -246,6 +247,12 @@ public class TutorService : ITutorService
 
         _teacherRepository.Update(profile);
         await _teacherRepository.SaveChangesAsync();
+
+        var listings = await _listingRepository.GetByTeacherUserIdAsync(userId);
+        foreach (var listing in listings)
+            listing.UpdatedAt = DateTime.UtcNow;
+
+        await _listingRepository.SaveChangesAsync();
 
         return true;
     }
