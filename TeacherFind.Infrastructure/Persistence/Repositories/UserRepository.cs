@@ -1,11 +1,12 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
 using TeacherFind.Application.Abstractions.Repositories;
 using TeacherFind.Domain.Entities;
+using TeacherFind.Domain.Enums;
 
 namespace TeacherFind.Infrastructure.Persistence.Repositories;
 
@@ -41,4 +42,8 @@ public class UserRepository : IUserRepository
     {
         await _context.SaveChangesAsync();
     }
+    public async Task<List<User>> GetAdminUsersAsync()
+    => await _context.Users
+        .Where(x => (x.Role == UserRole.Admin || x.Role == UserRole.SuperAdmin) && x.IsActive)
+        .ToListAsync();
 }

@@ -20,4 +20,7 @@ public class SystemSetting : AuditableEntity
     public decimal MinWithdrawal { get; set; } = 500;
 
     public string SocialLinksJson { get; set; } = "{}";
+    public string? SiteDescription { get; set; }
+    public string? SiteKeywords { get; set; }
+    public string? GoogleAnalyticsId { get; set; }
 }
