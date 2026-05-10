@@ -94,17 +94,10 @@ builder.Services
 
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("StudentOnly", policy =>
-        policy.RequireRole("Student"));
-
-    options.AddPolicy("TutorOnly", policy =>
-        policy.RequireRole("Tutor"));
-
-    options.AddPolicy("AdminOnly", policy =>
-        policy.RequireRole("Admin", "SuperAdmin"));
-
-    options.AddPolicy("SuperAdminOnly", policy =>
-        policy.RequireRole("SuperAdmin"));
+    options.AddPolicy("StudentOnly", policy => policy.RequireRole("Student", "Admin", "SuperAdmin"));
+    options.AddPolicy("TutorOnly", policy => policy.RequireRole("Tutor", "Admin", "SuperAdmin"));
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin", "SuperAdmin"));
+    options.AddPolicy("SuperAdminOnly", policy => policy.RequireRole("SuperAdmin"));
 });
 
 // =====================================================

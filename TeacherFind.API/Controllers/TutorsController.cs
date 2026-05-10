@@ -398,19 +398,19 @@ public class TutorsController : ControllerBase
         }
     }
 
-    [Authorize(Policy = "TutorOnly")]
     [HttpPut("profile/availability")]
+    [Authorize(Policy = "TutorOnly")]
     public async Task<IActionResult> UpdateProfileAvailability(
-        [FromBody] Dictionary<string, string> availability)
+    [FromBody] UpdateAvailabilityRequest request)
     {
-        if (availability is null || availability.Count == 0)
-            return BadRequest(new { message = "En az bir müsaitlik aralığı gönderilmelidir." });
+        if (request?.Availability is null || request.Availability.Count == 0)
+            return BadRequest(new { message = "Müsaitlik bilgisi boş olamaz." });
 
         var currentUserId = GetRequiredCurrentUserId();
 
         var dto = new UpdateTutorAvailabilityDto
         {
-            Items = availability.Select(x =>
+            Items = request.Availability.Select(x =>
             {
                 var parts = x.Key.Split('-', 2, StringSplitOptions.TrimEntries);
                 var day = parts.Length > 0 ? parts[0] : x.Key;
@@ -426,7 +426,6 @@ public class TutorsController : ControllerBase
         };
 
         var result = await _tutorService.UpdateMyAvailabilityAsync(currentUserId, dto);
-
         return Ok(result);
     }
 
@@ -674,5 +673,9 @@ public class TutorsController : ControllerBase
         public string? FileName { get; set; }
 
         public string? ContentType { get; set; }
+    }
+    public class UpdateAvailabilityRequest
+    {
+        public Dictionary<string, string> Availability { get; set; } = new();
     }
 }
