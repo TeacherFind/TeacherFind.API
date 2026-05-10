@@ -66,12 +66,18 @@ public class ReviewsController : ControllerBase
     // Eski endpoint kapatıldı. BookingId tabanlı POST /api/reviews kullanılmalı.
     [HttpPost("{listingId:guid}")]
     [Authorize]
-    [Obsolete("Bu endpoint kapatıldı. POST /api/reviews endpointini BookingId ile kullanın.")]
-    public IActionResult Add(Guid listingId, [FromBody] ReviewRequest request)
+    public async Task<IActionResult> Add(Guid listingId, [FromBody] ReviewRequest request)
     {
-        return BadRequest(new
-        {
-            message = "Bu endpoint kullanımdan kaldırıldı. Yorum eklemek için POST /api/reviews endpointini BookingId ile kullanın."
-        });
+        if (request is null)
+            return BadRequest(new { message = "İstek boş olamaz." });
+
+        if (request.Rating < 1 || request.Rating > 5)
+            return BadRequest(new { message = "Puan 1 ile 5 arasında olmalıdır." });
+
+        var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        await _reviewService.AddReviewAsync(userId, listingId, request.Rating, request.Comment);
+
+        return Ok(new { message = "Yorum eklendi." });
     }
 }   

@@ -4,6 +4,7 @@ public class TutorDetailDto
 {
     public Guid Id { get; set; }
     public Guid TeacherProfileId { get; set; }
+    public Guid TeacherUserId { get; set; }
     public string TeacherName { get; set; } = default!;
     public string? AvatarUrl { get; set; }
     public string Title { get; set; } = default!;
@@ -33,4 +34,5 @@ public class TutorDetailDto
     public List<TutorReviewDto> Reviews { get; set; } = new();
     public List<TutorAvailabilityDto> Availability { get; set; } = new();
     public List<TutorCertificateDto> Documents { get; set; } = new();
+
 }
