@@ -6,32 +6,51 @@ using TeacherFind.Application.Abstractions.Services;
 namespace TeacherFind.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/notifications")]
 [Authorize]
 public class NotificationsController : ControllerBase
 {
     private readonly INotificationService _notificationService;
 
     public NotificationsController(INotificationService notificationService)
-    {
-        _notificationService = notificationService;
-    }
+        => _notificationService = notificationService;
 
+    // GET /api/notifications
     [HttpGet]
     public async Task<IActionResult> GetMyNotifications()
     {
-        var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-
-        var result = await _notificationService.GetMyNotificationsAsync(userId);
-
+        var result = await _notificationService.GetMyNotificationsAsync(GetUserId());
         return Ok(result);
     }
 
-    [HttpPost("read/{id}")]
+    // GET /api/notifications/unread
+    [HttpGet("unread")]
+    public async Task<IActionResult> GetUnread()
+    {
+        var result = await _notificationService.GetMyUnreadNotificationsAsync(GetUserId());
+        return Ok(result);
+    }
+
+    // PUT /api/notifications/{id}/read
+    [HttpPut("{id:guid}/read")]
     public async Task<IActionResult> MarkAsRead(Guid id)
     {
-        await _notificationService.MarkAsReadAsync(id);
+        var success = await _notificationService.MarkAsReadAsync(id, GetUserId());
 
-        return Ok();
+        if (!success)
+            return NotFound(new { message = "Bildirim bulunamadı veya bu bildirim size ait değil." });
+
+        return Ok(new { message = "Bildirim okundu olarak işaretlendi." });
     }
+
+    // PUT /api/notifications/read-all
+    [HttpPut("read-all")]
+    public async Task<IActionResult> MarkAllAsRead()
+    {
+        await _notificationService.MarkAllAsReadAsync(GetUserId());
+        return Ok(new { message = "Tüm bildirimler okundu olarak işaretlendi." });
+    }
+
+    private Guid GetUserId()
+        => Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 }

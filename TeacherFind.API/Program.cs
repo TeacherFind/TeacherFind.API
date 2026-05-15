@@ -1,8 +1,11 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using TeacherFind.API.Hubs;
 using TeacherFind.Application.Abstractions.Identity;
 using TeacherFind.Application.Abstractions.Repositories;
@@ -21,9 +24,10 @@ using TeacherFind.Infrastructure.Identity;
 using TeacherFind.Infrastructure.Persistence;
 using TeacherFind.Infrastructure.Persistence.Repositories;
 using TeacherFind.Infrastructure.Persistence.Seed;
-using TeacherFind.Infrastructure.Seeds;
 using TeacherFind.Infrastructure.Services.Admin;
 using TeacherFind.Infrastructure.Services.Education;
+using TeacherFind.API.Middleware;
+using TeacherFind.Infrastructure.Services.Email;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -91,17 +95,10 @@ builder.Services
 
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("StudentOnly", policy =>
-        policy.RequireRole("Student"));
-
-    options.AddPolicy("TutorOnly", policy =>
-        policy.RequireRole("Tutor"));
-
-    options.AddPolicy("AdminOnly", policy =>
-        policy.RequireRole("Admin", "SuperAdmin"));
-
-    options.AddPolicy("SuperAdminOnly", policy =>
-        policy.RequireRole("SuperAdmin"));
+    options.AddPolicy("StudentOnly", policy => policy.RequireRole("Student", "Admin", "SuperAdmin"));
+    options.AddPolicy("TutorOnly", policy => policy.RequireRole("Tutor", "Admin", "SuperAdmin"));
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin", "SuperAdmin"));
+    options.AddPolicy("SuperAdminOnly", policy => policy.RequireRole("SuperAdmin"));
 });
 
 // =====================================================
@@ -128,7 +125,32 @@ builder.Services.AddCors(options =>
 // Framework Services
 // =====================================================
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        options.JsonSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
+    });
+
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var errors = context.ModelState
+            .Where(x => x.Value?.Errors.Count > 0)
+            .ToDictionary(
+                x => x.Key,
+                x => x.Value!.Errors.Select(e => e.ErrorMessage).ToList());
+
+        return new BadRequestObjectResult(new
+        {
+            message = "İlan bilgileri doğrulanamadı.",
+            errors
+        });
+    };
+});
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSignalR();
 
@@ -202,10 +224,13 @@ builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
-builder.Services.AddScoped<IStudentService, StudentService>();
 builder.Services.AddScoped<IEducationService, EducationService>();
+builder.Services.AddScoped<IStudentService, StudentService>();
+// Email
+builder.Services.Configure<EmailOptions>(
+    builder.Configuration.GetSection("Email"));
 
-
+builder.Services.AddHttpClient<IEmailService, BrevoEmailService>();
 
 // =====================================================
 // Dependency Injection - Admin Services
@@ -233,7 +258,10 @@ if (app.Environment.IsDevelopment())
 // Middleware Pipeline
 // =====================================================
 
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseHttpsRedirection();
+
+app.UseStaticFiles();
 
 app.UseCors("Frontend");
 
@@ -263,6 +291,9 @@ using (var scope = app.Services.CreateScope())
         await CitySeed.SeedAsync(db);
         await DistrictSeed.SeedAsync(db);
         await NeighborhoodSeed.SeedAsync(db);
+        await SubjectSeed.SeedAsync(db);
+        await UniversitySeed.SeedAsync(db); 
+        await DepartmentSeed.SeedAsync(db);
 
         await SuperAdminSeed.SeedAsync(db, builder.Configuration);
 
