@@ -38,9 +38,22 @@ public class MessagesController : ControllerBase
         if (dto is null)
             return BadRequest(new { message = "İstek boş olamaz." });
 
+        var senderId = GetUserId();
+
+        // Prevent self-messaging
+        if (senderId == dto.ReceiverId)
+            return BadRequest(new { message = "Kendinize mesaj gönderemezsiniz." });
+
+        // Validate receiver exists
+        if (dto.ReceiverId == Guid.Empty)
+            return BadRequest(new { message = "Geçersiz alıcı." });
+
+        if (string.IsNullOrWhiteSpace(dto.Content))
+            return BadRequest(new { message = "Mesaj içeriği boş olamaz." });
+
         try
         {
-            var message = await _chatService.SendMessageAsync(GetUserId(), dto);
+            var message = await _chatService.SendMessageAsync(senderId, dto);
             return Ok(message);
         }
         catch (Exception ex)

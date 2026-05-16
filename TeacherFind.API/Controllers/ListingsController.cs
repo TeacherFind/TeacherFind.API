@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using TeacherFind.Application.Abstractions.Services;
+using TeacherFind.Application.Features.Notifications;
 using TeacherFind.Contracts.Listings;
 
 namespace TeacherFind.API.Controllers;

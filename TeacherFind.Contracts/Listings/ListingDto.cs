@@ -17,4 +17,5 @@ public class ListingDto
     public bool IsApproved { get; set; }
     public int ViewCount { get; set; }
     public string CityName { get; set; } = default!;
+    public string? TeacherName { get; set; }
 }

@@ -15,6 +15,14 @@ public class MeResponse
     public string Email { get; set; } = default!;
 
     public string Role { get; set; } = default!;
+    public int RoleValue { get; set; }
 
     public string? AvatarUrl { get; set; }
+
+    public string? PhoneNumber { get; set; }
+
+    public Guid? CityId { get; set; }
+
+    public string? CityName { get; set; }
+
 }
