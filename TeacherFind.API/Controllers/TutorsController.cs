@@ -53,16 +53,31 @@ public class TutorsController : ControllerBase
     // Tutor Profile
     // =====================================================
 
-    [Authorize(Policy = "TutorOnly")]
     [HttpGet("profile")]
+    [Authorize(Policy = "TutorOnly")]
     public async Task<IActionResult> GetMyProfile()
     {
         var currentUserId = GetRequiredCurrentUserId();
-
         var profile = await _tutorService.GetMyProfileAsync(currentUserId);
 
         if (profile is null)
-            return NotFound(new { message = "Öğretmen profili bulunamadı." });
+        {
+            // Profile doesn't exist yet — return a minimal response from user data
+            // so frontend never falls back to /api/auth/me
+            var user = await _userRepository.GetByIdAsync(currentUserId);
+            if (user is null) return Unauthorized();
+
+            return Ok(new TutorProfileDto
+            {
+                UserId = user.Id,
+                FullName = user.FullName,
+                Email = user.Email,
+                PhoneNumber = user.PhoneNumber,
+                ProfileImageUrl = user.ProfileImageUrl,
+                Rating = 0,
+                TotalReviews = 0
+            });
+        }
 
         return Ok(profile);
     }
