@@ -467,6 +467,7 @@ public class AppDbContext : DbContext
 
             entity.HasIndex(x => x.Category);
             entity.HasIndex(x => x.Level);
+
         });
     }
 
