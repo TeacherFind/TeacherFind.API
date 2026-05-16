@@ -26,4 +26,5 @@ public class Subject
     public string Level { get; set; } = default!;
 
     public bool IsActive { get; set; } = true;
+    public int ParentId { get; set; }
 }
