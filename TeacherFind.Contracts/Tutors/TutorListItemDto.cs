@@ -22,4 +22,7 @@ public class TutorListItemDto
     public double Rating { get; set; }
     public int ReviewCount { get; set; }
     public bool IsFavorite { get; set; }
+    public string? PhoneNumber { get; set; }
+
+    public List<ListingPhotoDto> Photos { get; set; } = new();
 }
