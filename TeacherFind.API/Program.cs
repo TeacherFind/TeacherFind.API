@@ -214,6 +214,7 @@ internal class Program
         builder.Services.AddScoped<IVerificationRepository, VerificationRepository>();
         builder.Services.AddScoped<IReportRepository, ReportRepository>();
         builder.Services.AddScoped<IBookingRepository, BookingRepository>();
+        builder.Services.AddHttpContextAccessor();
 
         // =====================================================
         // Dependency Injection - Application Services
