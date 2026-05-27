@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace TeacherFind.Mobile.Core.Abstractions
 {
-    internal class ILessonRequestService
+    internal class IBookingService
     {
     }
 }

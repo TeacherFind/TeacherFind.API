@@ -6,7 +6,12 @@ using System.Threading.Tasks;
 
 namespace TeacherFind.Mobile.Core.Abstractions
 {
-    internal class IUserSession
+     public interface IUserSession
     {
+        Guid? UserId { get; }
+        string? UserRole { get; }
+        bool IsAuthenticated { get; }
+        void StartSession(Guid userId, string role);
+        void ClearSession();
     }
 }

@@ -6,7 +6,10 @@ using System.Threading.Tasks;
 
 namespace TeacherFind.Mobile.Core.Abstractions
 {
-    internal class ITokenStorage
+    public interface ITokenStorage
     {
+        Task SaveTokenAsync(string token);
+        Task<string?> GetTokenAsync();
+        Task ClearTokenAsync();
     }
 }

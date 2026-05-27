@@ -1,12 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
+using TeacherFind.Mobile.Core.Models;
 
-namespace TeacherFind.Mobile.Core.Abstractions
+namespace TeacherFind.Mobile.Core.Abstractions;
+
+public interface IApiService
 {
-    internal class IApiService
-    {
-    }
+    Task<ApiRequestResult<T>> GetAsync<T>(string url);
+    Task<ApiRequestResult<T>> PostAsync<T, TData>(string url, TData data);
+    Task<ApiRequestResult<T>> PutAsync<T, TData>(string url, TData data);
+    Task<ApiRequestResult<bool>> DeleteAsync(string url);
 }
