@@ -54,6 +54,10 @@ namespace TeacherFind.Mobile
             builder.Services.AddTransient<TeacherFind.Mobile.Features.Profile.Views.ProfileSettingsPage>();
             builder.Services.AddTransient<TeacherFind.Mobile.Features.Profile.ViewModels.ProfileSettingsViewModel>();
 
+            // --- Arama ve Filtreleme Modülü (Search) ---
+            builder.Services.AddTransient<TeacherFind.Mobile.Features.Search.Views.SearchFilterPage>();
+            builder.Services.AddTransient<TeacherFind.Mobile.Features.Search.ViewModels.SearchFilterViewModel>();
+
             return builder.Build();
         }
     }

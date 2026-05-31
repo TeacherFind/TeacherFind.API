@@ -52,10 +52,10 @@
                         <Label Text="Seçiniz" FontSize="14" FontAttributes="Bold"/>
                     </VerticalStackLayout>
 
-                    <Border Grid.Column="3" BackgroundColor="#0A194F" StrokeShape="RoundRectangle 25" 
-                            WidthRequest="50" HeightRequest="50" Stroke="Transparent">
-                        <Label Text="🔍" TextColor="White" HorizontalOptions="Center" VerticalOptions="Center"/>
-                    </Border>
+                    <Button Grid.Column="3" BackgroundColor="#0A194F" CornerRadius="25" 
+                         WidthRequest="50" HeightRequest="50" 
+                         Text="🔍" TextColor="White" FontSize="16"
+                         Clicked="OnSearchTapped" />
                 </Grid>
             </Border>
 
@@ -80,7 +80,11 @@
             <VerticalStackLayout Grid.Row="2" Margin="20,30,20,30">
                 <Grid ColumnDefinitions="*, Auto" Margin="0,0,0,15">
                     <Label Grid.Column="0" Text="Öne Çıkan Öğretmenler" FontSize="18" FontAttributes="Bold" TextColor="#0A194F"/>
-                    <Label Grid.Column="1" Text="Tümünü Gör >" FontSize="12" TextColor="Gray" VerticalOptions="Center"/>
+                    <Label Grid.Column="1" Text="Tümünü Gör >" FontSize="12" TextColor="Gray" VerticalOptions="Center">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnSearchTapped" />
+                        </Label.GestureRecognizers>
+                    </Label>
                 </Grid>
 
                 <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" Color="#6C8DF6" HorizontalOptions="Center" Margin="0,20"/>

@@ -32,7 +32,16 @@ public partial class HomePage : ContentPage
     }
     private async void OnSearchTapped(object sender, EventArgs e)
     {
+        // Butona týklandýðýnda motorun kilitlenmesini önlemek için küçük bir bekleme (opsiyonel)
+        await Task.Delay(100);
+
+        // Arama/Listeleme sayfasýný DI Container'dan çekiyoruz
         var teacherListPage = Handler.MauiContext.Services.GetService<TeacherFind.Mobile.Features.Teachers.Views.TeacherListPage>();
-        await Navigation.PushAsync(teacherListPage);
+
+        // O sayfaya geçiþ yapýyoruz
+        if (teacherListPage != null)
+        {
+            await Navigation.PushAsync(teacherListPage);
+        }
     }
 }
