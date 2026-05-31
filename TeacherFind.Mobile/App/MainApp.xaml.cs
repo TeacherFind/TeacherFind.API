@@ -1,12 +1,35 @@
-using TeacherFind.Mobile.Shell;
+using Microsoft.Maui.Controls;
+using Microsoft.Maui.Graphics;
 
-namespace TeacherFind.Mobile; // Namespace BU OLMALI
+namespace TeacherFind.Mobile;
 
-public partial class MainApp : Application // Sýnýf adý BU OLMALI
+public partial class MainApp : Application
 {
     public MainApp()
     {
         InitializeComponent();
-        MainPage = new AppShell();
+
+        // ÇÖKMENÝN ASIL SEBEBÝ BURASIYDI: MainPage asla null kalamaz!
+        // Þimdilik ekrana test için doðrudan kodla yazýlmýþ bir sayfa veriyoruz.
+        MainPage = new ContentPage
+        {
+            BackgroundColor = Colors.DarkSlateBlue,
+            Content = new VerticalStackLayout
+            {
+                VerticalOptions = LayoutOptions.Center,
+                HorizontalOptions = LayoutOptions.Center,
+                Children =
+                {
+                    new Label
+                    {
+                        Text = "A-Muallem Motoru Çalýþýyor! ??",
+                        TextColor = Colors.White,
+                        FontSize = 24,
+                        FontAttributes = FontAttributes.Bold,
+                        HorizontalOptions = LayoutOptions.Center
+                    }
+                }
+            }
+        };
     }
 }
