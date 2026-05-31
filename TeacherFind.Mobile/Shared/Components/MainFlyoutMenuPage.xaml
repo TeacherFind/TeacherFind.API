@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="TeacherFind.Mobile.Shared.Components.MainFlyoutMenuPage"
+             Title="MainFlyoutMenuPage"
+             BackgroundColor="#FFFFFF">
+
+    <Grid RowDefinitions="Auto, *" Padding="20,40,20,20">
+
+        <VerticalStackLayout Grid.Row="0" Margin="0,0,0,30" Spacing="2">
+            <Label Text="Öğrenmenin" FontSize="20" FontAttributes="Bold" TextColor="#212121"/>
+            <Label Text="Çilingirleri" FontSize="16" FontAttributes="Bold" TextColor="#3498db"/>
+        </VerticalStackLayout>
+
+        <CollectionView Grid.Row="1" x:Name="MenuCollectionView" SelectionMode="Single">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Grid ColumnDefinitions="Auto, *" Padding="10,15">
+                        <Label Grid.Column="0" Text="{Binding Icon}" FontSize="18" 
+                               WidthRequest="30" VerticalOptions="Center" HorizontalTextAlignment="Center"/>
+                        <Label Grid.Column="1" Text="{Binding Title}" FontSize="15" 
+                               TextColor="#555555" VerticalOptions="Center" Margin="10,0,0,0"/>
+                    </Grid>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+    </Grid>
+</ContentPage>

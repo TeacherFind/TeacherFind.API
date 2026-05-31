@@ -188,6 +188,9 @@
 	  <MauiXaml Update="Shared\Components\LoadingView.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
+	  <MauiXaml Update="Shared\Components\MainFlyoutMenuPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
 	  <MauiXaml Update="Shared\Components\NotificationBadge.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>

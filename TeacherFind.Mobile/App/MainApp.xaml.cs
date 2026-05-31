@@ -1,35 +1,15 @@
 using Microsoft.Maui.Controls;
-using Microsoft.Maui.Graphics;
+using TeacherFind.Mobile.Shared.Components;
 
 namespace TeacherFind.Mobile;
 
-public partial class MainApp : Application
+public partial class MainApp : global::Microsoft.Maui.Controls.Application
 {
-    public MainApp()
+    public MainApp(MainShellPage mainShellPage)
     {
         InitializeComponent();
 
-        // ÇÖKMENÝN ASIL SEBEBÝ BURASIYDI: MainPage asla null kalamaz!
-        // Þimdilik ekrana test için doðrudan kodla yazýlmýþ bir sayfa veriyoruz.
-        MainPage = new ContentPage
-        {
-            BackgroundColor = Colors.DarkSlateBlue,
-            Content = new VerticalStackLayout
-            {
-                VerticalOptions = LayoutOptions.Center,
-                HorizontalOptions = LayoutOptions.Center,
-                Children =
-                {
-                    new Label
-                    {
-                        Text = "A-Muallem Motoru Çalýþýyor! ??",
-                        TextColor = Colors.White,
-                        FontSize = 24,
-                        FontAttributes = FontAttributes.Bold,
-                        HorizontalOptions = LayoutOptions.Center
-                    }
-                }
-            }
-        };
+        // Tertemiz menülü omurgayý uygulamanýn kalbine koyduk
+        MainPage = mainShellPage;
     }
 }
