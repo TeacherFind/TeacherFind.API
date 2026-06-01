@@ -10,15 +10,18 @@ public class ChatService : IChatService
     private readonly IConversationRepository _conversationRepository;
     private readonly IMessageRepository _messageRepository;
     private readonly IUserRepository _userRepository;
+    private readonly INotificationService _notificationService;
 
     public ChatService(
         IConversationRepository conversationRepository,
         IMessageRepository messageRepository,
-        IUserRepository userRepository)
+        IUserRepository userRepository,
+        INotificationService notificationService)
     {
         _conversationRepository = conversationRepository;
         _messageRepository = messageRepository;
         _userRepository = userRepository;
+        _notificationService = notificationService;
     }
 
     public async Task<MessageDto> SendMessageAsync(Guid senderId, SendMessageDto request)
@@ -56,6 +59,14 @@ public class ChatService : IChatService
 
         await _messageRepository.AddAsync(message);
         await _messageRepository.SaveChangesAsync();
+        await _notificationService.SendNotificationAsync(
+    request.ReceiverId,
+    "Yeni mesaj",
+    $"{sender.FullName} size yeni bir mesaj gönderdi.",
+    "Message",
+    senderId,
+    sender.FullName,
+    $"/messages/{senderId}");
 
         return Map(message);
     }

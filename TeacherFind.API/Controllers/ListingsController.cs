@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 using TeacherFind.Application.Abstractions.Services;
 using TeacherFind.Contracts.Listings;
@@ -19,6 +20,7 @@ public class ListingsController : ControllerBase
 
     // TÜM İLANLAR + FİLTRE + PAGINATION
     [HttpGet]
+    [EnableRateLimiting("PublicListPolicy")]
     public async Task<IActionResult> GetAll([FromQuery] ListingFilterRequestDto request)
     {
         var result = await _listingService.FilterAsync(request);
@@ -27,6 +29,7 @@ public class ListingsController : ControllerBase
 
     // TEK İLAN
     [HttpGet("{id:guid}")]
+    [EnableRateLimiting("PublicListPolicy")]
     public async Task<IActionResult> GetById(Guid id)
     {
         var listing = await _listingService.GetByIdAsync(id);
@@ -40,6 +43,7 @@ public class ListingsController : ControllerBase
     // İLAN OLUŞTUR
     [HttpPost]
     [Authorize]
+    [EnableRateLimiting("WritePolicy")]
     public async Task<IActionResult> Create([FromBody] CreateListingRequestDto request)
     {
         if (request == null)
@@ -59,6 +63,7 @@ public class ListingsController : ControllerBase
     // İLAN GÜNCELLE
     [HttpPut("{id:guid}")]
     [Authorize]
+    [EnableRateLimiting("WritePolicy")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateListingRequestDto request)
     {
         if (request == null)
@@ -81,6 +86,7 @@ public class ListingsController : ControllerBase
     // İLAN SİL
     [HttpDelete("{id:guid}")]
     [Authorize]
+    [EnableRateLimiting("WritePolicy")]
     public async Task<IActionResult> Delete(Guid id)
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value

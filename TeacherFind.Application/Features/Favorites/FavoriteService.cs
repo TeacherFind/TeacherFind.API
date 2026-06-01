@@ -31,7 +31,6 @@ public class FavoriteService : IFavoriteService
 
     public async Task<List<ListingDto>> GetFavoritesAsync(Guid userId)
     {
-        // Single JOIN query — N+1 fixed
         var favorites = await _favoriteRepository.GetUserFavoritesWithListingsAsync(userId);
 
         return favorites
@@ -45,7 +44,9 @@ public class FavoriteService : IFavoriteService
                 Price = f.Listing.Price,
                 IsActive = f.Listing.IsActive,
                 IsApproved = f.Listing.IsApproved,
-                ViewCount = f.Listing.ViewCount
+                ViewCount = f.Listing.ViewCount,
+                TeacherName = f.Listing.TeacherProfile?.User?.FullName ?? "Eğitmen",
+                CityName = f.Listing.City?.Name ?? string.Empty
             })
             .ToList();
     }

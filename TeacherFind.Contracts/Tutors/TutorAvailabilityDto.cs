@@ -11,4 +11,5 @@ public class TutorAvailabilityDto
     public string Day { get; set; } = default!;
     public string Start { get; set; } = default!;
     public string End { get; set; } = default!;
+    public string? Type { get; set; }
 }

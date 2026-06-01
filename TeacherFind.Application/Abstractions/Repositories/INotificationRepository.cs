@@ -10,10 +10,9 @@ namespace TeacherFind.Application.Abstractions.Repositories;
 public interface INotificationRepository
 {
     Task AddAsync(Notification notification);
-
     Task<List<Notification>> GetUserNotificationsAsync(Guid userId);
-
-    Task MarkAsReadAsync(Guid notificationId);
-
+    Task<Notification?> GetByIdAsync(Guid id);
+    Task MarkAsReadAsync(Guid notificationId, Guid userId);
+    Task MarkAllAsReadAsync(Guid userId);
     Task SaveChangesAsync();
 }

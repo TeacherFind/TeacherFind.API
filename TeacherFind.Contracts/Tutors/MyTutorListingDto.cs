@@ -12,7 +12,7 @@ public class MyTutorListingDto
 
     public Guid TeacherProfileId { get; set; }
 
-    public Guid? SubjectId { get; set; }
+    public int? SubjectId { get; set; }
 
     public string? SubjectName { get; set; }
 
@@ -55,4 +55,5 @@ public class MyTutorListingDto
     public DateTime CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
+    public List<ListingPhotoDto>? Photos { get; set; }
 }

@@ -6,6 +6,6 @@ namespace TeacherFind.Application.Abstractions.Services;
 public interface IAuthService
 {
     Task<User> RegisterAsync(RegisterRequest request);
-
     Task<LoginResponse?> LoginAsync(string email, string password);
+    Task<bool> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword);
 }

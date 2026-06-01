@@ -12,7 +12,10 @@ public class TeacherProfile : AuditableEntity
     public string? Bio { get; set; }
     public string? TeachingStyle { get; set; }
     public string? City { get; set; }
-
+    public string? WhatsApp { get; set; }
+    public string? Instagram { get; set; }
+    public string? Facebook { get; set; }
+    public string? LinkedIn { get; set; }
     public double Rating { get; set; }
     public int TotalReviews { get; set; }
 
@@ -27,4 +30,5 @@ public class TeacherProfile : AuditableEntity
 
     public ICollection<TeacherCertificate> Certificates { get; set; } = new List<TeacherCertificate>();
     public ICollection<TeacherAvailability> Availabilities { get; set; } = new List<TeacherAvailability>();
+    public ICollection<TeacherProfileSubject> Subjects { get; set; } = new List<TeacherProfileSubject>();
 }

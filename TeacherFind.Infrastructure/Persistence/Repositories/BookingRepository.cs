@@ -33,7 +33,14 @@ public class BookingRepository : IBookingRepository
             .Include(x => x.TutorUser)
             .FirstOrDefaultAsync(x => x.Id == id);
     }
-
+    public async Task<Booking> GetByIdWithListingAsync(Guid id)
+    {
+        // Assuming you are using Entity Framework Core and your DbContext is named _context
+        return await _context.Bookings
+            .Include(b => b.TeacherListing)
+            .FirstOrDefaultAsync(b => b.Id == id)
+            ?? throw new InvalidOperationException("Booking bulunamadı.");
+    }
     public async Task<List<Booking>> GetByStudentUserIdAsync(Guid studentUserId)
     {
         return await _context.Bookings
@@ -74,6 +81,34 @@ public class BookingRepository : IBookingRepository
                 x.TutorUserId == tutorUserId &&
                 x.Status == BookingStatus.Completed)
             .OrderByDescending(x => x.StartTime)
+            .ToListAsync();
+    }
+
+    public async Task<bool> HasTutorTimeConflictAsync(
+    Guid tutorUserId,
+    DateTime startTime,
+    DateTime endTime)
+    {
+        return await _context.Bookings.AnyAsync(x =>
+            x.TutorUserId == tutorUserId &&
+            (x.Status == BookingStatus.Pending || x.Status == BookingStatus.Approved) &&
+            startTime < x.EndTime &&
+            endTime > x.StartTime);
+    }
+
+    public async Task<List<Booking>> GetOccupiedSlotsByListingAsync(
+        Guid teacherListingId,
+        DateTime from,
+        DateTime to)
+    {
+        return await _context.Bookings
+            .AsNoTracking()
+            .Where(x =>
+                x.TeacherListingId == teacherListingId &&
+                (x.Status == BookingStatus.Pending || x.Status == BookingStatus.Approved) &&
+                x.StartTime < to &&
+                x.EndTime > from)
+            .OrderBy(x => x.StartTime)
             .ToListAsync();
     }
 }

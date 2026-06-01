@@ -10,13 +10,16 @@ public class BookingService : IBookingService
 {
     private readonly IBookingRepository _bookingRepository;
     private readonly IListingRepository _listingRepository;
+    private readonly INotificationService _notificationService;
 
     public BookingService(
         IBookingRepository bookingRepository,
-        IListingRepository listingRepository)
+        IListingRepository listingRepository,
+        INotificationService notificationService)
     {
         _bookingRepository = bookingRepository;
         _listingRepository = listingRepository;
+        _notificationService = notificationService;
     }
 
     public async Task<BookingDto> CreateAsync(
@@ -34,11 +37,21 @@ public class BookingService : IBookingService
         if (!listing.IsActive || !listing.IsApproved)
             throw new InvalidOperationException("Bu ilan şu anda rezervasyon için uygun değil.");
 
+        var tutorUserId = listing.TeacherProfile.UserId;
+
+        var hasConflict = await _bookingRepository.HasTutorTimeConflictAsync(
+            tutorUserId,
+            request.StartTime,
+            request.EndTime);
+
+        if (hasConflict)
+            throw new InvalidOperationException("Bu saat aralığı dolu. Lütfen başka bir saat seçiniz.");
+
         var booking = new Booking
         {
             TeacherListingId = listing.Id,
             StudentUserId = studentUserId,
-            TutorUserId = listing.TeacherProfile.UserId,
+            TutorUserId = tutorUserId,
             StartTime = request.StartTime,
             EndTime = request.EndTime,
             Source = request.Source,
@@ -49,6 +62,12 @@ public class BookingService : IBookingService
         await _bookingRepository.AddAsync(booking);
         await _bookingRepository.SaveChangesAsync();
 
+        await _notificationService.SendNotificationAsync(
+            tutorUserId,
+            "Yeni ders talebi",
+            $"{request.StartTime:dd.MM.yyyy HH:mm} için yeni bir ders talebi aldınız.",
+            "Booking");
+
         var createdBooking = await _bookingRepository.GetByIdWithDetailsAsync(booking.Id);
 
         return MapToDto(createdBooking ?? booking);
@@ -58,14 +77,43 @@ public class BookingService : IBookingService
     {
         var bookings = await _bookingRepository.GetByStudentUserIdAsync(currentUserId);
 
-        return bookings.Select(MapToDto).ToList();
+        return bookings
+            .Select(MapToDto)
+            .ToList();
     }
 
     public async Task<List<BookingDto>> GetTutorBookingsAsync(Guid tutorUserId)
     {
         var bookings = await _bookingRepository.GetByTutorUserIdAsync(tutorUserId);
 
-        return bookings.Select(MapToDto).ToList();
+        return bookings
+            .Select(MapToDto)
+            .ToList();
+    }
+
+    public async Task<List<OccupiedBookingSlotDto>> GetOccupiedSlotsAsync(
+        Guid teacherListingId,
+        DateTime from,
+        DateTime to)
+    {
+        if (to <= from)
+            throw new InvalidOperationException("Bitiş tarihi başlangıç tarihinden sonra olmalıdır.");
+
+        var bookings = await _bookingRepository.GetOccupiedSlotsByListingAsync(
+            teacherListingId,
+            from,
+            to);
+
+        return bookings
+            .Select(x => new OccupiedBookingSlotDto
+            {
+                BookingId = x.Id,
+                TeacherListingId = x.TeacherListingId,
+                StartTime = x.StartTime,
+                EndTime = x.EndTime,
+                Status = x.Status.ToString()
+            })
+            .ToList();
     }
 
     public async Task<bool> ApproveAsync(Guid bookingId, Guid tutorUserId)
@@ -83,6 +131,12 @@ public class BookingService : IBookingService
         booking.UpdatedAt = DateTime.UtcNow;
 
         await _bookingRepository.SaveChangesAsync();
+
+        await _notificationService.SendNotificationAsync(
+            booking.StudentUserId,
+            "Ders talebiniz onaylandı",
+            $"{booking.StartTime:dd.MM.yyyy HH:mm} tarihindeki ders talebiniz onaylandı.",
+            "Booking");
 
         return true;
     }
@@ -106,6 +160,12 @@ public class BookingService : IBookingService
         booking.UpdatedAt = DateTime.UtcNow;
 
         await _bookingRepository.SaveChangesAsync();
+
+        await _notificationService.SendNotificationAsync(
+            booking.StudentUserId,
+            "Ders talebiniz reddedildi",
+            $"{booking.StartTime:dd.MM.yyyy HH:mm} tarihindeki ders talebiniz reddedildi.",
+            "Booking");
 
         return true;
     }
@@ -136,6 +196,16 @@ public class BookingService : IBookingService
 
         await _bookingRepository.SaveChangesAsync();
 
+        var targetUserId = isStudentOwner
+            ? booking.TutorUserId
+            : booking.StudentUserId;
+
+        await _notificationService.SendNotificationAsync(
+            targetUserId,
+            "Ders iptal edildi",
+            $"{booking.StartTime:dd.MM.yyyy HH:mm} tarihindeki ders iptal edildi.",
+            "Booking");
+
         return true;
     }
 
@@ -154,6 +224,12 @@ public class BookingService : IBookingService
         booking.UpdatedAt = DateTime.UtcNow;
 
         await _bookingRepository.SaveChangesAsync();
+
+        await _notificationService.SendNotificationAsync(
+            booking.StudentUserId,
+            "Ders tamamlandı",
+            $"{booking.StartTime:dd.MM.yyyy HH:mm} tarihindeki ders tamamlandı olarak işaretlendi.",
+            "Booking");
 
         return true;
     }
