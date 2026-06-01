@@ -10,66 +10,89 @@ namespace TeacherFind.Application.Features.Auth;
 public class AuthService : IAuthService
 {
     private readonly IUserRepository _userRepository;
-    private readonly ITeacherRepository _teacherRepository;
-    private readonly IVerificationRepository _verificationRepository;
     private readonly IJwtProvider _jwtProvider;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly ITeacherRepository _teacherRepository;
 
     public AuthService(
         IUserRepository userRepository,
-        ITeacherRepository teacherRepository,
-        IVerificationRepository verificationRepository,
         IJwtProvider jwtProvider,
-        IPasswordHasher passwordHasher)
+        IPasswordHasher passwordHasher,
+        ITeacherRepository teacherRepository)
     {
         _userRepository = userRepository;
-        _teacherRepository = teacherRepository;
-        _verificationRepository = verificationRepository;
         _jwtProvider = jwtProvider;
         _passwordHasher = passwordHasher;
+        _teacherRepository = teacherRepository;
     }
 
     public async Task<User> RegisterAsync(RegisterRequest request)
     {
-        var existingUser = await _userRepository.GetByEmailAsync(request.Email);
+        if (request is null)
+            throw new ArgumentNullException(nameof(request));
 
-        if (existingUser is not null)
-            throw new Exception("User already exists");
+        if (string.IsNullOrWhiteSpace(request.FullName))
+            throw new Exception("Ad soyad zorunludur.");
 
-        var role = ResolveRegisterRole(request.Role);
+        if (string.IsNullOrWhiteSpace(request.Email))
+            throw new Exception("E-posta adresi zorunludur.");
+
+        if (string.IsNullOrWhiteSpace(request.Password) || request.Password.Length < 6)
+            throw new Exception("Şifre en az 6 karakter olmalıdır.");
+
+        var normalizedEmail = NormalizeEmail(request.Email);
+
+        var existing = await _userRepository.GetByEmailAsync(normalizedEmail);
+
+        if (existing is not null)
+            throw new Exception("Bu e-posta adresi zaten kullanılıyor.");
+
+        var role = request.Role == UserRole.Tutor
+            ? UserRole.Tutor
+            : UserRole.Student;
 
         var user = new User
         {
             FullName = request.FullName.Trim(),
-            Email = request.Email.Trim(),
+            Email = normalizedEmail,
             PasswordHash = _passwordHasher.Hash(request.Password),
             Role = role,
+            PhoneNumber = string.IsNullOrWhiteSpace(request.PhoneNumber)
+                ? null
+                : request.PhoneNumber.Trim(),
+            CityId = request.CityId,
             IsActive = true,
             IsEmailVerified = false,
-            IsPhoneVerified = false
+            IsPhoneVerified = false,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
         };
 
         await _userRepository.AddAsync(user);
-
-        if (user.Role == UserRole.Tutor)
-        {
-            var teacherProfile = CreateInitialTeacherProfile(user);
-            await _teacherRepository.AddAsync(teacherProfile);
-        }
-
-        var verificationCode = CreatePhoneVerificationCode(user.Id);
-        await _verificationRepository.AddAsync(verificationCode);
-
         await _userRepository.SaveChangesAsync();
 
-        Console.WriteLine($"SMS CODE: {verificationCode.Code}");
+        if (role == UserRole.Tutor)
+        {
+            var teacherProfile = CreateTeacherProfile(user, request);
+
+            await _teacherRepository.AddAsync(teacherProfile);
+            await _teacherRepository.SaveChangesAsync();
+        }
 
         return user;
     }
 
     public async Task<LoginResponse?> LoginAsync(string email, string password)
     {
-        var user = await _userRepository.GetByEmailAsync(email.Trim());
+        if (string.IsNullOrWhiteSpace(email) ||
+            string.IsNullOrWhiteSpace(password))
+        {
+            return null;
+        }
+
+        var normalizedEmail = NormalizeEmail(email);
+
+        var user = await _userRepository.GetByEmailAsync(normalizedEmail);
 
         if (user is null)
             return null;
@@ -77,9 +100,14 @@ public class AuthService : IAuthService
         if (!user.IsActive)
             return null;
 
-        var isValidPassword = _passwordHasher.Verify(password, user.PasswordHash);
+        var isPasswordValid = _passwordHasher.Verify(
+            password,
+            user.PasswordHash);
 
-        if (!isValidPassword)
+        if (!isPasswordValid)
+            return null;
+
+        if (!user.IsEmailVerified && !user.IsPhoneVerified)
             return null;
 
         var token = _jwtProvider.GenerateToken(user);
@@ -90,43 +118,100 @@ public class AuthService : IAuthService
             UserId = user.Id,
             FullName = user.FullName,
             Email = user.Email,
-            Role = user.Role.ToString()
+            Role = user.Role.ToString(),
+            RoleValue = (int)user.Role,
+            PhoneNumber = user.PhoneNumber,
+            CityId = user.CityId,
+            CityName = user.City?.Name
         };
     }
 
-    private static UserRole ResolveRegisterRole(UserRole requestedRole)
+    public async Task<bool> ChangePasswordAsync(
+        Guid userId,
+        string currentPassword,
+        string newPassword)
     {
-        return requestedRole == UserRole.Tutor
-            ? UserRole.Tutor
-            : UserRole.Student;
+        if (string.IsNullOrWhiteSpace(currentPassword))
+            return false;
+
+        if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 6)
+            return false;
+
+        var user = await _userRepository.GetByIdAsync(userId);
+
+        if (user is null)
+            return false;
+
+        var isCurrentPasswordValid = _passwordHasher.Verify(
+            currentPassword,
+            user.PasswordHash);
+
+        if (!isCurrentPasswordValid)
+            return false;
+
+        user.PasswordHash = _passwordHasher.Hash(newPassword);
+        user.RefreshToken = null;
+        user.RefreshTokenExpiryTime = null;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _userRepository.SaveChangesAsync();
+
+        return true;
     }
 
-    private static TeacherProfile CreateInitialTeacherProfile(User user)
+    private static TeacherProfile CreateTeacherProfile(
+        User user,
+        RegisterRequest request)
     {
-        return new TeacherProfile
+        var teacherProfile = new TeacherProfile
         {
             UserId = user.Id,
             Title = $"{user.FullName} öğretmen profili",
-            Headline = null,
-            Bio = null,
-            TeachingStyle = null,
-            City = null,
+            Bio = request.Bio?.Trim(),
+            UniversityId = request.UniversityId,
+            DepartmentId = request.DepartmentId,
             Rating = 0,
             TotalReviews = 0,
-            EducationLevel = null,
             IsStudent = false
         };
+
+        if (request.Certificates is not null)
+        {
+            foreach (var cert in request.Certificates)
+            {
+                if (string.IsNullOrWhiteSpace(cert.Name))
+                    continue;
+
+                teacherProfile.Certificates.Add(new TeacherCertificate
+                {
+                    Name = cert.Name.Trim(),
+                    Organization = cert.Organization?.Trim() ?? string.Empty,
+                    Year = cert.Year ?? DateTime.UtcNow.Year,
+                    FileUrl = cert.FileUrl
+                });
+            }
+        }
+
+        if (request.Subjects is not null)
+        {
+            foreach (var sub in request.Subjects)
+            {
+                teacherProfile.Subjects.Add(new TeacherProfileSubject
+                {
+                    SubjectId = sub.SubjectId,
+                    Stage = sub.Stage?.Trim(),
+                    Category = sub.Category?.Trim(),
+                    Name = sub.Name?.Trim(),
+                    Level = sub.Level?.Trim()
+                });
+            }
+        }
+
+        return teacherProfile;
     }
 
-    private static VerificationCode CreatePhoneVerificationCode(Guid userId)
+    private static string NormalizeEmail(string email)
     {
-        return new VerificationCode
-        {
-            UserId = userId,
-            Code = Random.Shared.Next(100000, 999999).ToString(),
-            Type = "Phone",
-            ExpireAt = DateTime.UtcNow.AddMinutes(5),
-            IsUsed = false
-        };
+        return email.Trim().ToLowerInvariant();
     }
 }

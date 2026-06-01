@@ -22,6 +22,9 @@ public class BookingsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateBookingRequestDto request)
     {
+        if (request is null)
+            return BadRequest(new { message = "Rezervasyon bilgileri gönderilmedi." });
+
         var currentUserId = GetRequiredCurrentUserId();
 
         try
@@ -46,12 +49,44 @@ public class BookingsController : ControllerBase
         return Ok(result);
     }
 
+    // GET /api/bookings/occupied?teacherListingId=...&from=2026-05-01&to=2026-05-08
+    [AllowAnonymous]
+    [HttpGet("occupied")]
+    public async Task<IActionResult> GetOccupiedSlots(
+        [FromQuery] Guid teacherListingId,
+        [FromQuery] DateTime from,
+        [FromQuery] DateTime to)
+    {
+        if (teacherListingId == Guid.Empty)
+            return BadRequest(new { message = "Öğretmen ilan ID bilgisi zorunludur." });
+
+        if (from == default || to == default)
+            return BadRequest(new { message = "Başlangıç ve bitiş tarihi zorunludur." });
+
+        try
+        {
+            var result = await _bookingService.GetOccupiedSlotsAsync(
+                teacherListingId,
+                from,
+                to);
+
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     // PUT /api/bookings/{id}/cancel
     [HttpPut("{id:guid}/cancel")]
     public async Task<IActionResult> Cancel(
         Guid id,
         [FromBody] CancelBookingRequestDto request)
     {
+        if (request is null)
+            return BadRequest(new { message = "İptal bilgisi gönderilmedi." });
+
         var currentUserId = GetRequiredCurrentUserId();
 
         try

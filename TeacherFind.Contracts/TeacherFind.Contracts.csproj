@@ -10,11 +10,13 @@
     <Folder Include="LessonRequests\" />
     <Folder Include="Favorites\" />
     <Folder Include="Enums\" />
-    <Folder Include="Notifications\" />
-    <Folder Include="Reviews\" />
     <Folder Include="Parents\" />
     <Folder Include="Teachers\" />
     <Folder Include="Users\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.26" />
   </ItemGroup>
 
   <ItemGroup>

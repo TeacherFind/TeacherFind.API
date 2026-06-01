@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿#nullable disable
+using Microsoft.EntityFrameworkCore;
 using TeacherFind.Application.Abstractions.Repositories;
 using TeacherFind.Domain.Entities;
 
@@ -16,7 +17,7 @@ public class FavoriteRepository : IFavoriteRepository
         _context.Favorites.Remove(favorite);
         return Task.CompletedTask;
     }
-    public async Task<Favorite?> GetAsync(Guid userId, Guid listingId)
+    public async Task<Favorite> GetAsync(Guid userId, Guid listingId)
         => await _context.Favorites
             .FirstOrDefaultAsync(x => x.UserId == userId && x.ListingId == listingId);
 
@@ -27,6 +28,12 @@ public class FavoriteRepository : IFavoriteRepository
     public async Task<List<Favorite>> GetUserFavoritesWithListingsAsync(Guid userId)
         => await _context.Favorites
             .Include(f => f.Listing)
+                .ThenInclude(l => l.TeacherProfile)
+                    .ThenInclude(p => p.User)
+            .Include(f => f.Listing)
+                .ThenInclude(l => l.City)
+            .Include(f => f.Listing)
+                .ThenInclude(l => l.Subject)
             .Where(x => x.UserId == userId)
             .ToListAsync();
 

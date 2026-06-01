@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -22,4 +23,16 @@ public interface IBookingRepository
     Task<List<Booking>> GetCompletedByTutorUserIdAsync(Guid tutorUserId);
 
     Task SaveChangesAsync();
+
+    Task<Booking> GetByIdWithListingAsync(Guid id);
+
+    Task<bool> HasTutorTimeConflictAsync(
+    Guid tutorUserId,
+    DateTime startTime,
+    DateTime endTime);
+
+    Task<List<Booking>> GetOccupiedSlotsByListingAsync(
+        Guid teacherListingId,
+        DateTime from,
+        DateTime to);
 }

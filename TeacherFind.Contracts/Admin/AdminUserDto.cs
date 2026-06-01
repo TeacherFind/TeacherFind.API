@@ -23,4 +23,5 @@ public class AdminUserDto
     public bool IsPhoneVerified { get; set; }
 
     public string? PhoneNumber { get; set; }
+    public DateTime CreatedAt { get; set; }
 }

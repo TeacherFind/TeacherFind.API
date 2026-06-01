@@ -7,15 +7,22 @@ namespace TeacherFind.Infrastructure.Services.Admin;
 
 public class AdminListingService : IAdminListingService
 {
+    private const string PendingApprovalStatus = "PendingApproval";
+    private const string ActiveStatus = "Active";
+    private const string RejectedStatus = "Rejected";
+    private readonly INotificationService _notificationService;
+
     private readonly AppDbContext _context;
     private readonly IAdminActionLogService _adminActionLogService;
 
     public AdminListingService(
         AppDbContext context,
-        IAdminActionLogService adminActionLogService)
+        IAdminActionLogService adminActionLogService,
+        INotificationService notificationService)
     {
         _context = context;
         _adminActionLogService = adminActionLogService;
+        _notificationService = notificationService;
     }
 
     public async Task<AdminPagedResponse<AdminListingDto>> GetPendingListingsAsync(
@@ -27,7 +34,10 @@ public class AdminListingService : IAdminListingService
 
         var query = _context.TeacherListings
             .AsNoTracking()
-            .Where(x => !x.IsApproved || x.Status == "Pending")
+            .Where(x =>
+                !x.IsApproved &&
+                x.IsActive &&
+                x.Status == PendingApprovalStatus)
             .AsQueryable();
 
         var totalCount = await query.CountAsync();
@@ -39,7 +49,7 @@ public class AdminListingService : IAdminListingService
             .Include(x => x.City)
             .Include(x => x.District)
             .Include(x => x.Neighborhood)
-            .OrderByDescending(x => x.Id)
+            .OrderByDescending(x => x.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Select(x => new AdminListingDto
@@ -121,6 +131,7 @@ public class AdminListingService : IAdminListingService
         string? userAgent)
     {
         var listing = await _context.TeacherListings
+            .Include(x => x.TeacherProfile)
             .FirstOrDefaultAsync(x => x.Id == listingId);
 
         if (listing is null)
@@ -128,7 +139,16 @@ public class AdminListingService : IAdminListingService
 
         listing.IsApproved = true;
         listing.IsActive = true;
-        listing.Status = "Approved";
+        listing.Status = ActiveStatus;
+        await _notificationService.SendNotificationAsync(
+    listing.TeacherProfile.UserId,
+    "İlanınız onaylandı",
+    $"{listing.Title} başlıklı ilanınız onaylandı ve yayına alındı.",
+    "Listing",
+    adminUserId,
+    "Admin",
+    $"/tutor/listings/{listing.Id}");
+        listing.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
 
@@ -137,7 +157,7 @@ public class AdminListingService : IAdminListingService
             "ApproveListing",
             "TeacherListing",
             listing.Id,
-            "Admin approved listing.",
+            "Admin ilanın durumunu Active yaptı.",
             ipAddress,
             userAgent);
 
@@ -152,6 +172,7 @@ public class AdminListingService : IAdminListingService
         string? userAgent)
     {
         var listing = await _context.TeacherListings
+            .Include(x => x.TeacherProfile)
             .FirstOrDefaultAsync(x => x.Id == listingId);
 
         if (listing is null)
@@ -159,7 +180,18 @@ public class AdminListingService : IAdminListingService
 
         listing.IsApproved = false;
         listing.IsActive = false;
-        listing.Status = "Rejected";
+        listing.Status = RejectedStatus;
+        await _notificationService.SendNotificationAsync(
+    listing.TeacherProfile.UserId,
+    "İlanınız reddedildi",
+    string.IsNullOrWhiteSpace(reason)
+        ? $"{listing.Title} başlıklı ilanınız reddedildi."
+        : $"{listing.Title} başlıklı ilanınız reddedildi. Sebep: {reason}",
+    "Listing",
+    adminUserId,
+    "Admin",
+    $"/tutor/listings/{listing.Id}");
+        listing.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
 
@@ -169,8 +201,8 @@ public class AdminListingService : IAdminListingService
             "TeacherListing",
             listing.Id,
             string.IsNullOrWhiteSpace(reason)
-                ? "Admin rejected listing."
-                : $"Admin rejected listing. Reason: {reason}",
+                ? "Admin ilanın durumunu Rejected yaptı."
+                : $"Admin ilanın durumunu Rejected yaptı. Sebep: {reason}",
             ipAddress,
             userAgent);
 

@@ -27,4 +27,5 @@ public class TeacherProfile : AuditableEntity
 
     public ICollection<TeacherCertificate> Certificates { get; set; } = new List<TeacherCertificate>();
     public ICollection<TeacherAvailability> Availabilities { get; set; } = new List<TeacherAvailability>();
+    public ICollection<TeacherProfileSubject> Subjects { get; set; } = new List<TeacherProfileSubject>();
 }

@@ -81,6 +81,27 @@ public class AdminUsersController : ControllerBase
         return Ok(new { message = "Kullanıcı rolü güncellendi" });
     }
 
+    [HttpPut("{id:guid}/make-admin")]
+    [Authorize(Policy = "SuperAdminOnly")]
+    public async Task<IActionResult> MakeAdmin(Guid id)
+    {
+        var adminUserId = GetCurrentUserId();
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var userAgent = Request.Headers.UserAgent.ToString();
+
+        var result = await _adminUserService.UpdateRoleAsync(
+            id,
+            "Admin",
+            adminUserId,
+            ipAddress,
+            userAgent);
+
+        if (!result)
+            return BadRequest(new { message = "Kullanıcı bulunamadı veya admin yapılamadı." });
+
+        return Ok(new { message = "Kullanıcı admin yapıldı." });
+    }
+
     private Guid GetCurrentUserId()
     {
         var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);

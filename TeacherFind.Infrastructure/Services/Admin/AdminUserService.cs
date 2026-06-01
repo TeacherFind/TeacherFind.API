@@ -61,7 +61,8 @@ public class AdminUserService : IAdminUserService
                 IsActive = x.IsActive,
                 IsEmailVerified = x.IsEmailVerified,
                 IsPhoneVerified = x.IsPhoneVerified,
-                PhoneNumber = x.PhoneNumber
+                PhoneNumber = x.PhoneNumber,
+                CreatedAt = x.CreatedAt
             })
             .ToListAsync();
 
@@ -89,7 +90,8 @@ public class AdminUserService : IAdminUserService
                 IsActive = x.IsActive,
                 IsEmailVerified = x.IsEmailVerified,
                 IsPhoneVerified = x.IsPhoneVerified,
-                PhoneNumber = x.PhoneNumber
+                PhoneNumber = x.PhoneNumber,
+                CreatedAt = x.CreatedAt
             })
             .FirstOrDefaultAsync();
     }

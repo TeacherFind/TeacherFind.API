@@ -58,8 +58,8 @@ public class AdminSubjectsController : ControllerBase
     }
 
     // PUT /api/admin/subjects/{id}
-    [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateSubjectDto dto)
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateSubjectDto dto)
     {
         if (dto is null)
             return BadRequest(new { message = "İstek boş olamaz." });
@@ -76,8 +76,8 @@ public class AdminSubjectsController : ControllerBase
     }
 
     // DELETE /api/admin/subjects/{id}
-    [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> Delete(Guid id)
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Delete(int id)
     {
         var subject = await _context.Subjects.FirstOrDefaultAsync(x => x.Id == id);
         if (subject is null)
