@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using TeacherFind.Infrastructure.Persistence;
 
@@ -14,9 +15,11 @@ public class SubjectsController : ControllerBase
 
     // GET /api/subjects
     [HttpGet]
+    [EnableRateLimiting("PublicListPolicy")]
     public async Task<IActionResult> GetAll()
     {
         var subjects = await _context.Subjects
+            .AsNoTracking()
             .Where(x => x.IsActive)
             .OrderBy(x => x.Stage)
             .ThenBy(x => x.Category)
@@ -38,9 +41,11 @@ public class SubjectsController : ControllerBase
 
     // GET /api/subjects/grouped — Stage > Category > Subjects hierarchy
     [HttpGet("grouped")]
+    [EnableRateLimiting("PublicListPolicy")]
     public async Task<IActionResult> GetGrouped()
     {
         var subjects = await _context.Subjects
+            .AsNoTracking()
             .Where(x => x.IsActive)
             .OrderBy(x => x.Stage)
             .ThenBy(x => x.Category)

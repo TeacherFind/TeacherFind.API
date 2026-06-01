@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 using TeacherFind.Application.Abstractions.Repositories;
 using TeacherFind.Application.Abstractions.Services;
@@ -32,6 +33,7 @@ public class TutorsController : ControllerBase
     // =====================================================
 
     [HttpGet]
+    [EnableRateLimiting("public-read-limit")]
     public async Task<IActionResult> GetTutors([FromQuery] TutorFilterRequestDto filter)
     {
         var result = await _tutorService.GetTutorsAsync(filter, GetCurrentUserId());
@@ -39,6 +41,8 @@ public class TutorsController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [EnableRateLimiting("public-read-limit")]
+
     public async Task<IActionResult> GetTutor(Guid id)
     {
         var result = await _tutorService.GetTutorByIdAsync(id, GetCurrentUserId());
