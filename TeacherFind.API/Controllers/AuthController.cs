@@ -1,11 +1,14 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Logging;
 using TeacherFind.Application.Abstractions.Identity;
 using TeacherFind.Application.Abstractions.Repositories;
 using TeacherFind.Application.Abstractions.Services;
 using TeacherFind.Contracts.Auth;
 using TeacherFind.Domain.Entities;
+using System.Security.Cryptography;
 
 namespace TeacherFind.API.Controllers;
 
@@ -13,34 +16,70 @@ namespace TeacherFind.API.Controllers;
 [Route("api/auth")]
 public class AuthController : ControllerBase
 {
+    private const int VerificationCodeExpireMinutes = 10;
+
+    private const string InvalidLoginMessage = "Email veya şifre hatalı";
+    private const string InvalidCodeMessage = "Kod hatalı veya süresi dolmuş.";
+
+    private const string GenericEmailVerificationMessage =
+        "Eğer bu e-posta kayıtlıysa doğrulama kodu gönderildi.";
+
+    private const string GenericPasswordResetMessage =
+        "Eğer bu e-posta kayıtlıysa sıfırlama kodu gönderildi.";
+
     private readonly IAuthService _authService;
     private readonly IUserRepository _userRepository;
     private readonly IVerificationRepository _verificationRepository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IEmailService _emailService;
+    private readonly ILogger<AuthController> _logger;
 
     public AuthController(
         IAuthService authService,
         IUserRepository userRepository,
         IVerificationRepository verificationRepository,
         IPasswordHasher passwordHasher,
-        IEmailService emailService)
+        IEmailService emailService,
+        ILogger<AuthController> logger)
     {
         _authService = authService;
         _userRepository = userRepository;
         _verificationRepository = verificationRepository;
         _passwordHasher = passwordHasher;
         _emailService = emailService;
+        _logger = logger;
     }
 
+    // POST /api/auth/register
     [HttpPost("register")]
+    [EnableRateLimiting("register-limit")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
+        if (request is null)
+            return BadRequest(new { message = "Kayıt bilgileri gönderilmedi." });
+
         try
         {
-            await _authService.RegisterAsync(request);
-            var loginResult = await _authService.LoginAsync(request.Email, request.Password);
-            return Ok(loginResult);
+            var user = await _authService.RegisterAsync(request);
+
+            try
+            {
+                await CreateAndSendEmailVerificationCodeAsync(user);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Register başarılı oldu ama e-posta doğrulama kodu gönderilemedi. UserId: {UserId}",
+                    user.Id);
+            }
+
+            return Ok(new
+            {
+                message = "Kayıt başarılı. Lütfen e-posta veya telefon doğrulaması yapın.",
+                userId = user.Id,
+                requiresVerification = true
+            });
         }
         catch (Exception ex)
         {
@@ -48,25 +87,64 @@ public class AuthController : ControllerBase
         }
     }
 
+    // POST /api/auth/login
     [HttpPost("login")]
+    [EnableRateLimiting("auth-limit")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
-        var result = await _authService.LoginAsync(request.Email, request.Password);
-        if (result == null)
-            return Unauthorized(new { message = "Email veya şifre hatalı" });
+        if (request is null)
+            return BadRequest(new { message = "Giriş bilgileri gönderilmedi." });
+
+        if (string.IsNullOrWhiteSpace(request.Email) ||
+            string.IsNullOrWhiteSpace(request.Password))
+        {
+            return Unauthorized(new { message = InvalidLoginMessage });
+        }
+
+        var email = NormalizeEmail(request.Email);
+        var user = await _userRepository.GetByEmailAsync(email);
+
+        if (user is null || !user.IsActive)
+            return Unauthorized(new { message = InvalidLoginMessage });
+
+        var isPasswordValid = _passwordHasher.Verify(
+            request.Password,
+            user.PasswordHash);
+
+        if (!isPasswordValid)
+            return Unauthorized(new { message = InvalidLoginMessage });
+
+        if (!user.IsEmailVerified && !user.IsPhoneVerified)
+        {
+            return Unauthorized(new
+            {
+                message = "Hesabınızı kullanmadan önce e-posta veya telefon doğrulaması yapmanız gerekiyor.",
+                requiresVerification = true,
+                userId = user.Id
+            });
+        }
+
+        var result = await _authService.LoginAsync(email, request.Password);
+
+        if (result is null)
+            return Unauthorized(new { message = InvalidLoginMessage });
+
         return Ok(result);
     }
 
+    // GET /api/auth/me
     [Authorize]
     [HttpGet("me")]
     public async Task<IActionResult> Me()
     {
         var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
         if (!Guid.TryParse(userIdValue, out var userId))
             return Unauthorized(new { message = "Geçersiz token" });
 
         var user = await _userRepository.GetByIdAsync(userId);
-        if (user == null)
+
+        if (user is null)
             return Unauthorized(new { message = "Kullanıcı bulunamadı" });
 
         return Ok(new MeResponse
@@ -85,18 +163,28 @@ public class AuthController : ControllerBase
 
     // POST /api/auth/verify-phone
     [HttpPost("verify-phone")]
+    [EnableRateLimiting("auth-limit")]
     public async Task<IActionResult> VerifyPhone([FromBody] VerifyDto dto)
     {
-        var code = await _verificationRepository.GetValidCode(dto.UserId, dto.Code, "Phone");
-        if (code == null)
-            return BadRequest(new { message = "Kod hatalı veya süresi dolmuş." });
+        if (dto is null)
+            return BadRequest(new { message = "Doğrulama bilgileri gönderilmedi." });
+
+        var code = await _verificationRepository.GetValidCode(
+            dto.UserId,
+            dto.Code,
+            "Phone");
+
+        if (code is null)
+            return BadRequest(new { message = InvalidCodeMessage });
 
         var user = await _userRepository.GetByIdAsync(dto.UserId);
-        if (user == null)
-            return NotFound(new { message = "Kullanıcı bulunamadı" });
+
+        if (user is null)
+            return BadRequest(new { message = InvalidCodeMessage });
 
         code.IsUsed = true;
         user.IsPhoneVerified = true;
+
         await _userRepository.SaveChangesAsync();
 
         return Ok(new { message = "Telefon doğrulandı" });
@@ -104,18 +192,28 @@ public class AuthController : ControllerBase
 
     // POST /api/auth/verify-email
     [HttpPost("verify-email")]
+    [EnableRateLimiting("auth-limit")]
     public async Task<IActionResult> VerifyEmail([FromBody] VerifyDto dto)
     {
-        var code = await _verificationRepository.GetValidCode(dto.UserId, dto.Code, "Email");
-        if (code == null)
-            return BadRequest(new { message = "Kod hatalı veya süresi dolmuş." });
+        if (dto is null)
+            return BadRequest(new { message = "Doğrulama bilgileri gönderilmedi." });
+
+        var code = await _verificationRepository.GetValidCode(
+            dto.UserId,
+            dto.Code,
+            "Email");
+
+        if (code is null)
+            return BadRequest(new { message = InvalidCodeMessage });
 
         var user = await _userRepository.GetByIdAsync(dto.UserId);
-        if (user == null)
-            return NotFound(new { message = "Kullanıcı bulunamadı" });
+
+        if (user is null)
+            return BadRequest(new { message = InvalidCodeMessage });
 
         code.IsUsed = true;
         user.IsEmailVerified = true;
+
         await _userRepository.SaveChangesAsync();
 
         return Ok(new { message = "E-posta doğrulandı" });
@@ -123,94 +221,113 @@ public class AuthController : ControllerBase
 
     // POST /api/auth/resend-email-verification
     [HttpPost("resend-email-verification")]
+    [EnableRateLimiting("auth-limit")]
     public async Task<IActionResult> ResendEmailVerification(
         [FromBody] ResendEmailVerificationDto dto)
     {
-        var user = await _userRepository.GetByEmailAsync(dto.Email);
+        if (dto is null || string.IsNullOrWhiteSpace(dto.Email))
+            return BadRequest(new { message = "E-posta adresi zorunludur." });
 
-        // Always return 200 — don't expose whether email exists
-        if (user == null)
-            return Ok(new { message = "Eğer bu e-posta kayıtlıysa doğrulama kodu gönderildi." });
+        var email = NormalizeEmail(dto.Email);
+        var user = await _userRepository.GetByEmailAsync(email);
 
-        if (user.IsEmailVerified)
-            return BadRequest(new { message = "E-posta zaten doğrulanmış." });
-
-        var code = new VerificationCode
+        if (user is null || user.IsEmailVerified)
         {
-            UserId = user.Id,
-            Code = Random.Shared.Next(100000, 999999).ToString(),
-            Type = "Email",
-            ExpireAt = DateTime.UtcNow.AddMinutes(15),
-            IsUsed = false
-        };
+            return Ok(new
+            {
+                message = GenericEmailVerificationMessage
+            });
+        }
 
-        await _verificationRepository.AddAsync(code);
-        await _verificationRepository.SaveChangesAsync();
+        try
+        {
+            await CreateAndSendEmailVerificationCodeAsync(user);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "E-posta doğrulama kodu gönderilemedi. UserId: {UserId}",
+                user.Id);
+        }
 
-        await _emailService.SendAsync(
-            user.Email,
-            "Özel Ders Burada E-posta Doğrulama Kodunuz",
-            $"""
-            <h2>E-posta Doğrulama</h2>
-            <p>Merhaba,</p>
-            <p>Özel Ders Burada hesabınızı doğrulamak için aşağıdaki kodu kullanın:</p>
-            <h1>{code.Code}</h1>
-            <p>Bu kod 15 dakika geçerlidir.</p>
-            """);
-
-        return Ok(new { message = "Eğer bu e-posta kayıtlıysa doğrulama kodu gönderildi." });
+        return Ok(new
+        {
+            message = GenericEmailVerificationMessage
+        });
     }
 
     // POST /api/auth/forgot-password
     [HttpPost("forgot-password")]
-    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
+    [EnableRateLimiting("auth-limit")]
+    public async Task<IActionResult> ForgotPassword(
+        [FromBody] ForgotPasswordDto dto)
     {
-        var user = await _userRepository.GetByEmailAsync(dto.Email);
+        if (dto is null || string.IsNullOrWhiteSpace(dto.Email))
+            return BadRequest(new { message = "E-posta adresi zorunludur." });
 
-        if (user == null)
-            return Ok(new { message = "Eğer bu e-posta kayıtlıysa sıfırlama kodu gönderildi." });
+        var email = NormalizeEmail(dto.Email);
+        var user = await _userRepository.GetByEmailAsync(email);
 
-        var code = new VerificationCode
+        if (user is not null && user.IsActive)
         {
-            UserId = user.Id,
-            Code = Random.Shared.Next(100000, 999999).ToString(),
-            Type = "PasswordReset",
-            ExpireAt = DateTime.UtcNow.AddMinutes(15),
-            IsUsed = false
-        };
+            try
+            {
+                await CreateAndSendPasswordResetCodeAsync(user);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Şifre sıfırlama kodu gönderilemedi. UserId: {UserId}",
+                    user.Id);
+            }
+        }
 
-        await _verificationRepository.AddAsync(code);
-        await _verificationRepository.SaveChangesAsync();
-
-        await _emailService.SendAsync(
-            user.Email,
-            "Özel Ders Burada Şifre Sıfırlama Kodunuz",
-            $"""
-            <h2>Şifre Sıfırlama</h2>
-            <p>Şifrenizi sıfırlamak için aşağıdaki kodu kullanın:</p>
-            <h1>{code.Code}</h1>
-            <p>Bu kod 15 dakika geçerlidir.</p>
-            """);
-
-        return Ok(new { message = "Sıfırlama kodu e-posta adresinize gönderildi." });
+        return Ok(new
+        {
+            message = GenericPasswordResetMessage
+        });
     }
 
     // POST /api/auth/reset-password
     [HttpPost("reset-password")]
-    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
+    [EnableRateLimiting("auth-limit")]
+    public async Task<IActionResult> ResetPassword(
+        [FromBody] ResetPasswordDto dto)
     {
-        var user = await _userRepository.GetByEmailAsync(dto.Email);
-        if (user == null)
-            return BadRequest(new { message = "Geçersiz istek." });
+        if (dto is null)
+            return BadRequest(new { message = "Şifre sıfırlama bilgileri gönderilmedi." });
 
-        var code = await _verificationRepository.GetValidCode(user.Id, dto.Code, "PasswordReset");
-        if (code == null)
-            return BadRequest(new { message = "Kod hatalı veya süresi dolmuş." });
+        if (string.IsNullOrWhiteSpace(dto.Email) ||
+            string.IsNullOrWhiteSpace(dto.Code) ||
+            string.IsNullOrWhiteSpace(dto.NewPassword))
+        {
+            return BadRequest(new { message = InvalidCodeMessage });
+        }
 
-        if (string.IsNullOrWhiteSpace(dto.NewPassword) || dto.NewPassword.Length < 6)
+        if (dto.NewPassword.Length < 6)
             return BadRequest(new { message = "Şifre en az 6 karakter olmalıdır." });
 
+        var email = NormalizeEmail(dto.Email);
+        var user = await _userRepository.GetByEmailAsync(email);
+
+        if (user is null)
+            return BadRequest(new { message = InvalidCodeMessage });
+
+        var code = await _verificationRepository.GetValidCode(
+            user.Id,
+            dto.Code,
+            "PasswordReset");
+
+        if (code is null)
+            return BadRequest(new { message = InvalidCodeMessage });
+
         user.PasswordHash = _passwordHasher.Hash(dto.NewPassword);
+        user.RefreshToken = null;
+        user.RefreshTokenExpiryTime = null;
+        user.UpdatedAt = DateTime.UtcNow;
+
         code.IsUsed = true;
 
         await _userRepository.SaveChangesAsync();
@@ -219,24 +336,104 @@ public class AuthController : ControllerBase
     }
 
     // POST /api/auth/change-password
-    [HttpPost("change-password")]
     [Authorize]
-    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
+    [HttpPost("change-password")]
+    [EnableRateLimiting("auth-limit")]
+    public async Task<IActionResult> ChangePassword(
+        [FromBody] ChangePasswordDto dto)
     {
         if (dto is null)
             return BadRequest(new { message = "İstek boş olamaz." });
 
-        if (string.IsNullOrWhiteSpace(dto.NewPassword) || dto.NewPassword.Length < 6)
+        if (string.IsNullOrWhiteSpace(dto.CurrentPassword))
+            return BadRequest(new { message = "Mevcut şifre zorunludur." });
+
+        if (string.IsNullOrWhiteSpace(dto.NewPassword) ||
+            dto.NewPassword.Length < 6)
+        {
             return BadRequest(new { message = "Yeni şifre en az 6 karakter olmalıdır." });
+        }
 
         var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!Guid.TryParse(userIdValue, out var userId))
-            return Unauthorized();
 
-        var success = await _authService.ChangePasswordAsync(userId, dto.CurrentPassword, dto.NewPassword);
+        if (!Guid.TryParse(userIdValue, out var userId))
+            return Unauthorized(new { message = "Geçersiz token." });
+
+        var success = await _authService.ChangePasswordAsync(
+            userId,
+            dto.CurrentPassword,
+            dto.NewPassword);
+
         if (!success)
             return BadRequest(new { message = "Mevcut şifre hatalı." });
 
         return Ok(new { message = "Şifre başarıyla değiştirildi." });
+    }
+
+    // =====================================================
+    // Private Helpers
+    // =====================================================
+
+    private async Task CreateAndSendEmailVerificationCodeAsync(User user)
+    {
+        var code = new VerificationCode
+        {
+            UserId = user.Id,
+            Code = GenerateSixDigitCode(),
+            Type = "Email",
+            ExpireAt = DateTime.UtcNow.AddMinutes(VerificationCodeExpireMinutes),
+            IsUsed = false
+        };
+
+        await _verificationRepository.AddAsync(code);
+        await _verificationRepository.SaveChangesAsync();
+
+        await _emailService.SendAsync(
+            user.Email,
+            "Özel Ders VIP E-posta Doğrulama Kodunuz",
+            $"""
+            <h2>E-posta Doğrulama</h2>
+            <p>Merhaba,</p>
+            <p>Özel Ders VIP hesabınızı doğrulamak için aşağıdaki kodu kullanın:</p>
+            <h1>{code.Code}</h1>
+            <p>Bu kod {VerificationCodeExpireMinutes} dakika geçerlidir.</p>
+            """);
+    }
+
+    private async Task CreateAndSendPasswordResetCodeAsync(User user)
+    {
+        var code = new VerificationCode
+        {
+            UserId = user.Id,
+            Code = GenerateSixDigitCode(),
+            Type = "PasswordReset",
+            ExpireAt = DateTime.UtcNow.AddMinutes(VerificationCodeExpireMinutes),
+            IsUsed = false
+        };
+
+        await _verificationRepository.AddAsync(code);
+        await _verificationRepository.SaveChangesAsync();
+
+        await _emailService.SendAsync(
+            user.Email,
+            "Özel Ders VIP Şifre Sıfırlama Kodunuz",
+            $"""
+            <h2>Şifre Sıfırlama</h2>
+            <p>Şifrenizi sıfırlamak için aşağıdaki kodu kullanın:</p>
+            <h1>{code.Code}</h1>
+            <p>Bu kod {VerificationCodeExpireMinutes} dakika geçerlidir.</p>
+            """);
+    }
+
+    private static string GenerateSixDigitCode()
+    {
+        return RandomNumberGenerator
+            .GetInt32(100000, 1000000)
+            .ToString();
+    }
+
+    private static string NormalizeEmail(string email)
+    {
+        return email.Trim();
     }
 }

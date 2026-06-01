@@ -1,12 +1,16 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 using TeacherFind.API.Hubs;
+using TeacherFind.API.Middleware;
 using TeacherFind.Application.Abstractions.Identity;
 using TeacherFind.Application.Abstractions.Repositories;
 using TeacherFind.Application.Abstractions.Services;
@@ -26,9 +30,7 @@ using TeacherFind.Infrastructure.Persistence.Repositories;
 using TeacherFind.Infrastructure.Persistence.Seed;
 using TeacherFind.Infrastructure.Services.Admin;
 using TeacherFind.Infrastructure.Services.Education;
-using TeacherFind.API.Middleware;
 using TeacherFind.Infrastructure.Services.Email;
-using Microsoft.AspNetCore.Http.Features;
 
 internal class Program
 {
@@ -50,7 +52,22 @@ internal class Program
         // =====================================================
 
         builder.Services.AddDbContext<AppDbContext>(options =>
-            options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+            options.UseSqlServer(
+                builder.Configuration.GetConnectionString("DefaultConnection")));
+
+        // =====================================================
+        // Forwarded Headers
+        // Cloudflare / Nginx / Reverse Proxy için
+        // =====================================================
+
+        builder.Services.Configure<ForwardedHeadersOptions>(options =>
+        {
+            options.ForwardedHeaders =
+                ForwardedHeaders.XForwardedFor |
+                ForwardedHeaders.XForwardedProto;
+
+            options.ForwardLimit = 1;
+        });
 
         // =====================================================
         // JWT Authentication
@@ -59,7 +76,8 @@ internal class Program
         var jwtKey = builder.Configuration["Jwt:Key"]
             ?? throw new InvalidOperationException("Jwt:Key bulunamadı.");
 
-        var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
+        var signingKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(jwtKey));
 
         builder.Services
             .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -67,10 +85,14 @@ internal class Program
             {
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
+                    ValidateIssuer = builder.Environment.IsProduction(),
+                    ValidateAudience = builder.Environment.IsProduction(),
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
+
+                    ValidIssuer = builder.Configuration["Jwt:Issuer"],
+                    ValidAudience = builder.Configuration["Jwt:Audience"],
+
                     IssuerSigningKey = signingKey,
                     ClockSkew = TimeSpan.Zero
                 };
@@ -95,31 +117,107 @@ internal class Program
             });
 
         // =====================================================
+        // Rate Limiting
+        // =====================================================
+
+        builder.Services.AddRateLimiter(options =>
+        {
+            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+            options.OnRejected = async (context, cancellationToken) =>
+            {
+                context.HttpContext.Response.StatusCode =
+                    StatusCodes.Status429TooManyRequests;
+
+                context.HttpContext.Response.ContentType = "application/json";
+
+                await context.HttpContext.Response.WriteAsync(
+                    JsonSerializer.Serialize(new
+                    {
+                        message = "Çok fazla istek gönderdiniz. Lütfen biraz sonra tekrar deneyin."
+                    }),
+                    cancellationToken);
+            };
+
+            options.AddPolicy("auth-limit", httpContext =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: GetClientIp(httpContext),
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 10,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueLimit = 0,
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+                    }));
+
+            options.AddPolicy("register-limit", httpContext =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: GetClientIp(httpContext),
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 3,
+                        Window = TimeSpan.FromMinutes(10),
+                        QueueLimit = 0,
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+                    }));
+
+            options.AddPolicy("public-read-limit", httpContext =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: GetClientIp(httpContext),
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 60,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueLimit = 0,
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+                    }));
+        });
+
+        static string GetClientIp(HttpContext context)
+        {
+            return context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        }
+
+        // =====================================================
         // Authorization Policies
         // =====================================================
 
         builder.Services.AddAuthorization(options =>
         {
-            options.AddPolicy("StudentOnly", policy => policy.RequireRole("Student", "Admin", "SuperAdmin"));
-            options.AddPolicy("TutorOnly", policy => policy.RequireRole("Tutor", "Admin", "SuperAdmin"));
-            options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin", "SuperAdmin"));
-            options.AddPolicy("SuperAdminOnly", policy => policy.RequireRole("SuperAdmin"));
+            options.AddPolicy("StudentOnly", policy =>
+                policy.RequireRole("Student", "Admin", "SuperAdmin"));
+
+            options.AddPolicy("TutorOnly", policy =>
+                policy.RequireRole("Tutor", "Admin", "SuperAdmin"));
+
+            options.AddPolicy("AdminOnly", policy =>
+                policy.RequireRole("Admin", "SuperAdmin"));
+
+            options.AddPolicy("SuperAdminOnly", policy =>
+                policy.RequireRole("SuperAdmin"));
         });
 
         // =====================================================
         // CORS
         // =====================================================
 
+        var allowedOrigins = builder.Configuration
+            .GetSection("Cors:AllowedOrigins")
+            .Get<string[]>()
+            ?? new[]
+            {
+                "http://localhost:5173",
+                "https://localhost:5173",
+                "http://localhost:3000",
+                "https://localhost:3000"
+            };
+
         builder.Services.AddCors(options =>
         {
             options.AddPolicy("Frontend", policy =>
             {
                 policy
-                    .WithOrigins(
-                        "http://localhost:5173",
-                        "https://localhost:5173",
-                        "http://localhost:3000",
-                        "https://localhost:3000")
+                    .WithOrigins(allowedOrigins)
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowCredentials();
@@ -130,13 +228,18 @@ internal class Program
         // Framework Services
         // =====================================================
 
-        builder.Services.AddControllers()
+        builder.Services
+            .AddControllers()
             .AddJsonOptions(options =>
             {
-                options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
-                options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-                options.JsonSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
+                options.JsonSerializerOptions.ReferenceHandler =
+                    ReferenceHandler.IgnoreCycles;
 
+                options.JsonSerializerOptions.PropertyNamingPolicy =
+                    JsonNamingPolicy.CamelCase;
+
+                options.JsonSerializerOptions.DictionaryKeyPolicy =
+                    JsonNamingPolicy.CamelCase;
             });
 
         builder.Services.Configure<ApiBehaviorOptions>(options =>
@@ -147,11 +250,13 @@ internal class Program
                     .Where(x => x.Value?.Errors.Count > 0)
                     .ToDictionary(
                         x => x.Key,
-                        x => x.Value!.Errors.Select(e => e.ErrorMessage).ToList());
+                        x => x.Value!.Errors
+                            .Select(e => e.ErrorMessage)
+                            .ToList());
 
                 return new BadRequestObjectResult(new
                 {
-                    message = "İlan bilgileri doğrulanamadı.",
+                    message = "İstek doğrulanamadı.",
                     errors
                 });
             };
@@ -159,6 +264,7 @@ internal class Program
 
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSignalR();
+        builder.Services.AddHttpContextAccessor();
 
         // =====================================================
         // Swagger + JWT
@@ -185,17 +291,17 @@ internal class Program
 
             options.AddSecurityRequirement(new OpenApiSecurityRequirement
             {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
                 {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
+                    new OpenApiSecurityScheme
+                    {
+                        Reference = new OpenApiReference
+                        {
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "Bearer"
+                        }
+                    },
+                    Array.Empty<string>()
                 }
-            },
-            Array.Empty<string>()
-        }
             });
         });
 
@@ -214,7 +320,6 @@ internal class Program
         builder.Services.AddScoped<IVerificationRepository, VerificationRepository>();
         builder.Services.AddScoped<IReportRepository, ReportRepository>();
         builder.Services.AddScoped<IBookingRepository, BookingRepository>();
-        builder.Services.AddHttpContextAccessor();
 
         // =====================================================
         // Dependency Injection - Application Services
@@ -233,7 +338,11 @@ internal class Program
         builder.Services.AddScoped<IBookingService, BookingService>();
         builder.Services.AddScoped<IEducationService, EducationService>();
         builder.Services.AddScoped<IStudentService, StudentService>();
-        // Email
+
+        // =====================================================
+        // Email Service
+        // =====================================================
+
         builder.Services.Configure<EmailOptions>(
             builder.Configuration.GetSection("Email"));
 
@@ -265,12 +374,19 @@ internal class Program
         // Middleware Pipeline
         // =====================================================
 
+        app.UseForwardedHeaders();
+
         app.UseMiddleware<ExceptionHandlingMiddleware>();
+
         app.UseHttpsRedirection();
 
         app.UseStaticFiles();
 
+        app.UseRouting();
+
         app.UseCors("Frontend");
+
+        app.UseRateLimiter();
 
         app.UseAuthentication();
         app.UseAuthorization();
