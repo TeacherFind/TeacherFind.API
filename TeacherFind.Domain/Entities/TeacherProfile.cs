@@ -12,7 +12,10 @@ public class TeacherProfile : AuditableEntity
     public string? Bio { get; set; }
     public string? TeachingStyle { get; set; }
     public string? City { get; set; }
-
+    public string? WhatsApp { get; set; }
+    public string? Instagram { get; set; }
+    public string? Facebook { get; set; }
+    public string? LinkedIn { get; set; }
     public double Rating { get; set; }
     public int TotalReviews { get; set; }
 

@@ -104,6 +104,13 @@ public class TutorService : ITutorService
             TeacherName = profile.User.FullName,
             PhoneNumber = profile.User.PhoneNumber,
             AvatarUrl = BuildFullUrl(profile.User.ProfileImageUrl ?? ""),
+            SocialLinks = new SocialLinksDto
+            {
+                WhatsApp = profile.WhatsApp,
+                Instagram = profile.Instagram,
+                Facebook = profile.Facebook,
+                LinkedIn = profile.LinkedIn
+            },
             Title = listing.Title,
             Bio = listing.Description,
             Price = listing.Price,
@@ -187,6 +194,13 @@ public class TutorService : ITutorService
             DepartmentName = profile.DepartmentEntity?.Name,
             EducationLevel = profile.EducationLevel,
             IsStudent = profile.IsStudent,
+            SocialLinks = new SocialLinksDto
+            {
+                WhatsApp = profile.WhatsApp,
+                Instagram = profile.Instagram,
+                Facebook = profile.Facebook,
+                LinkedIn = profile.LinkedIn
+            },
             Rating = profile.Rating,
             TotalReviews = profile.TotalReviews,
 
@@ -237,6 +251,14 @@ public class TutorService : ITutorService
         if (request.City is not null) profile.City = request.City.Trim();
         if (request.UniversityId is not null) profile.UniversityId = request.UniversityId;
         if (request.DepartmentId is not null) profile.DepartmentId = request.DepartmentId;
+
+        if (request.SocialLinks is not null)
+        {
+            profile.WhatsApp = request.SocialLinks.WhatsApp?.Trim();
+            profile.Instagram = request.SocialLinks.Instagram?.Trim();
+            profile.Facebook = request.SocialLinks.Facebook?.Trim();
+            profile.LinkedIn = request.SocialLinks.LinkedIn?.Trim();
+        }
 
         profile.UpdatedAt = DateTime.UtcNow;
 

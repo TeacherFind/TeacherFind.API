@@ -30,7 +30,7 @@ public class TutorProfileDto
 
     public string? EducationLevel { get; set; }
     public bool? IsStudent { get; set; }
-
+    public SocialLinksDto? SocialLinks { get; set; }
     public double Rating { get; set; }
     public int TotalReviews { get; set; }
 
