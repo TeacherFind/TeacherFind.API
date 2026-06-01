@@ -161,12 +161,23 @@ internal class Program
                         QueueProcessingOrder = QueueProcessingOrder.OldestFirst
                     }));
 
-            options.AddPolicy("public-read-limit", httpContext =>
+            options.AddPolicy("PublicListPolicy", httpContext =>
+    RateLimitPartition.GetFixedWindowLimiter(
+        partitionKey: GetClientIp(httpContext),
+        factory: _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 60,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+        }));
+
+            options.AddPolicy("WritePolicy", httpContext =>
                 RateLimitPartition.GetFixedWindowLimiter(
                     partitionKey: GetClientIp(httpContext),
                     factory: _ => new FixedWindowRateLimiterOptions
                     {
-                        PermitLimit = 60,
+                        PermitLimit = 10,
                         Window = TimeSpan.FromMinutes(1),
                         QueueLimit = 0,
                         QueueProcessingOrder = QueueProcessingOrder.OldestFirst
