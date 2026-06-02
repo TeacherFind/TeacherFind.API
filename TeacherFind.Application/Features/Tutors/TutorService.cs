@@ -722,6 +722,7 @@ public class TutorService : ITutorService
         if (photo is null) return false;
 
         var wasMain = photo.IsMain;
+        var photoUrl = photo.PhotoUrl;
 
         await _listingRepository.RemovePhotoAsync(photo);
 
@@ -741,12 +742,52 @@ public class TutorService : ITutorService
         }
 
         await _listingRepository.SaveChangesAsync();
+
+        DeletePhysicalUploadedFile(photoUrl);
+
         return true;
     }
 
     // =====================================================
     // Helpers
     // =====================================================
+
+    private static void DeletePhysicalUploadedFile(string? relativePath)
+    {
+        if (string.IsNullOrWhiteSpace(relativePath))
+            return;
+
+        try
+        {
+            var normalizedPath = relativePath.Trim();
+
+            if (Uri.TryCreate(normalizedPath, UriKind.Absolute, out var absoluteUri))
+                normalizedPath = absoluteUri.AbsolutePath;
+
+            if (!normalizedPath.StartsWith("/uploads/", StringComparison.OrdinalIgnoreCase))
+                return;
+
+            var uploadsRoot = Path.GetFullPath(
+                Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads"));
+
+            var filePath = Path.GetFullPath(
+                Path.Combine(
+                    Directory.GetCurrentDirectory(),
+                    "wwwroot",
+                    normalizedPath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar)));
+
+            if (!filePath.StartsWith(uploadsRoot, StringComparison.OrdinalIgnoreCase))
+                return;
+
+            if (File.Exists(filePath))
+                File.Delete(filePath);
+        }
+        catch
+        {
+            // Fiziksel dosya silinemese bile veritabanı işlemini bozmayalım.
+            // Gerekirse burada ileride loglama yapılabilir.
+        }
+    }
 
     private string BuildFullUrl(string relativePath)
     {
