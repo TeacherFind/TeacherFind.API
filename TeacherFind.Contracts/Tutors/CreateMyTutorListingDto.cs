@@ -31,6 +31,9 @@ public class CreateMyTutorListingDto : IValidatableObject
     [Range(1, int.MaxValue, ErrorMessage = "Ders süresi 0'dan büyük olmalıdır.")]
     public int LessonDuration { get; set; }
 
+    [MaxLength(500)]
+    public string? YoutubeVideoUrl { get; set; }
+
     public decimal Price { get; set; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext ctx)

@@ -104,8 +104,16 @@ public class TutorService : ITutorService
             TeacherName = profile.User.FullName,
             PhoneNumber = profile.User.PhoneNumber,
             AvatarUrl = BuildFullUrl(profile.User.ProfileImageUrl ?? ""),
+            SocialLinks = new SocialLinksDto
+            {
+                WhatsApp = profile.WhatsApp,
+                Instagram = profile.Instagram,
+                Facebook = profile.Facebook,
+                LinkedIn = profile.LinkedIn
+            },
             Title = listing.Title,
             Bio = listing.Description,
+            YoutubeVideoUrl = listing.YoutubeVideoUrl,
             Price = listing.Price,
             LessonDuration = listing.LessonDuration,
             ServiceType = listing.ServiceType.ToString(),
@@ -187,6 +195,13 @@ public class TutorService : ITutorService
             DepartmentName = profile.DepartmentEntity?.Name,
             EducationLevel = profile.EducationLevel,
             IsStudent = profile.IsStudent,
+            SocialLinks = new SocialLinksDto
+            {
+                WhatsApp = profile.WhatsApp,
+                Instagram = profile.Instagram,
+                Facebook = profile.Facebook,
+                LinkedIn = profile.LinkedIn
+            },
             Rating = profile.Rating,
             TotalReviews = profile.TotalReviews,
 
@@ -238,6 +253,14 @@ public class TutorService : ITutorService
         if (request.UniversityId is not null) profile.UniversityId = request.UniversityId;
         if (request.DepartmentId is not null) profile.DepartmentId = request.DepartmentId;
 
+        if (request.SocialLinks is not null)
+        {
+            profile.WhatsApp = request.SocialLinks.WhatsApp?.Trim();
+            profile.Instagram = request.SocialLinks.Instagram?.Trim();
+            profile.Facebook = request.SocialLinks.Facebook?.Trim();
+            profile.LinkedIn = request.SocialLinks.LinkedIn?.Trim();
+        }
+
         profile.UpdatedAt = DateTime.UtcNow;
 
         _teacherRepository.Update(profile);
@@ -286,6 +309,7 @@ public class TutorService : ITutorService
             NeighborhoodId = request.NeighborhoodId,
             Title = request.Title.Trim(),
             Description = request.Description.Trim(),
+            YoutubeVideoUrl = NormalizeYoutubeVideoUrl(request.YoutubeVideoUrl),
             Category = request.Category.Trim(),
             SubCategory = request.SubCategory.Trim(),
             LessonDuration = request.LessonDuration,
@@ -327,6 +351,7 @@ public class TutorService : ITutorService
         listing.NeighborhoodId = request.NeighborhoodId;
         listing.Title = request.Title.Trim();
         listing.Description = request.Description.Trim();
+        listing.YoutubeVideoUrl = NormalizeYoutubeVideoUrl(request.YoutubeVideoUrl);
         listing.Category = request.Category.Trim();
         listing.SubCategory = request.SubCategory.Trim();
         listing.LessonDuration = request.LessonDuration;
@@ -746,6 +771,38 @@ public class TutorService : ITutorService
             }).ToList() ?? new List<ListingPhotoDto>();
     }
 
+    private static string? NormalizeYoutubeVideoUrl(string? youtubeVideoUrl)
+    {
+        if (string.IsNullOrWhiteSpace(youtubeVideoUrl))
+            return null;
+
+        var value = youtubeVideoUrl.Trim();
+
+        if (value.Length > 500)
+            throw new InvalidOperationException("YouTube video bağlantısı en fazla 500 karakter olabilir.");
+
+        if (!Uri.TryCreate(value, UriKind.Absolute, out var uri) ||
+            (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+            throw new InvalidOperationException("Geçerli bir YouTube video bağlantısı giriniz.");
+
+        var host = uri.Host.ToLowerInvariant();
+
+        var isYoutube =
+            host == "youtube.com" ||
+            host == "www.youtube.com" ||
+            host == "m.youtube.com" ||
+            host == "music.youtube.com" ||
+            host == "youtu.be" ||
+            host == "www.youtu.be" ||
+            host == "youtube-nocookie.com" ||
+            host == "www.youtube-nocookie.com";
+
+        if (!isYoutube)
+            throw new InvalidOperationException("Sadece YouTube video bağlantısı eklenebilir.");
+
+        return value;
+    }
+
     private static decimal NormalizePrice(decimal price)
     {
         var normalizedPrice = Math.Round(price / 50m, MidpointRounding.AwayFromZero) * 50m;
@@ -787,6 +844,7 @@ public class TutorService : ITutorService
             NeighborhoodName = listing.Neighborhood?.Name,
             Title = listing.Title,
             Description = listing.Description,
+            YoutubeVideoUrl = listing.YoutubeVideoUrl,
             Category = listing.Category,
             SubCategory = listing.SubCategory,
             LessonDuration = listing.LessonDuration,

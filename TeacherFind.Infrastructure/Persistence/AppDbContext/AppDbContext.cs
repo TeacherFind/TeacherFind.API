@@ -181,6 +181,9 @@ public class AppDbContext : DbContext
                 .IsRequired()
                 .HasMaxLength(2000);
 
+            entity.Property(x => x.YoutubeVideoUrl)
+                .HasMaxLength(500);
+
             entity.Property(x => x.Category)
                 .IsRequired()
                 .HasMaxLength(100);
@@ -373,6 +376,18 @@ public class AppDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(x => x.DepartmentId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            entity.Property(x => x.WhatsApp)
+                .HasMaxLength(50);
+
+            entity.Property(x => x.Instagram)
+                .HasMaxLength(300);
+
+            entity.Property(x => x.Facebook)
+                .HasMaxLength(300);
+
+            entity.Property(x => x.LinkedIn)
+                .HasMaxLength(300);
         });
     }
 

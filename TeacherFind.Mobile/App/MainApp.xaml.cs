@@ -1,12 +1,15 @@
-using TeacherFind.Mobile.Shell;
+using Microsoft.Maui.Controls;
+using TeacherFind.Mobile.Shared.Components;
 
-namespace TeacherFind.Mobile; // Namespace BU OLMALI
+namespace TeacherFind.Mobile;
 
-public partial class MainApp : Application // Sýnýf adý BU OLMALI
+public partial class MainApp : global::Microsoft.Maui.Controls.Application
 {
-    public MainApp()
+    public MainApp(MainShellPage mainShellPage)
     {
         InitializeComponent();
-        MainPage = new AppShell();
+
+        // Tertemiz menülü omurgayý uygulamanýn kalbine koyduk
+        MainPage = mainShellPage;
     }
 }

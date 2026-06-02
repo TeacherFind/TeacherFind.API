@@ -14,4 +14,7 @@ public class UpdateTutorProfileDto
     public string? City { get; set; }
     public Guid? UniversityId { get; set; }
     public Guid? DepartmentId { get; set; }
+
+    public SocialLinksDto? SocialLinks { get; set; }
+
 }

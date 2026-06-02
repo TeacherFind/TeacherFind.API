@@ -139,6 +139,7 @@ internal class Program
                     cancellationToken);
             };
 
+            // Login / doğrulama gibi auth endpointleri
             options.AddPolicy("auth-limit", httpContext =>
                 RateLimitPartition.GetFixedWindowLimiter(
                     partitionKey: GetClientIp(httpContext),
@@ -150,6 +151,7 @@ internal class Program
                         QueueProcessingOrder = QueueProcessingOrder.OldestFirst
                     }));
 
+            // Register endpointi için daha sıkı limit
             options.AddPolicy("register-limit", httpContext =>
                 RateLimitPartition.GetFixedWindowLimiter(
                     partitionKey: GetClientIp(httpContext),
@@ -161,12 +163,37 @@ internal class Program
                         QueueProcessingOrder = QueueProcessingOrder.OldestFirst
                     }));
 
+            // Eski public liste policy adı - TutorsController bunu kullanıyor
             options.AddPolicy("public-read-limit", httpContext =>
                 RateLimitPartition.GetFixedWindowLimiter(
                     partitionKey: GetClientIp(httpContext),
                     factory: _ => new FixedWindowRateLimiterOptions
                     {
                         PermitLimit = 60,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueLimit = 0,
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+                    }));
+
+            // Yeni public liste policy adı - Listings / Subjects / Locations / Categories bunu kullanıyor
+            options.AddPolicy("PublicListPolicy", httpContext =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: GetClientIp(httpContext),
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 60,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueLimit = 0,
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+                    }));
+
+            // Create / Update / Delete gibi yazma işlemleri
+            options.AddPolicy("WritePolicy", httpContext =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: GetClientIp(httpContext),
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 10,
                         Window = TimeSpan.FromMinutes(1),
                         QueueLimit = 0,
                         QueueProcessingOrder = QueueProcessingOrder.OldestFirst
@@ -406,6 +433,7 @@ internal class Program
         using (var scope = app.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
 
             try
             {
