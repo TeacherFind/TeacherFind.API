@@ -10,30 +10,32 @@ namespace TeacherFind.Mobile.Core.Services
     {
         private readonly HttpClient _httpClient;
 
-        // DI Motorundan internete çıkış aracımızı (HttpClient) istiyoruz
         public ApiService(HttpClient httpClient)
         {
             _httpClient = httpClient;
 
-            // Eğer backend API'nin sabit bir ana adresi varsa buraya yazabilirsin. 
-            // Şimdilik yoruma aldım, ileride kendi local/sunucu API adresini buraya ekleyeceksin.
-            // _httpClient.BaseAddress = new Uri("https://localhost:7001/"); 
+            // Canlı backend API adresi
+            // Web, admin ve mobil aynı backend'e bağlanacak.
+            _httpClient.BaseAddress = new Uri("https://api.teacherfind.com/");
         }
 
-        // İŞTE EKSİK OLAN VE HATAYA SEBEP OLAN ASIL METOT:
         public async Task<T> GetAsync<T>(string endpoint)
         {
             try
             {
-                // Gelen endpoint adresine (Örn: "api/teachers") istek atıp gelen JSON'ı T (List<User>) formatına çevirir
+                if (string.IsNullOrWhiteSpace(endpoint))
+                    throw new ArgumentException("Endpoint boş olamaz.", nameof(endpoint));
+
+                endpoint = endpoint.TrimStart('/');
+
                 var response = await _httpClient.GetFromJsonAsync<T>(endpoint);
-                return response;
+
+                return response!;
             }
             catch (Exception ex)
             {
-                // API'ye ulaşılamazsa veya hata çıkarsa program çökmesin diye hatayı yakalıyoruz
                 Console.WriteLine($"API Hatası: {ex.Message}");
-                return default; // Hata durumunda boş (null) döner
+                return default!;
             }
         }
     }
