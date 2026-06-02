@@ -30,6 +30,7 @@ public class TeacherListing : AuditableEntity
     public string Title { get; set; } = default!;
 
     public string Description { get; set; } = default!;
+    public string? YoutubeVideoUrl { get; set; }
 
     public string Category { get; set; } = default!;
 

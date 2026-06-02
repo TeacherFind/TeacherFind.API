@@ -181,6 +181,9 @@ public class AppDbContext : DbContext
                 .IsRequired()
                 .HasMaxLength(2000);
 
+            entity.Property(x => x.YoutubeVideoUrl)
+                .HasMaxLength(500);
+
             entity.Property(x => x.Category)
                 .IsRequired()
                 .HasMaxLength(100);
