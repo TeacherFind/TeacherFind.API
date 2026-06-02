@@ -30,6 +30,9 @@ public class UpdateMyTutorListingDto : IValidatableObject
     [Range(1, 3, ErrorMessage = "Geçerli bir ders türü seçiniz. 1: Online, 2: FaceToFace, 3: Both")]
     public int ServiceType { get; set; } = 3;
 
+    [MaxLength(500)]
+    public string? YoutubeVideoUrl { get; set; }
+
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {

@@ -28,6 +28,7 @@ public class TutorDetailDto
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public string? PhoneNumber { get; set; }
+    public string? YoutubeVideoUrl { get; set; }
     public SocialLinksDto? SocialLinks { get; set; }
     public List<ListingPhotoDto> Photos { get; set; } = new();
 
