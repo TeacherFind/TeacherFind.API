@@ -145,8 +145,7 @@ public class TutorsController : ControllerBase
             await file.CopyToAsync(stream);
         }
 
-        var baseUrl = $"{Request.Scheme}://{Request.Host}";
-        var avatarUrl = $"{baseUrl}/uploads/avatars/{fileName}";
+        var avatarUrl = $"/uploads/avatars/{fileName}";
 
         user.ProfileImageUrl = avatarUrl;
         user.UpdatedAt = DateTime.UtcNow;
