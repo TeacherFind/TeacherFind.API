@@ -7,133 +7,149 @@
              NavigationPage.HasNavigationBar="False"
              BackgroundColor="#F5F7FA">
 
-    <ScrollView>
-        <Grid RowDefinitions="Auto, Auto, Auto">
+    <RefreshView IsRefreshing="{Binding IsRefreshing}" 
+                 Command="{Binding RefreshCommand}" 
+                 RefreshColor="#0A194F">
 
-            <Grid Grid.Row="0" BackgroundColor="#6C8DF6" Padding="20,20,20,80" RowDefinitions="Auto, Auto">
+        <ScrollView>
+            <Grid RowDefinitions="Auto, Auto, Auto">
 
-                <Grid Grid.Row="0" ColumnDefinitions="Auto, *, Auto" VerticalOptions="Center">
+                <Grid Grid.Row="0" BackgroundColor="#6C8DF6" Padding="20,20,20,80" RowDefinitions="Auto, Auto">
 
-                    <Button Grid.Column="0" Text="☰" FontSize="26" TextColor="White" 
-                            BackgroundColor="Transparent" BorderWidth="0"
-                            HorizontalOptions="Start" VerticalOptions="Center" 
-                            WidthRequest="50" HeightRequest="50"
-                            Clicked="OnMenuButtonClicked"/>
+                    <Grid Grid.Row="0" ColumnDefinitions="Auto, *, Auto" VerticalOptions="Center">
+                        <Button Grid.Column="0" Text="☰" FontSize="26" TextColor="White" 
+                                BackgroundColor="Transparent" BorderWidth="0"
+                                HorizontalOptions="Start" VerticalOptions="Center" 
+                                WidthRequest="50" HeightRequest="50"
+                                Clicked="OnMenuButtonClicked"/>
 
-                    <Border Grid.Column="1" StrokeShape="RoundRectangle 20" Stroke="Transparent" 
-                            BackgroundColor="#8EA9FA" HorizontalOptions="Center" Padding="15,5" VerticalOptions="Center">
-                        <Label Text="🎓 ALANINDA UZMAN 112.637 EĞİTMEN" TextColor="White" FontSize="10" FontAttributes="Bold"/>
-                    </Border>
+                        <Border Grid.Column="1" StrokeShape="RoundRectangle 20" Stroke="Transparent" 
+                                BackgroundColor="#8EA9FA" HorizontalOptions="Center" Padding="15,5" VerticalOptions="Center">
+                            <Label Text="🎓 ALANINDA UZMAN 112.637 EĞİTMEN" TextColor="White" FontSize="10" FontAttributes="Bold"/>
+                        </Border>
 
-                    <BoxView Grid.Column="2" WidthRequest="50" BackgroundColor="Transparent"/>
+                        <BoxView Grid.Column="2" WidthRequest="50" BackgroundColor="Transparent"/>
+                    </Grid>
+
+                    <Label Grid.Row="1" Text="En İyi Öğretmenlerden&#10;Online veya&#10;Yüz Yüze Dersler Alın" 
+                           TextColor="White" FontSize="28" FontAttributes="Bold" 
+                           HorizontalTextAlignment="Center" Margin="0,20,0,0" LineHeight="1.2"/>
                 </Grid>
 
-                <Label Grid.Row="1" Text="En İyi Öğretmenlerden&#10;Online veya&#10;Yüz Yüze Dersler Alın" 
-                       TextColor="White" FontSize="28" FontAttributes="Bold" 
-                       HorizontalTextAlignment="Center" Margin="0,20,0,0" LineHeight="1.2"/>
-            </Grid>
+                <Border Grid.Row="0" Margin="20,240,20,0" VerticalOptions="End"
+                        StrokeShape="RoundRectangle 30" Stroke="Transparent" BackgroundColor="White">
+                    <Border.Shadow>
+                        <Shadow Brush="Black" Offset="0,10" Radius="20" Opacity="0.1" />
+                    </Border.Shadow>
 
-            <Border Grid.Row="0" Margin="20,240,20,0" VerticalOptions="End"
-                    StrokeShape="RoundRectangle 30" Stroke="Transparent" BackgroundColor="White">
-                <Border.Shadow>
-                    <Shadow Brush="Black" Offset="0,10" Radius="20" Opacity="0.1" />
-                </Border.Shadow>
+                    <Grid ColumnDefinitions="*, 1, *, Auto" Padding="10">
 
-                <Grid ColumnDefinitions="*, 1, *, Auto" Padding="10">
-                    <VerticalStackLayout Grid.Column="0" Padding="10">
-                        <Label Text="DERS SEÇİN" FontSize="10" TextColor="Gray"/>
-                        <Label Text="Seçiniz" FontSize="14" FontAttributes="Bold"/>
-                    </VerticalStackLayout>
-
-                    <BoxView Grid.Column="1" Color="#E0E0E0" WidthRequest="1" Margin="0,10"/>
-
-                    <VerticalStackLayout Grid.Column="2" Padding="10">
-                        <Label Text="DERS NEREDE YAPILSIN" FontSize="10" TextColor="Gray"/>
-                        <Label Text="Seçiniz" FontSize="14" FontAttributes="Bold"/>
-                    </VerticalStackLayout>
-
-                    <Button Grid.Column="3" BackgroundColor="#0A194F" CornerRadius="25" 
-                         WidthRequest="50" HeightRequest="50" 
-                         Text="🔍" TextColor="White" FontSize="16"
-                         Clicked="OnSearchTapped" />
-                </Grid>
-            </Border>
-
-            <VerticalStackLayout Grid.Row="1" Margin="0,30,0,0">
-                <CollectionView ItemsSource="{Binding Categories}" ItemsLayout="HorizontalList" 
-                                HorizontalScrollBarVisibility="Never" Margin="20,0">
-                    <CollectionView.ItemTemplate>
-                        <DataTemplate>
-                            <Border StrokeShape="RoundRectangle 15" Stroke="#E0E0E0" BackgroundColor="White" 
-                                    WidthRequest="160" Margin="0,0,15,0" Padding="15">
-                                <VerticalStackLayout>
-                                    <Label Text="{Binding Icon}" FontSize="24" Margin="0,0,0,10"/>
-                                    <Label Text="{Binding Title}" FontSize="14" FontAttributes="Bold" TextColor="#0A194F"/>
-                                    <Label Text="{Binding Subtitle}" FontSize="11" TextColor="Gray"/>
-                                </VerticalStackLayout>
-                            </Border>
-                        </DataTemplate>
-                    </CollectionView.ItemTemplate>
-                </CollectionView>
-            </VerticalStackLayout>
-
-            <VerticalStackLayout Grid.Row="2" Margin="20,30,20,30">
-                <Grid ColumnDefinitions="*, Auto" Margin="0,0,0,15">
-                    <Label Grid.Column="0" Text="Öne Çıkan Öğretmenler" FontSize="18" FontAttributes="Bold" TextColor="#0A194F"/>
-                    <Label Grid.Column="1" Text="Tümünü Gör >" FontSize="12" TextColor="Gray" VerticalOptions="Center">
-                        <Label.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="OnSearchTapped" />
-                        </Label.GestureRecognizers>
-                    </Label>
-                </Grid>
-
-                <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" Color="#6C8DF6" HorizontalOptions="Center" Margin="0,20"/>
-
-                <CollectionView ItemsSource="{Binding FeaturedTeachers}" 
-                                ItemsLayout="HorizontalList" 
-                                HorizontalScrollBarVisibility="Never">
-
-                    <CollectionView.Triggers>
-                        <DataTrigger TargetType="CollectionView" Binding="{Binding IsBusy}" Value="True">
-                            <Setter Property="IsVisible" Value="False"/>
-                        </DataTrigger>
-                    </CollectionView.Triggers>
-
-                    <CollectionView.EmptyView>
-                        <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center" Padding="30" Spacing="10">
-                            <Label Text="ℹ️" FontSize="36" HorizontalOptions="Center"/>
-                            <Label Text="Öne çıkan eğitmen bulunamadı." 
-                                   FontSize="14" 
-                                   FontAttributes="Bold"
-                                   TextColor="Gray" 
-                                   HorizontalOptions="Center"/>
-                            <Label Text="Şu an aktif eğitmen kaydı bulunmamaktadır." 
-                                   FontSize="11" 
-                                   TextColor="LightGray" 
-                                   HorizontalOptions="Center"/>
+                        <VerticalStackLayout Grid.Column="0" Padding="10">
+                            <Label Text="DERS SEÇİN" FontSize="10" TextColor="Gray"/>
+                            <Label Text="{Binding Subjects.Count, StringFormat='Gelen Ders: {0}'}" FontSize="8" TextColor="Red" />
+                            <Picker ItemsSource="{Binding Subjects}" 
+                                    ItemDisplayBinding="{Binding DisplayName}" 
+                                    SelectedItem="{Binding SelectedSubject}"
+                                    Title="Seçiniz" FontSize="14" FontAttributes="Bold" 
+                                    TextColor="#212121" TitleColor="Gray" BackgroundColor="Transparent"/>
                         </VerticalStackLayout>
-                    </CollectionView.EmptyView>
 
-                    <CollectionView.ItemTemplate>
-                        <DataTemplate>
-                            <Border StrokeShape="RoundRectangle 15" Stroke="Transparent" BackgroundColor="White" WidthRequest="220" Margin="0,0,15,0">
-                                <Border.Shadow>
-                                    <Shadow Brush="Black" Offset="0,5" Radius="10" Opacity="0.05" />
-                                </Border.Shadow>
-                                <VerticalStackLayout>
-                                    <Image Source="{Binding ProfilePictureUrl}" HeightRequest="120" Aspect="AspectFill" />
+                        <BoxView Grid.Column="1" Color="#E0E0E0" WidthRequest="1" Margin="0,10"/>
 
-                                    <Grid ColumnDefinitions="*, Auto" Padding="15">
-                                        <Label Grid.Column="0" Text="{Binding FirstName}" FontAttributes="Bold" FontSize="14" TextColor="#0A194F"/>
-                                        <Label Grid.Column="1" Text="⭐ 4.8" TextColor="#FFA000" FontSize="12" FontAttributes="Bold"/>
-                                    </Grid>
-                                </VerticalStackLayout>
-                            </Border>
-                        </DataTemplate>
-                    </CollectionView.ItemTemplate>
-                </CollectionView>
-            </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="2" Padding="10">
+                            <Label Text="NEREDE YAPILSIN?" FontSize="10" TextColor="Gray"/>
+                            <Label Text="{Binding Cities.Count, StringFormat='Gelen Şehir: {0}'}" FontSize="8" TextColor="Red" />
+                            <Picker ItemsSource="{Binding Cities}" 
+                                    ItemDisplayBinding="{Binding Name}" 
+                                    SelectedItem="{Binding SelectedCity}"
+                                    Title="Seçiniz" FontSize="14" FontAttributes="Bold" 
+                                    TextColor="#212121" TitleColor="Gray" BackgroundColor="Transparent"/>
+                        </VerticalStackLayout>
 
-        </Grid>
-    </ScrollView>
+                        <Button Grid.Column="3" BackgroundColor="#0A194F" CornerRadius="25" 
+                                WidthRequest="50" HeightRequest="50" 
+                                Text="🔍" TextColor="White" FontSize="16"
+                                Clicked="OnSearchTapped" />
+                    </Grid>
+                </Border>
+
+                <VerticalStackLayout Grid.Row="1" Margin="0,30,0,0">
+                    <CollectionView ItemsSource="{Binding Categories}" ItemsLayout="HorizontalList" 
+                                    HorizontalScrollBarVisibility="Never" Margin="20,0">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Border StrokeShape="RoundRectangle 15" Stroke="#E0E0E0" BackgroundColor="White" 
+                                        WidthRequest="160" Margin="0,0,15,0" Padding="15">
+                                    <VerticalStackLayout>
+                                        <Label Text="{Binding Icon}" FontSize="24" Margin="0,0,0,10"/>
+                                        <Label Text="{Binding Title}" FontSize="14" FontAttributes="Bold" TextColor="#0A194F"/>
+                                        <Label Text="{Binding Subtitle}" FontSize="11" TextColor="Gray"/>
+                                    </VerticalStackLayout>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Grid.Row="2" Margin="20,30,20,30">
+                    <Grid ColumnDefinitions="*, Auto" Margin="0,0,0,15">
+                        <Label Grid.Column="0" Text="Öne Çıkan Öğretmenler" FontSize="18" FontAttributes="Bold" TextColor="#0A194F"/>
+                        <Label Grid.Column="1" Text="Tümünü Gör >" FontSize="12" TextColor="Gray" VerticalOptions="Center">
+                            <Label.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnSearchTapped" />
+                            </Label.GestureRecognizers>
+                        </Label>
+                    </Grid>
+
+                    <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" Color="#6C8DF6" HorizontalOptions="Center" Margin="0,20"/>
+
+                    <CollectionView ItemsSource="{Binding FeaturedTeachers}" 
+                                    ItemsLayout="HorizontalList" 
+                                    HorizontalScrollBarVisibility="Never">
+
+                        <CollectionView.Triggers>
+                            <DataTrigger TargetType="CollectionView" Binding="{Binding IsBusy}" Value="True">
+                                <Setter Property="IsVisible" Value="False"/>
+                            </DataTrigger>
+                        </CollectionView.Triggers>
+
+                        <CollectionView.EmptyView>
+                            <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center" Padding="30" Spacing="10">
+                                <Label Text="ℹ️" FontSize="36" HorizontalOptions="Center"/>
+                                <Label Text="Öne çıkan eğitmen bulunamadı." 
+                                       FontSize="14" 
+                                       FontAttributes="Bold"
+                                       TextColor="Gray" 
+                                       HorizontalOptions="Center"/>
+                                <Label Text="Şu an aktif eğitmen kaydı bulunmamaktadır." 
+                                       FontSize="11" 
+                                       TextColor="LightGray" 
+                                       HorizontalOptions="Center"/>
+                            </VerticalStackLayout>
+                        </CollectionView.EmptyView>
+
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Border StrokeShape="RoundRectangle 15" Stroke="Transparent" BackgroundColor="White" WidthRequest="220" Margin="0,0,15,0">
+                                    <Border.Shadow>
+                                        <Shadow Brush="Black" Offset="0,5" Radius="10" Opacity="0.05" />
+                                    </Border.Shadow>
+                                    <VerticalStackLayout>
+                                        <Image Source="{Binding ProfilePictureUrl}" HeightRequest="120" Aspect="AspectFill" />
+
+                                        <Grid ColumnDefinitions="*, Auto" Padding="15">
+                                            <Label Grid.Column="0" Text="{Binding FirstName}" FontAttributes="Bold" FontSize="14" TextColor="#0A194F"/>
+                                            <Label Grid.Column="1" Text="⭐ 4.8" TextColor="#FFA000" FontSize="12" FontAttributes="Bold"/>
+                                        </Grid>
+                                    </VerticalStackLayout>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+
+            </Grid>
+        </ScrollView>
+
+    </RefreshView>
 </ContentPage>

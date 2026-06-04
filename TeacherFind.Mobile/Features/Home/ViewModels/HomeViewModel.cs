@@ -1,12 +1,65 @@
 ﻿using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using Microsoft.Maui.Controls;
 using TeacherFind.Mobile.Core.Abstractions;
+using System.Text.Json.Serialization;
+using System.Windows.Input;
 
 namespace TeacherFind.Mobile.Features.Home.ViewModels;
 
-// 1. KATEGORİ UI MODELİ
+// --- API MODELLERİ (BACKEND İLE HABERLEŞEN KISIM) ---
+public class CityModel
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; }
+    [JsonPropertyName("plateCode")]
+    public int PlateCode { get; set; }
+    [JsonPropertyName("name")]
+    public string Name { get; set; }
+}
+
+public class SubjectModel
+{
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+    [JsonPropertyName("code")]
+    public int Code { get; set; }
+    [JsonPropertyName("stage")]
+    public string Stage { get; set; }
+    [JsonPropertyName("category")]
+    public string Category { get; set; }
+    [JsonPropertyName("name")]
+    public string Name { get; set; }
+    [JsonPropertyName("level")]
+    public string Level { get; set; }
+    [JsonPropertyName("isActive")]
+    public bool IsActive { get; set; }
+
+    public string DisplayName => $"{Name} - {Level}";
+}
+
+// Kategorinin içindeki dersleri sayabilmek için gelen kısa model
+public class ApiSubjectShortModel
+{
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+    [JsonPropertyName("name")]
+    public string Name { get; set; }
+}
+
+// Backend'den Gelen Kategori Modeli
+public class ApiCategoryModel
+{
+    [JsonPropertyName("category")]
+    public string CategoryName { get; set; }
+    [JsonPropertyName("subjects")]
+    public List<ApiSubjectShortModel> Subjects { get; set; }
+}
+
+// --- ARAYÜZ (UI) MODELLERİ (EKRANDA GÖSTERİLEN KISIM) ---
 public class CategoryModel
 {
     public string Icon { get; set; }
@@ -14,20 +67,20 @@ public class CategoryModel
     public string Subtitle { get; set; }
 }
 
-// 2. ÖĞRETMEN KARTI UI MODELİ (Domain'deki User'dan bağımsız hale getirdik)
 public class TeacherModel
 {
     public string FirstName { get; set; }
     public string ProfilePictureUrl { get; set; }
+    public double Rating { get; set; }
 }
 
 public class HomeViewModel : BindableObject
 {
     private readonly IApiService _apiService;
     private bool _isBusy;
-
-    public ObservableCollection<CategoryModel> Categories { get; set; }
-    public ObservableCollection<TeacherModel> FeaturedTeachers { get; set; }
+    private bool _isRefreshing;
+    private CityModel _selectedCity;
+    private SubjectModel _selectedSubject;
 
     public bool IsBusy
     {
@@ -35,43 +88,120 @@ public class HomeViewModel : BindableObject
         set { _isBusy = value; OnPropertyChanged(); }
     }
 
+    public bool IsRefreshing
+    {
+        get => _isRefreshing;
+        set { _isRefreshing = value; OnPropertyChanged(); }
+    }
+
+    public ObservableCollection<CityModel> Cities { get; set; }
+    public ObservableCollection<SubjectModel> Subjects { get; set; }
+    public ObservableCollection<CategoryModel> Categories { get; set; }
+    public ObservableCollection<TeacherModel> FeaturedTeachers { get; set; }
+
+    public CityModel SelectedCity
+    {
+        get => _selectedCity;
+        set { _selectedCity = value; OnPropertyChanged(); }
+    }
+
+    public SubjectModel SelectedSubject
+    {
+        get => _selectedSubject;
+        set { _selectedSubject = value; OnPropertyChanged(); }
+    }
+
+    public ICommand RefreshCommand { get; }
+
     public HomeViewModel(IApiService apiService)
     {
         _apiService = apiService;
+        Cities = new ObservableCollection<CityModel>();
+        Subjects = new ObservableCollection<SubjectModel>();
         Categories = new ObservableCollection<CategoryModel>();
         FeaturedTeachers = new ObservableCollection<TeacherModel>();
 
-        LoadStaticCategories();
+        LoadDummyTeacherData(); // Sadece öğretmenler sahte kalsın
+
+        RefreshCommand = new Command(async () => await RefreshDataAsync());
     }
 
-    public async Task InitializeAsync()
+    private void LoadDummyTeacherData()
+    {
+        // Öğretmenler şimdilik vitrin olarak kalıyor, buraya dokunmadık
+        FeaturedTeachers.Clear();
+        FeaturedTeachers.Add(new TeacherModel { FirstName = "Emre Koç", ProfilePictureUrl = "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500&auto=format&fit=crop&q=60", Rating = 4.8 });
+        FeaturedTeachers.Add(new TeacherModel { FirstName = "Ayşe Yılmaz", ProfilePictureUrl = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=500&auto=format&fit=crop&q=60", Rating = 4.9 });
+        FeaturedTeachers.Add(new TeacherModel { FirstName = "Burak Kaya", ProfilePictureUrl = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&auto=format&fit=crop&q=60", Rating = 4.7 });
+    }
+
+    private async Task RefreshDataAsync()
+    {
+        IsRefreshing = true;
+        await InitializeAsync(forceRefresh: true);
+        IsRefreshing = false;
+    }
+
+    public async Task InitializeAsync(bool forceRefresh = false)
     {
         if (IsBusy) return;
 
         try
         {
             IsBusy = true;
-            FeaturedTeachers.Clear();
 
-            // Sayfa yüklenme efektini görmek için küçük bir gecikme
-            await Task.Delay(1000);
-
-            // Artık kendi TeacherModel'imizi eklediğimiz için User entity'si ile hiçbir çakışma yaşanmaz
-            FeaturedTeachers.Add(new TeacherModel
+            // 1. ŞEHİRLERİ ÇEK
+            if (forceRefresh || Cities.Count == 0)
             {
-                FirstName = "Emre Koç",
-                ProfilePictureUrl = "https://picsum.photos/300/200?random=1"
-            });
+                var apiCities = await _apiService.GetAsync<List<CityModel>>("api/locations/cities");
+                if (apiCities != null && apiCities.Any())
+                {
+                    Cities.Clear();
+                    foreach (var city in apiCities.OrderBy(c => c.Name))
+                        Cities.Add(city);
+                }
+            }
 
-            FeaturedTeachers.Add(new TeacherModel
+            // 2. DERSLERİ ÇEK
+            if (forceRefresh || Subjects.Count == 0)
             {
-                FirstName = "Ayşe Yılmaz",
-                ProfilePictureUrl = "https://picsum.photos/300/200?random=2"
-            });
+                var apiSubjects = await _apiService.GetAsync<List<SubjectModel>>("api/subjects");
+                if (apiSubjects != null && apiSubjects.Any())
+                {
+                    Subjects.Clear();
+                    foreach (var subject in apiSubjects.Where(s => s.IsActive).OrderBy(s => s.Name))
+                        Subjects.Add(subject);
+                }
+            }
+
+            // 3. KATEGORİLERİ ÇEK (YENİ EKLENEN KISIM)
+            if (forceRefresh || Categories.Count == 0)
+            {
+                var apiCategories = await _apiService.GetAsync<List<ApiCategoryModel>>("api/categories");
+                if (apiCategories != null && apiCategories.Any())
+                {
+                    Categories.Clear();
+
+                    // İçinde en çok ders olan kategori en başa gelsin (En Popüler Mantığı)
+                    var sortedCategories = apiCategories.OrderByDescending(c => c.Subjects?.Count ?? 0).ToList();
+
+                    foreach (var apiCat in sortedCategories)
+                    {
+                        Categories.Add(new CategoryModel
+                        {
+                            Title = apiCat.CategoryName,
+                            // Kaç ders varsa alt başlığa onu yazdırıyoruz
+                            Subtitle = $"{(apiCat.Subjects?.Count ?? 0)} Farklı Ders",
+                            // Otomatik ikon seçiciyi çağırıyoruz
+                            Icon = GetIconForCategory(apiCat.CategoryName)
+                        });
+                    }
+                }
+            }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Hata durumunda liste boş kalır, XAML'deki EmptyView tetiklenir
+            Console.WriteLine($"Ana Sayfa Veri Çekme Hatası: {ex.Message}");
         }
         finally
         {
@@ -79,11 +209,21 @@ public class HomeViewModel : BindableObject
         }
     }
 
-    private void LoadStaticCategories()
+    // Kategori ismine göre mantıklı ikon atayan yardımcı metot
+    private string GetIconForCategory(string categoryName)
     {
-        Categories.Add(new CategoryModel { Icon = "📐", Title = "Matematik", Subtitle = "Bilgisayarlı (TYT/AYT)" });
-        Categories.Add(new CategoryModel { Icon = "🔬", Title = "Fen Bilimleri", Subtitle = "Fizik/Kimya/Biyoloji" });
-        Categories.Add(new CategoryModel { Icon = "💻", Title = "Yazılım & Kodlama", Subtitle = "Mobil/Web" });
-        Categories.Add(new CategoryModel { Icon = "🌍", Title = "Dil Kursları", Subtitle = "İngilizce, Almanca" });
+        if (string.IsNullOrEmpty(categoryName)) return "📚";
+
+        var lower = categoryName.ToLower();
+        if (lower.Contains("matematik") || lower.Contains("geometri")) return "📐";
+        if (lower.Contains("fen") || lower.Contains("kimya") || lower.Contains("biyoloji") || lower.Contains("fizik")) return "🔬";
+        if (lower.Contains("dil") || lower.Contains("ingilizce") || lower.Contains("almanca")) return "🌍";
+        if (lower.Contains("yazılım") || lower.Contains("bilişim") || lower.Contains("bilgisayar")) return "💻";
+        if (lower.Contains("sanat") || lower.Contains("müzik") || lower.Contains("resim")) return "🎨";
+        if (lower.Contains("spor") || lower.Contains("beden")) return "🏃‍♂️";
+        if (lower.Contains("tarih") || lower.Contains("coğrafya") || lower.Contains("sosyal")) return "🏛️";
+        if (lower.Contains("sınav") || lower.Contains("lgs") || lower.Contains("yks")) return "🎯";
+
+        return "📘"; // Eğer kelimeyi tanımazsa standart kitap ikonu koysun
     }
 }
