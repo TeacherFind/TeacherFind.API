@@ -34,6 +34,13 @@ jobs:
               "ApiKey": "${{ secrets.BREVO_API_KEY }}",
               "FromEmail": "noreply@ozeldersburada.com",
               "FromName": "Özel Ders Burada"
+            },
+            "Cors": {
+              "AllowedOrigins": [
+                "http://ozeldersvip.com",
+                "https://ozeldersvip.com",
+                "http://45.195.231.69"
+              ]
             }
           }
           EOF

@@ -57,7 +57,6 @@ internal class Program
 
         // =====================================================
         // Forwarded Headers
-        // Cloudflare / Nginx / Reverse Proxy için
         // =====================================================
 
         builder.Services.Configure<ForwardedHeadersOptions>(options =>
@@ -89,15 +88,12 @@ internal class Program
                     ValidateAudience = builder.Environment.IsProduction(),
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
-
                     ValidIssuer = builder.Configuration["Jwt:Issuer"],
                     ValidAudience = builder.Configuration["Jwt:Audience"],
-
                     IssuerSigningKey = signingKey,
                     ClockSkew = TimeSpan.Zero
                 };
 
-                // SignalR için JWT desteği
                 options.Events = new JwtBearerEvents
                 {
                     OnMessageReceived = context =>
@@ -126,9 +122,7 @@ internal class Program
 
             options.OnRejected = async (context, cancellationToken) =>
             {
-                context.HttpContext.Response.StatusCode =
-                    StatusCodes.Status429TooManyRequests;
-
+                context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
                 context.HttpContext.Response.ContentType = "application/json";
 
                 await context.HttpContext.Response.WriteAsync(
@@ -139,7 +133,6 @@ internal class Program
                     cancellationToken);
             };
 
-            // Login / doğrulama gibi auth endpointleri
             options.AddPolicy("auth-limit", httpContext =>
                 RateLimitPartition.GetFixedWindowLimiter(
                     partitionKey: GetClientIp(httpContext),
@@ -151,7 +144,6 @@ internal class Program
                         QueueProcessingOrder = QueueProcessingOrder.OldestFirst
                     }));
 
-            // Register endpointi için daha sıkı limit
             options.AddPolicy("register-limit", httpContext =>
                 RateLimitPartition.GetFixedWindowLimiter(
                     partitionKey: GetClientIp(httpContext),
@@ -163,7 +155,6 @@ internal class Program
                         QueueProcessingOrder = QueueProcessingOrder.OldestFirst
                     }));
 
-            // Eski public liste policy adı - TutorsController bunu kullanıyor
             options.AddPolicy("public-read-limit", httpContext =>
                 RateLimitPartition.GetFixedWindowLimiter(
                     partitionKey: GetClientIp(httpContext),
@@ -175,7 +166,6 @@ internal class Program
                         QueueProcessingOrder = QueueProcessingOrder.OldestFirst
                     }));
 
-            // Yeni public liste policy adı - Listings / Subjects / Locations / Categories bunu kullanıyor
             options.AddPolicy("PublicListPolicy", httpContext =>
                 RateLimitPartition.GetFixedWindowLimiter(
                     partitionKey: GetClientIp(httpContext),
@@ -187,7 +177,6 @@ internal class Program
                         QueueProcessingOrder = QueueProcessingOrder.OldestFirst
                     }));
 
-            // Create / Update / Delete gibi yazma işlemleri
             options.AddPolicy("WritePolicy", httpContext =>
                 RateLimitPartition.GetFixedWindowLimiter(
                     partitionKey: GetClientIp(httpContext),
@@ -201,9 +190,7 @@ internal class Program
         });
 
         static string GetClientIp(HttpContext context)
-        {
-            return context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-        }
+            => context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
         // =====================================================
         // Authorization Policies
@@ -211,40 +198,34 @@ internal class Program
 
         builder.Services.AddAuthorization(options =>
         {
-            options.AddPolicy("StudentOnly", policy =>
-                policy.RequireRole("Student", "Admin", "SuperAdmin"));
-
-            options.AddPolicy("TutorOnly", policy =>
-                policy.RequireRole("Tutor", "Admin", "SuperAdmin"));
-
-            options.AddPolicy("AdminOnly", policy =>
-                policy.RequireRole("Admin", "SuperAdmin"));
-
-            options.AddPolicy("SuperAdminOnly", policy =>
-                policy.RequireRole("SuperAdmin"));
+            options.AddPolicy("StudentOnly", policy => policy.RequireRole("Student", "Admin", "SuperAdmin"));
+            options.AddPolicy("TutorOnly", policy => policy.RequireRole("Tutor", "Admin", "SuperAdmin"));
+            options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin", "SuperAdmin"));
+            options.AddPolicy("SuperAdminOnly", policy => policy.RequireRole("SuperAdmin"));
         });
 
         // =====================================================
         // CORS
         // =====================================================
 
-        var allowedOrigins = builder.Configuration
+        var allowedOriginsFromConfig = builder.Configuration
             .GetSection("Cors:AllowedOrigins")
-            .Get<string[]>()
-            ?? new[]
-            {
-                "http://localhost:5173",
-                "https://localhost:5173",
-                "http://localhost:3000",
-                "https://localhost:3000"
-            };
+            .Get<string[]>() ?? Array.Empty<string>();
+
+        var allOrigins = allowedOriginsFromConfig.Concat(new[]
+        {
+            "http://localhost:5173",
+            "https://localhost:5173",
+            "http://localhost:3000",
+            "https://localhost:3000"
+        }).Distinct().ToArray();
 
         builder.Services.AddCors(options =>
         {
             options.AddPolicy("Frontend", policy =>
             {
                 policy
-                    .WithOrigins(allowedOrigins)
+                    .WithOrigins(allOrigins)
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowCredentials();
@@ -259,14 +240,9 @@ internal class Program
             .AddControllers()
             .AddJsonOptions(options =>
             {
-                options.JsonSerializerOptions.ReferenceHandler =
-                    ReferenceHandler.IgnoreCycles;
-
-                options.JsonSerializerOptions.PropertyNamingPolicy =
-                    JsonNamingPolicy.CamelCase;
-
-                options.JsonSerializerOptions.DictionaryKeyPolicy =
-                    JsonNamingPolicy.CamelCase;
+                options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+                options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+                options.JsonSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
             });
 
         builder.Services.Configure<ApiBehaviorOptions>(options =>
@@ -277,9 +253,7 @@ internal class Program
                     .Where(x => x.Value?.Errors.Count > 0)
                     .ToDictionary(
                         x => x.Key,
-                        x => x.Value!.Errors
-                            .Select(e => e.ErrorMessage)
-                            .ToList());
+                        x => x.Value!.Errors.Select(e => e.ErrorMessage).ToList());
 
                 return new BadRequestObjectResult(new
                 {
@@ -324,7 +298,7 @@ internal class Program
                         Reference = new OpenApiReference
                         {
                             Type = ReferenceType.SecurityScheme,
-                            Id = "Bearer"
+                            Id   = "Bearer"
                         }
                     },
                     Array.Empty<string>()
@@ -333,7 +307,7 @@ internal class Program
         });
 
         // =====================================================
-        // Dependency Injection - Repositories
+        // Dependency Injection — Repositories
         // =====================================================
 
         builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -349,7 +323,7 @@ internal class Program
         builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 
         // =====================================================
-        // Dependency Injection - Application Services
+        // Dependency Injection — Application Services
         // =====================================================
 
         builder.Services.AddScoped<IAuthService, AuthService>();
@@ -376,7 +350,7 @@ internal class Program
         builder.Services.AddHttpClient<IEmailService, BrevoEmailService>();
 
         // =====================================================
-        // Dependency Injection - Admin Services
+        // Dependency Injection — Admin Services
         // =====================================================
 
         builder.Services.AddScoped<IAdminUserService, AdminUserService>();
@@ -402,19 +376,12 @@ internal class Program
         // =====================================================
 
         app.UseForwardedHeaders();
-
         app.UseMiddleware<ExceptionHandlingMiddleware>();
-
         app.UseHttpsRedirection();
-
         app.UseStaticFiles();
-
         app.UseRouting();
-
         app.UseCors("Frontend");
-
         app.UseRateLimiter();
-
         app.UseAuthentication();
         app.UseAuthorization();
 
@@ -423,7 +390,6 @@ internal class Program
         // =====================================================
 
         app.MapHub<ChatHub>("/chat");
-
         app.MapControllers();
 
         // =====================================================
@@ -433,7 +399,6 @@ internal class Program
         using (var scope = app.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
 
             try
             {
