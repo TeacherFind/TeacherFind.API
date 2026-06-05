@@ -7,6 +7,7 @@
 	<ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
     <Platforms>AnyCPU;x64</Platforms>
     
+    <UserSecretsId>8995012e-a183-4ad5-b164-eb42469b4800</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
