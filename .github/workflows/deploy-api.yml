@@ -5,6 +5,7 @@ on:
     branches:
       - Develop
       - main
+      - master
 
 jobs:
   build-and-deploy:
@@ -28,12 +29,16 @@ jobs:
               "DefaultConnection": "${{ secrets.DB_CONNECTION_STRING }}"
             },
             "Jwt": {
-              "Key": "${{ secrets.JWT_KEY }}"
+              "Key": "${{ secrets.JWT_KEY }}",
+              "Issuer": "TeacherFind",
+              "Audience": "TeacherFind",
+              "ExpiryMinutes": "120"
             },
             "Email": {
+              "Provider": "Brevo",
               "ApiKey": "${{ secrets.BREVO_API_KEY }}",
-              "FromEmail": "noreply@ozeldersburada.com",
-              "FromName": "Özel Ders Burada"
+              "FromEmail": "destek@ozeldersvip.com",
+              "FromName": "Özel Ders VIP"
             },
             "Cors": {
               "AllowedOrigins": [
