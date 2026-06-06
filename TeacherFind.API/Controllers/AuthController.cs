@@ -114,15 +114,16 @@ public class AuthController : ControllerBase
         if (!isPasswordValid)
             return Unauthorized(new { message = InvalidLoginMessage });
 
-        if (!user.IsEmailVerified && !user.IsPhoneVerified)
-        {
-            return Unauthorized(new
-            {
-                message = "Hesabınızı kullanmadan önce e-posta veya telefon doğrulaması yapmanız gerekiyor.",
-                requiresVerification = true,
-                userId = user.Id
-            });
-        }
+        // Doğrulama iptal edildi
+        // if (!user.IsEmailVerified && !user.IsPhoneVerified)
+        // {
+        //     return Unauthorized(new
+        //     {
+        //         message = "Hesabınızı kullanmadan önce e-posta veya telefon doğrulaması yapmanız gerekiyor.",
+        //         requiresVerification = true,
+        //         userId = user.Id
+        //     });
+        // }
 
         var result = await _authService.LoginAsync(email, request.Password);
 
