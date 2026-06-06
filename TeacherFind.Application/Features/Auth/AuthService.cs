@@ -62,7 +62,7 @@ public class AuthService : IAuthService
                 : request.PhoneNumber.Trim(),
             CityId = request.CityId,
             IsActive = true,
-            IsEmailVerified = false,
+            IsEmailVerified = true,
             IsPhoneVerified = false,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
