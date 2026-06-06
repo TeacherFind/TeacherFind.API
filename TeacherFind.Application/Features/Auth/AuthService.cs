@@ -1,4 +1,4 @@
-using TeacherFind.Application.Abstractions.Identity;
+﻿using TeacherFind.Application.Abstractions.Identity;
 using TeacherFind.Application.Abstractions.Repositories;
 using TeacherFind.Application.Abstractions.Services;
 using TeacherFind.Contracts.Auth;
@@ -62,8 +62,8 @@ public class AuthService : IAuthService
                 : request.PhoneNumber.Trim(),
             CityId = request.CityId,
             IsActive = true,
-            IsEmailVerified = true,
-            IsPhoneVerified = true,
+            IsEmailVerified = false,
+            IsPhoneVerified = false,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -107,9 +107,8 @@ public class AuthService : IAuthService
         if (!isPasswordValid)
             return null;
 
-        // Doğrulama iptal edildi
-        // if (!user.IsEmailVerified && !user.IsPhoneVerified)
-        //    return null;
+        if (!user.IsEmailVerified && !user.IsPhoneVerified)
+            return null;
 
         var token = _jwtProvider.GenerateToken(user);
 
