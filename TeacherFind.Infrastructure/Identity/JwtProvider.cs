@@ -11,13 +11,14 @@ namespace TeacherFind.Infrastructure.Identity;
 public class JwtProvider : IJwtProvider
 {
     private readonly IConfiguration _configuration;
+    private bool rememberMe;
 
     public JwtProvider(IConfiguration configuration)
     {
         _configuration = configuration;
     }
 
-    public string GenerateToken(User user)
+    public string GenerateToken(User user, bool rememberMe = false)
     {
         var key = _configuration["Jwt:Key"]
                   ?? throw new InvalidOperationException("Jwt:Key bulunamadı. appsettings kontrol edin.");
@@ -37,8 +38,9 @@ public class JwtProvider : IJwtProvider
             issuer: _configuration["Jwt:Issuer"],
             audience: _configuration["Jwt:Audience"],
             claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(
-                                   int.Parse(_configuration["Jwt:ExpiryMinutes"]!)),
+            expires: rememberMe
+                ? DateTime.UtcNow.AddDays(30)   // Remember me → 30 gün
+                : DateTime.UtcNow.AddHours(8),  // Normal → 8 saat
             signingCredentials: credentials
         );
 

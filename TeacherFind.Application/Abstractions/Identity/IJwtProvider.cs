@@ -9,5 +9,5 @@ namespace TeacherFind.Application.Abstractions.Identity;
 
 public interface IJwtProvider
 {
-    string GenerateToken(User user);
+    string GenerateToken(User user, bool rememberMe = false);
 }
