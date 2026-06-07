@@ -173,8 +173,6 @@ public class TutorService : ITutorService
         if (profile is null)
             return null;
 
-        var fullImageUrl = BuildFullUrl(profile.User.ProfileImageUrl ?? "");
-
         return new TutorProfileDto
         {
             UserId = profile.UserId,
@@ -391,6 +389,7 @@ public class TutorService : ITutorService
             { ".jpg", ".jpeg", ".png", ".webp" };
 
         const long maxFileSize = 5 * 1024 * 1024;
+        const int maxPhotos = 2;
 
         var uploadedPhotos = new List<ListingPhotoDto>();
 
@@ -400,6 +399,19 @@ public class TutorService : ITutorService
         Directory.CreateDirectory(uploadsFolder);
 
         var existingPhotos = await _listingRepository.GetPhotosByListingIdAsync(listingId);
+
+        // ── 2 fotoğraf sınırı ──────────────────────────────────────
+        if (existingPhotos.Count >= maxPhotos)
+            throw new InvalidOperationException(
+                $"Bir ilana en fazla {maxPhotos} fotoğraf yüklenebilir. " +
+                $"Mevcut fotoğrafı silip yenisini yükleyebilirsiniz.");
+
+        if (existingPhotos.Count + files.Count > maxPhotos)
+            throw new InvalidOperationException(
+                $"En fazla {maxPhotos} fotoğraf yüklenebilir. " +
+                $"Şu an {existingPhotos.Count} fotoğrafınız var, " +
+                $"{maxPhotos - existingPhotos.Count} tane daha ekleyebilirsiniz.");
+        // ───────────────────────────────────────────────────────────
 
         if (isMain)
         {
@@ -785,7 +797,6 @@ public class TutorService : ITutorService
         catch
         {
             // Fiziksel dosya silinemese bile veritabanı işlemini bozmayalım.
-            // Gerekirse burada ileride loglama yapılabilir.
         }
     }
 
