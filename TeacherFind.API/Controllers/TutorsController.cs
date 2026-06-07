@@ -130,10 +130,10 @@ public class TutorsController : ControllerBase
             return NotFound(new { message = "Kullanıcı bulunamadı." });
 
         var uploadsFolder = Path.Combine(
-            Directory.GetCurrentDirectory(),
-            "wwwroot",
-            "uploads",
-            "avatars");
+                  AppContext.BaseDirectory,
+                   "wwwroot",
+                   "uploads",
+                   "avatars");
 
         Directory.CreateDirectory(uploadsFolder);
 

@@ -14,6 +14,7 @@ public class AuthService : IAuthService
     private readonly IPasswordHasher _passwordHasher;
     private readonly ITeacherRepository _teacherRepository;
 
+
     public AuthService(
         IUserRepository userRepository,
         IJwtProvider jwtProvider,
@@ -82,7 +83,7 @@ public class AuthService : IAuthService
         return user;
     }
 
-    public async Task<LoginResponse?> LoginAsync(string email, string password)
+    public async Task<LoginResponse?> LoginAsync(string email, string password, bool rememberMe = false)
     {
         if (string.IsNullOrWhiteSpace(email) ||
             string.IsNullOrWhiteSpace(password))
@@ -110,7 +111,7 @@ public class AuthService : IAuthService
         if (!user.IsEmailVerified && !user.IsPhoneVerified)
             return null;
 
-        var token = _jwtProvider.GenerateToken(user);
+        var token = _jwtProvider.GenerateToken(user, rememberMe);
 
         return new LoginResponse
         {

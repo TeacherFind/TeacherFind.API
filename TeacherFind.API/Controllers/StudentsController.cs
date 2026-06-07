@@ -131,7 +131,7 @@ public class StudentsController : ControllerBase
             throw new InvalidOperationException("Dosya boyutu en fazla 2 MB olabilir.");
 
         var uploadsFolder = Path.Combine(
-            Directory.GetCurrentDirectory(),
+            AppContext.BaseDirectory,
             "wwwroot",
             "uploads",
             "avatars");

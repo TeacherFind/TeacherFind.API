@@ -107,9 +107,7 @@ public class AuthController : ControllerBase
         if (user is null || !user.IsActive)
             return Unauthorized(new { message = InvalidLoginMessage });
 
-        var isPasswordValid = _passwordHasher.Verify(
-            request.Password,
-            user.PasswordHash);
+        var isPasswordValid = _passwordHasher.Verify(request.Password, user.PasswordHash);
 
         if (!isPasswordValid)
             return Unauthorized(new { message = InvalidLoginMessage });
@@ -124,7 +122,7 @@ public class AuthController : ControllerBase
             });
         }
 
-        var result = await _authService.LoginAsync(email, request.Password);
+        var result = await _authService.LoginAsync(email, request.Password, request.RememberMe);
 
         if (result is null)
             return Unauthorized(new { message = InvalidLoginMessage });
@@ -169,10 +167,7 @@ public class AuthController : ControllerBase
         if (dto is null)
             return BadRequest(new { message = "Doğrulama bilgileri gönderilmedi." });
 
-        var code = await _verificationRepository.GetValidCode(
-            dto.UserId,
-            dto.Code,
-            "Phone");
+        var code = await _verificationRepository.GetValidCode(dto.UserId, dto.Code, "Phone");
 
         if (code is null)
             return BadRequest(new { message = InvalidCodeMessage });
@@ -198,10 +193,7 @@ public class AuthController : ControllerBase
         if (dto is null)
             return BadRequest(new { message = "Doğrulama bilgileri gönderilmedi." });
 
-        var code = await _verificationRepository.GetValidCode(
-            dto.UserId,
-            dto.Code,
-            "Email");
+        var code = await _verificationRepository.GetValidCode(dto.UserId, dto.Code, "Email");
 
         if (code is null)
             return BadRequest(new { message = InvalidCodeMessage });
@@ -232,12 +224,7 @@ public class AuthController : ControllerBase
         var user = await _userRepository.GetByEmailAsync(email);
 
         if (user is null || user.IsEmailVerified)
-        {
-            return Ok(new
-            {
-                message = GenericEmailVerificationMessage
-            });
-        }
+            return Ok(new { message = GenericEmailVerificationMessage });
 
         try
         {
@@ -251,17 +238,13 @@ public class AuthController : ControllerBase
                 user.Id);
         }
 
-        return Ok(new
-        {
-            message = GenericEmailVerificationMessage
-        });
+        return Ok(new { message = GenericEmailVerificationMessage });
     }
 
     // POST /api/auth/forgot-password
     [HttpPost("forgot-password")]
     [EnableRateLimiting("auth-limit")]
-    public async Task<IActionResult> ForgotPassword(
-        [FromBody] ForgotPasswordDto dto)
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
     {
         if (dto is null || string.IsNullOrWhiteSpace(dto.Email))
             return BadRequest(new { message = "E-posta adresi zorunludur." });
@@ -284,17 +267,13 @@ public class AuthController : ControllerBase
             }
         }
 
-        return Ok(new
-        {
-            message = GenericPasswordResetMessage
-        });
+        return Ok(new { message = GenericPasswordResetMessage });
     }
 
     // POST /api/auth/reset-password
     [HttpPost("reset-password")]
     [EnableRateLimiting("auth-limit")]
-    public async Task<IActionResult> ResetPassword(
-        [FromBody] ResetPasswordDto dto)
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
     {
         if (dto is null)
             return BadRequest(new { message = "Şifre sıfırlama bilgileri gönderilmedi." });
@@ -315,10 +294,7 @@ public class AuthController : ControllerBase
         if (user is null)
             return BadRequest(new { message = InvalidCodeMessage });
 
-        var code = await _verificationRepository.GetValidCode(
-            user.Id,
-            dto.Code,
-            "PasswordReset");
+        var code = await _verificationRepository.GetValidCode(user.Id, dto.Code, "PasswordReset");
 
         if (code is null)
             return BadRequest(new { message = InvalidCodeMessage });
@@ -327,7 +303,6 @@ public class AuthController : ControllerBase
         user.RefreshToken = null;
         user.RefreshTokenExpiryTime = null;
         user.UpdatedAt = DateTime.UtcNow;
-
         code.IsUsed = true;
 
         await _userRepository.SaveChangesAsync();
@@ -339,8 +314,7 @@ public class AuthController : ControllerBase
     [Authorize]
     [HttpPost("change-password")]
     [EnableRateLimiting("auth-limit")]
-    public async Task<IActionResult> ChangePassword(
-        [FromBody] ChangePasswordDto dto)
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
     {
         if (dto is null)
             return BadRequest(new { message = "İstek boş olamaz." });
@@ -348,11 +322,8 @@ public class AuthController : ControllerBase
         if (string.IsNullOrWhiteSpace(dto.CurrentPassword))
             return BadRequest(new { message = "Mevcut şifre zorunludur." });
 
-        if (string.IsNullOrWhiteSpace(dto.NewPassword) ||
-            dto.NewPassword.Length < 6)
-        {
+        if (string.IsNullOrWhiteSpace(dto.NewPassword) || dto.NewPassword.Length < 6)
             return BadRequest(new { message = "Yeni şifre en az 6 karakter olmalıdır." });
-        }
 
         var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -426,14 +397,8 @@ public class AuthController : ControllerBase
     }
 
     private static string GenerateSixDigitCode()
-    {
-        return RandomNumberGenerator
-            .GetInt32(100000, 1000000)
-            .ToString();
-    }
+        => RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
 
     private static string NormalizeEmail(string email)
-    {
-        return email.Trim();
-    }
+        => email.Trim();
 }
