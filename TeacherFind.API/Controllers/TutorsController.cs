@@ -106,7 +106,7 @@ public class TutorsController : ControllerBase
     [Authorize(Policy = "TutorOnly")]
     [HttpPost("avatar")]
     [Consumes("multipart/form-data")]
-    public async Task<IActionResult> UploadAvatar(IFormFile? file)
+    public async Task<IActionResult> UploadAvatar([FromForm(Name = "file")] IFormFile? file)
     {
         var currentUserId = GetRequiredCurrentUserId();
 
@@ -130,10 +130,10 @@ public class TutorsController : ControllerBase
             return NotFound(new { message = "Kullanıcı bulunamadı." });
 
         var uploadsFolder = Path.Combine(
-            Directory.GetCurrentDirectory(),
-            "wwwroot",
-            "uploads",
-            "avatars");
+                  AppContext.BaseDirectory,
+                   "wwwroot",
+                   "uploads",
+                   "avatars");
 
         Directory.CreateDirectory(uploadsFolder);
 

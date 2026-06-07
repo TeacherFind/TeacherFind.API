@@ -75,7 +75,7 @@ public class StudentsController : ControllerBase
     [HttpPost("avatar")]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(typeof(object), 200)]
-    public async Task<IActionResult> UploadAvatar(IFormFile? file)
+    public async Task<IActionResult> UploadAvatar([FromForm(Name = "file")] IFormFile? file)
     {
         var currentUserId = GetRequiredCurrentUserId();
 
@@ -131,7 +131,7 @@ public class StudentsController : ControllerBase
             throw new InvalidOperationException("Dosya boyutu en fazla 2 MB olabilir.");
 
         var uploadsFolder = Path.Combine(
-            Directory.GetCurrentDirectory(),
+            AppContext.BaseDirectory,
             "wwwroot",
             "uploads",
             "avatars");

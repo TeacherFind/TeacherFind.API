@@ -99,7 +99,7 @@ public class AdminListingsController : ControllerBase
     {
         var adminUserId = GetCurrentUserId();
         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-        var userAgent = Request.Headers.UserAgent.ToString();
+        var userAgent = Request.Headers["User-Agent"].ToString();
 
         var result = await _adminListingService.ApproveAsync(id, adminUserId, ipAddress, userAgent);
 
@@ -114,8 +114,7 @@ public class AdminListingsController : ControllerBase
     {
         var adminUserId = GetCurrentUserId();
         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-        var userAgent = Request.Headers.UserAgent.ToString();
-
+        var userAgent = Request.Headers["User-Agent"].ToString();
         var result = await _adminListingService.RejectAsync(
             id, request.Reason, adminUserId, ipAddress, userAgent);
 
