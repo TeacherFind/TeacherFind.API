@@ -75,7 +75,7 @@ public class StudentsController : ControllerBase
     [HttpPost("avatar")]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(typeof(object), 200)]
-    public async Task<IActionResult> UploadAvatar([FromForm(Name = "file")] IFormFile? file)
+    public async Task<IActionResult> UploadAvatar(IFormFile? file)
     {
         var currentUserId = GetRequiredCurrentUserId();
 

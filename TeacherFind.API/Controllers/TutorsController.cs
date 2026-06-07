@@ -106,7 +106,7 @@ public class TutorsController : ControllerBase
     [Authorize(Policy = "TutorOnly")]
     [HttpPost("avatar")]
     [Consumes("multipart/form-data")]
-    public async Task<IActionResult> UploadAvatar([FromForm(Name = "file")] IFormFile? file)
+    public async Task<IActionResult> UploadAvatar(IFormFile? file)
     {
         var currentUserId = GetRequiredCurrentUserId();
 
