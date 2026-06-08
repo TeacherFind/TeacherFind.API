@@ -38,21 +38,25 @@ public class AdminListingsController : ControllerBase
     {
         var listing = await _adminListingService.GetByIdAsync(id);
 
-        if (listing == null)
+        if (listing is null)
             return NotFound(new { message = "İlan bulunamadı" });
 
         return Ok(listing);
     }
 
-    // GET /api/admin/listings — all listings with optional status filter
     [HttpGet]
     public async Task<IActionResult> GetAll(
         [FromQuery] string? status,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
     {
+        page = page <= 0 ? 1 : page;
+        pageSize = pageSize <= 0 ? 20 : pageSize;
+
         var query = _context.TeacherListings
-            .Include(x => x.TeacherProfile).ThenInclude(p => p.User)
+            .AsNoTracking()
+            .Include(x => x.TeacherProfile)
+                .ThenInclude(p => p.User)
             .Include(x => x.Subject)
             .Include(x => x.City)
             .AsQueryable();
@@ -69,6 +73,7 @@ public class AdminListingsController : ControllerBase
             .Select(x => new AdminListingDto
             {
                 Id = x.Id,
+                TeacherProfileId = x.TeacherProfileId,
                 Title = x.Title,
                 TeacherName = x.TeacherProfile.User.FullName,
                 TeacherEmail = x.TeacherProfile.User.Email,
@@ -95,13 +100,18 @@ public class AdminListingsController : ControllerBase
     }
 
     [HttpPut("{id:guid}/approve")]
+    [HttpPost("{id:guid}/approve")]
     public async Task<IActionResult> Approve(Guid id)
     {
         var adminUserId = GetCurrentUserId();
         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
         var userAgent = Request.Headers["User-Agent"].ToString();
 
-        var result = await _adminListingService.ApproveAsync(id, adminUserId, ipAddress, userAgent);
+        var result = await _adminListingService.ApproveAsync(
+            id,
+            adminUserId,
+            ipAddress,
+            userAgent);
 
         if (!result)
             return NotFound(new { message = "İlan bulunamadı" });
@@ -110,13 +120,19 @@ public class AdminListingsController : ControllerBase
     }
 
     [HttpPut("{id:guid}/reject")]
+    [HttpPost("{id:guid}/reject")]
     public async Task<IActionResult> Reject(Guid id, [FromBody] RejectListingRequest request)
     {
         var adminUserId = GetCurrentUserId();
         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
         var userAgent = Request.Headers["User-Agent"].ToString();
+
         var result = await _adminListingService.RejectAsync(
-            id, request.Reason, adminUserId, ipAddress, userAgent);
+            id,
+            request.Reason,
+            adminUserId,
+            ipAddress,
+            userAgent);
 
         if (!result)
             return NotFound(new { message = "İlan bulunamadı" });
