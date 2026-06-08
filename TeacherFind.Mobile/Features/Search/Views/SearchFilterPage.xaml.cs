@@ -16,4 +16,14 @@ public partial class SearchFilterPage : ContentPage
     {
         await Navigation.PopModalAsync();
     }
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+
+        // ViewModel'e eriþip verileri baþlat
+        if (BindingContext is SearchFilterViewModel viewModel)
+        {
+            await viewModel.InitializeAsync();
+        }
+    }
 }

@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TeacherFind.Application.Abstractions.Services;
@@ -30,20 +30,21 @@ public class AdminUsersController : ControllerBase
     {
         var user = await _adminUserService.GetByIdAsync(id);
 
-        if (user == null)
+        if (user is null)
             return NotFound(new { message = "Kullanıcı bulunamadı" });
 
         return Ok(user);
     }
 
+    [HttpPut("{id:guid}/status")]
     [HttpPost("{id:guid}/status")]
     public async Task<IActionResult> UpdateStatus(
         Guid id,
         [FromBody] UpdateUserStatusRequest request)
     {
         var adminUserId = GetCurrentUserId();
-        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-        var userAgent = Request.Headers.UserAgent.ToString();
+        var ipAddress = GetIpAddress();
+        var userAgent = GetUserAgent();
 
         var result = await _adminUserService.UpdateStatusAsync(
             id,
@@ -58,6 +59,7 @@ public class AdminUsersController : ControllerBase
         return Ok(new { message = "Kullanıcı durumu güncellendi" });
     }
 
+    [HttpPut("{id:guid}/role")]
     [HttpPost("{id:guid}/role")]
     [Authorize(Policy = "SuperAdminOnly")]
     public async Task<IActionResult> UpdateRole(
@@ -65,8 +67,8 @@ public class AdminUsersController : ControllerBase
         [FromBody] UpdateUserRoleRequest request)
     {
         var adminUserId = GetCurrentUserId();
-        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-        var userAgent = Request.Headers.UserAgent.ToString();
+        var ipAddress = GetIpAddress();
+        var userAgent = GetUserAgent();
 
         var result = await _adminUserService.UpdateRoleAsync(
             id,
@@ -81,13 +83,14 @@ public class AdminUsersController : ControllerBase
         return Ok(new { message = "Kullanıcı rolü güncellendi" });
     }
 
+    [HttpPut("{id:guid}/make-admin")]
     [HttpPost("{id:guid}/make-admin")]
     [Authorize(Policy = "SuperAdminOnly")]
     public async Task<IActionResult> MakeAdmin(Guid id)
     {
         var adminUserId = GetCurrentUserId();
-        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-        var userAgent = Request.Headers.UserAgent.ToString();
+        var ipAddress = GetIpAddress();
+        var userAgent = GetUserAgent();
 
         var result = await _adminUserService.UpdateRoleAsync(
             id,
@@ -110,5 +113,15 @@ public class AdminUsersController : ControllerBase
             throw new UnauthorizedAccessException("Geçersiz kullanıcı tokenı");
 
         return userId;
+    }
+
+    private string? GetIpAddress()
+    {
+        return HttpContext.Connection.RemoteIpAddress?.ToString();
+    }
+
+    private string? GetUserAgent()
+    {
+        return Request.Headers["User-Agent"].ToString();
     }
 }

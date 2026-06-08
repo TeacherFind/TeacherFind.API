@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
@@ -13,6 +13,9 @@ namespace TeacherFind.API.Controllers.Admin;
 [Authorize(Policy = "AdminOnly")]
 public class AdminListingsController : ControllerBase
 {
+    private const int DefaultPage = 1;
+    private const int DefaultPageSize = 20;
+
     private readonly IAdminListingService _adminListingService;
     private readonly AppDbContext _context;
 
@@ -26,10 +29,14 @@ public class AdminListingsController : ControllerBase
 
     [HttpGet("pending")]
     public async Task<IActionResult> GetPendingListings(
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20)
+        [FromQuery] int page = DefaultPage,
+        [FromQuery] int pageSize = DefaultPageSize)
     {
+        page = NormalizePage(page);
+        pageSize = NormalizePageSize(pageSize);
+
         var result = await _adminListingService.GetPendingListingsAsync(page, pageSize);
+
         return Ok(result);
     }
 
@@ -38,21 +45,25 @@ public class AdminListingsController : ControllerBase
     {
         var listing = await _adminListingService.GetByIdAsync(id);
 
-        if (listing == null)
+        if (listing is null)
             return NotFound(new { message = "İlan bulunamadı" });
 
         return Ok(listing);
     }
 
-    // GET /api/admin/listings — all listings with optional status filter
     [HttpGet]
     public async Task<IActionResult> GetAll(
         [FromQuery] string? status,
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20)
+        [FromQuery] int page = DefaultPage,
+        [FromQuery] int pageSize = DefaultPageSize)
     {
+        page = NormalizePage(page);
+        pageSize = NormalizePageSize(pageSize);
+
         var query = _context.TeacherListings
-            .Include(x => x.TeacherProfile).ThenInclude(p => p.User)
+            .AsNoTracking()
+            .Include(x => x.TeacherProfile)
+                .ThenInclude(x => x.User)
             .Include(x => x.Subject)
             .Include(x => x.City)
             .AsQueryable();
@@ -69,6 +80,7 @@ public class AdminListingsController : ControllerBase
             .Select(x => new AdminListingDto
             {
                 Id = x.Id,
+                TeacherProfileId = x.TeacherProfileId,
                 Title = x.Title,
                 TeacherName = x.TeacherProfile.User.FullName,
                 TeacherEmail = x.TeacherProfile.User.Email,
@@ -94,14 +106,19 @@ public class AdminListingsController : ControllerBase
         });
     }
 
+    [HttpPut("{id:guid}/approve")]
     [HttpPost("{id:guid}/approve")]
     public async Task<IActionResult> Approve(Guid id)
     {
         var adminUserId = GetCurrentUserId();
-        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-        var userAgent = Request.Headers["User-Agent"].ToString();
+        var ipAddress = GetIpAddress();
+        var userAgent = GetUserAgent();
 
-        var result = await _adminListingService.ApproveAsync(id, adminUserId, ipAddress, userAgent);
+        var result = await _adminListingService.ApproveAsync(
+            id,
+            adminUserId,
+            ipAddress,
+            userAgent);
 
         if (!result)
             return NotFound(new { message = "İlan bulunamadı" });
@@ -109,14 +126,20 @@ public class AdminListingsController : ControllerBase
         return Ok(new { message = "İlan onaylandı" });
     }
 
+    [HttpPut("{id:guid}/reject")]
     [HttpPost("{id:guid}/reject")]
     public async Task<IActionResult> Reject(Guid id, [FromBody] RejectListingRequest request)
     {
         var adminUserId = GetCurrentUserId();
-        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-        var userAgent = Request.Headers["User-Agent"].ToString();
+        var ipAddress = GetIpAddress();
+        var userAgent = GetUserAgent();
+
         var result = await _adminListingService.RejectAsync(
-            id, request.Reason, adminUserId, ipAddress, userAgent);
+            id,
+            request.Reason,
+            adminUserId,
+            ipAddress,
+            userAgent);
 
         if (!result)
             return NotFound(new { message = "İlan bulunamadı" });
@@ -132,5 +155,25 @@ public class AdminListingsController : ControllerBase
             throw new UnauthorizedAccessException("Geçersiz kullanıcı tokenı");
 
         return userId;
+    }
+
+    private string? GetIpAddress()
+    {
+        return HttpContext.Connection.RemoteIpAddress?.ToString();
+    }
+
+    private string? GetUserAgent()
+    {
+        return Request.Headers["User-Agent"].ToString();
+    }
+
+    private static int NormalizePage(int page)
+    {
+        return page <= 0 ? DefaultPage : page;
+    }
+
+    private static int NormalizePageSize(int pageSize)
+    {
+        return pageSize <= 0 ? DefaultPageSize : pageSize;
     }
 }
