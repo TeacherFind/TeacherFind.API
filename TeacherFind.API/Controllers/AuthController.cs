@@ -9,6 +9,7 @@ using TeacherFind.Application.Abstractions.Services;
 using TeacherFind.Contracts.Auth;
 using TeacherFind.Domain.Entities;
 using System.Security.Cryptography;
+using FirebaseAdmin.Auth;
 
 namespace TeacherFind.API.Controllers;
 
@@ -339,6 +340,55 @@ public class AuthController : ControllerBase
             return BadRequest(new { message = "Mevcut şifre hatalı." });
 
         return Ok(new { message = "Şifre başarıyla değiştirildi." });
+    }
+
+    // POST /api/auth/social-login
+    [HttpPost("social-login")]
+    [EnableRateLimiting("auth-limit")]
+    public async Task<IActionResult> SocialLogin([FromBody] SocialLoginRequest request)
+    {
+        if (request is null ||
+            string.IsNullOrWhiteSpace(request.IdToken) ||
+            string.IsNullOrWhiteSpace(request.Provider))
+        {
+            return BadRequest(new { message = "Provider ve idToken zorunludur." });
+        }
+
+        var provider = request.Provider.ToLowerInvariant();
+
+        if (provider != "google" && provider != "apple")
+            return BadRequest(new { message = "Desteklenmeyen provider. 'google' veya 'apple' kullanın." });
+
+        FirebaseToken decodedToken;
+
+        try
+        {
+            decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(request.IdToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Sosyal giriş için geçersiz Firebase token. Provider: {Provider}", provider);
+            return Unauthorized(new { message = "Geçersiz veya süresi dolmuş token." });
+        }
+
+        decodedToken.Claims.TryGetValue("email", out var emailObj);
+        decodedToken.Claims.TryGetValue("name", out var nameObj);
+
+        var email = emailObj?.ToString();
+        var fullName = nameObj?.ToString() ?? email ?? "Kullanıcı";
+
+        if (string.IsNullOrWhiteSpace(email))
+            return BadRequest(new { message = "Firebase token içinde e-posta bulunamadı." });
+
+        try
+        {
+            var result = await _authService.SocialLoginAsync(email, fullName, provider);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     // =====================================================
