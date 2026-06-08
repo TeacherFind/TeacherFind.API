@@ -42,9 +42,11 @@ jobs:
             },
             "Cors": {
               "AllowedOrigins": [
-                "http://ozeldersvip.com",
-                "https://ozeldersvip.com",
-                "http://45.195.231.69"
+                 "http://ozeldersvip.com",
+                 "https://ozeldersvip.com",
+                 "http://www.ozeldersvip.com",
+                 "https://www.ozeldersvip.com",
+                 "http://45.195.231.69"
               ]
             }
           }
