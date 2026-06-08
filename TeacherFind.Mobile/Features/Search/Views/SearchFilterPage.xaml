@@ -3,55 +3,70 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="TeacherFind.Mobile.Features.Search.Views.SearchFilterPage"
              Title="Filtreler"
-             BackgroundColor="#F5F7FA">
+             BackgroundColor="#F8F9FA">
 
     <Grid RowDefinitions="Auto, *, Auto" Padding="20">
 
-        <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,10,0,20">
-            <Label Grid.Column="0" Text="Filtreler" FontSize="22" FontAttributes="Bold" TextColor="#0A194F" VerticalOptions="Center"/>
-            <Button Grid.Column="1" Text="✕" FontSize="18" TextColor="Gray" BackgroundColor="Transparent" Clicked="OnCloseButtonClicked"/>
+        <Grid Grid.Row="0" ColumnDefinitions="Auto, *, Auto" Margin="0,0,0,20">
+            <Label Grid.Column="0" Text="🎛️" FontSize="20" VerticalOptions="Center" Margin="0,0,10,0"/>
+            <Label Grid.Column="1" Text="Filtreler" FontSize="22" FontAttributes="Bold" TextColor="#0A194F" VerticalOptions="Center"/>
+            <Button Grid.Column="2" Text="✕" FontSize="18" TextColor="Gray" BackgroundColor="Transparent" Clicked="OnCloseButtonClicked"/>
         </Grid>
 
-        <ScrollView Grid.Row="1" Margin="0,0,0,20">
+        <ScrollView Grid.Row="1" VerticalScrollBarVisibility="Never" Margin="0,0,0,20">
             <VerticalStackLayout Spacing="20">
 
-                <VerticalStackLayout Spacing="5">
-                    <Label Text="🔍 ARAMA" FontSize="11" FontAttributes="Bold" TextColor="Gray"/>
-                    <Border StrokeShape="RoundRectangle 10" Stroke="#E0E0E0" BackgroundColor="White" Padding="10,0">
-                        <Entry Text="{Binding SearchText}" Placeholder="İsim veya konu..." PlaceholderColor="LightGray" HeightRequest="45"/>
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="🔍 ARAMA" FontSize="12" FontAttributes="Bold" TextColor="Gray"/>
+                    <Border StrokeShape="RoundRectangle 10" Stroke="#E0E0E0" BackgroundColor="White" Padding="15,5">
+                        <Entry Text="{Binding SearchText}" Placeholder="İsim veya konu..." TextColor="#212121" PlaceholderColor="#A0A0A0" BackgroundColor="Transparent" ClearButtonVisibility="WhileEditing"/>
                     </Border>
                 </VerticalStackLayout>
 
-                <VerticalStackLayout Spacing="5">
-                    <Label Text="🗂 KATEGORİ" FontSize="11" FontAttributes="Bold" TextColor="Gray"/>
-                    <Border StrokeShape="RoundRectangle 10" Stroke="#E0E0E0" BackgroundColor="White" Padding="10,0">
-                        <Picker Title="Kategori Seçin" TextColor="#212121" ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" HeightRequest="45"/>
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="📁 KATEGORİ" FontSize="12" FontAttributes="Bold" TextColor="Gray"/>
+                    <Border StrokeShape="RoundRectangle 10" Stroke="#E0E0E0" BackgroundColor="White" Padding="15,0">
+                        <Grid ColumnDefinitions="*, Auto">
+                            <Picker Grid.Column="0" Title="Tüm Kategoriler" TextColor="#212121" TitleColor="#212121" BackgroundColor="Transparent" 
+                                    ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}"/>
+                            <Label Grid.Column="1" Text="▼" FontSize="12" TextColor="Gray" VerticalOptions="Center" Margin="0,0,5,0" InputTransparent="True"/>
+                        </Grid>
                     </Border>
                 </VerticalStackLayout>
 
-                <VerticalStackLayout Spacing="5">
-                    <Label Text="📍 KONUM" FontSize="11" FontAttributes="Bold" TextColor="Gray"/>
-                    <Border StrokeShape="RoundRectangle 10" Stroke="#E0E0E0" BackgroundColor="White" Padding="10,0">
-                        <Picker Title="Konum Seçin" TextColor="#212121" ItemsSource="{Binding Locations}" SelectedItem="{Binding SelectedLocation}" HeightRequest="45"/>
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="📍 KONUM" FontSize="12" FontAttributes="Bold" TextColor="Gray"/>
+                    <Border StrokeShape="RoundRectangle 10" Stroke="#E0E0E0" BackgroundColor="White" Padding="15,0">
+                        <Grid ColumnDefinitions="*, Auto">
+                            <Picker Grid.Column="0" Title="Fark Etmez" TextColor="#212121" TitleColor="#212121" BackgroundColor="Transparent"
+                                    ItemsSource="{Binding Locations}" SelectedItem="{Binding SelectedLocation}"/>
+                            <Label Grid.Column="1" Text="▼" FontSize="12" TextColor="Gray" VerticalOptions="Center" Margin="0,0,5,0" InputTransparent="True"/>
+                        </Grid>
                     </Border>
                 </VerticalStackLayout>
 
-                <VerticalStackLayout Spacing="5">
-                    <Label Text="💻 DERS TİPİ" FontSize="11" FontAttributes="Bold" TextColor="Gray"/>
-                    <Border StrokeShape="RoundRectangle 10" Stroke="#E0E0E0" BackgroundColor="White" Padding="10,0">
-                        <Picker Title="Ders Tipi Seçin" TextColor="#212121" ItemsSource="{Binding LessonTypes}" SelectedItem="{Binding SelectedLessonType}" HeightRequest="45"/>
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="💻 DERS TİPİ" FontSize="12" FontAttributes="Bold" TextColor="Gray"/>
+                    <Border StrokeShape="RoundRectangle 10" Stroke="#E0E0E0" BackgroundColor="White" Padding="15,0">
+                        <Grid ColumnDefinitions="*, Auto">
+                            <Picker Grid.Column="0" Title="Tümü" TextColor="#212121" TitleColor="#212121" BackgroundColor="Transparent"
+                                    ItemsSource="{Binding LessonTypes}" SelectedItem="{Binding SelectedLessonType}"/>
+                            <Label Grid.Column="1" Text="▼" FontSize="12" TextColor="Gray" VerticalOptions="Center" Margin="0,0,5,0" InputTransparent="True"/>
+                        </Grid>
                     </Border>
                 </VerticalStackLayout>
 
-                <VerticalStackLayout Spacing="5">
-                    <Label Text="💰 FİYAT ARALIĞI" FontSize="11" FontAttributes="Bold" TextColor="Gray"/>
-                    <Grid ColumnDefinitions="*, 15, *">
-                        <Border Grid.Column="0" StrokeShape="RoundRectangle 10" Stroke="#E0E0E0" BackgroundColor="White" Padding="10,0">
-                            <Entry Text="{Binding MinPrice}" Placeholder="Min" Keyboard="Numeric" PlaceholderColor="LightGray" HeightRequest="45" HorizontalTextAlignment="Center"/>
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="💰 FİYAT ARALIĞI" FontSize="12" FontAttributes="Bold" TextColor="Gray"/>
+                    <Grid ColumnDefinitions="*, Auto, *" ColumnSpacing="10" VerticalOptions="Center">
+                        <Border Grid.Column="0" StrokeShape="RoundRectangle 10" Stroke="#E0E0E0" BackgroundColor="White" Padding="15,0">
+                            <Entry Text="{Binding MinPrice}" Placeholder="Min" Keyboard="Numeric" TextColor="#212121" HorizontalTextAlignment="Center" BackgroundColor="Transparent"/>
                         </Border>
-                        <Label Grid.Column="1" Text="-" VerticalOptions="Center" HorizontalOptions="Center" TextColor="Gray"/>
-                        <Border Grid.Column="2" StrokeShape="RoundRectangle 10" Stroke="#E0E0E0" BackgroundColor="White" Padding="10,0">
-                            <Entry Text="{Binding MaxPrice}" Placeholder="Max" Keyboard="Numeric" PlaceholderColor="LightGray" HeightRequest="45" HorizontalTextAlignment="Center"/>
+
+                        <Label Grid.Column="1" Text="-" FontSize="18" TextColor="Gray" VerticalOptions="Center"/>
+
+                        <Border Grid.Column="2" StrokeShape="RoundRectangle 10" Stroke="#E0E0E0" BackgroundColor="White" Padding="15,0">
+                            <Entry Text="{Binding MaxPrice}" Placeholder="Max" Keyboard="Numeric" TextColor="#212121" HorizontalTextAlignment="Center" BackgroundColor="Transparent"/>
                         </Border>
                     </Grid>
                 </VerticalStackLayout>
@@ -59,6 +74,8 @@
             </VerticalStackLayout>
         </ScrollView>
 
-        <Button Grid.Row="2" Text="Filtreleri Uygula" Command="{Binding ApplyFiltersCommand}" BackgroundColor="#2962FF" TextColor="White" FontAttributes="Bold" CornerRadius="12" HeightRequest="50"/>
+        <Button Grid.Row="2" Text="Filtreleri Uygula" Command="{Binding ApplyFiltersCommand}" BackgroundColor="#2D68FE" TextColor="White" 
+                FontAttributes="Bold" FontSize="16" CornerRadius="12" HeightRequest="55" Margin="0,10,0,0"/>
+
     </Grid>
 </ContentPage>
