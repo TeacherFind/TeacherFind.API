@@ -39,8 +39,10 @@ public class ExceptionHandlingMiddleware
                 throw;
             }
 
+            context.Response.Clear();
+
             await ApplyCorsPolicyAsync(context);
-            await HandleExceptionAsync(context, ex);
+            await WriteExceptionResponseAsync(context, ex);
         }
     }
 
@@ -60,9 +62,8 @@ public class ExceptionHandlingMiddleware
         _corsService.ApplyResult(corsResult, context.Response);
     }
 
-    private static async Task HandleExceptionAsync(HttpContext context, Exception ex)
+    private static async Task WriteExceptionResponseAsync(HttpContext context, Exception ex)
     {
-        context.Response.Clear();
         context.Response.ContentType = "application/json";
 
         var (statusCode, message) = ex switch
