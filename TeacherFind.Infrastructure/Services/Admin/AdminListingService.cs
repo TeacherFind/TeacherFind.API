@@ -12,6 +12,9 @@ public class AdminListingService : IAdminListingService
     private const string ActiveStatus = "Active";
     private const string RejectedStatus = "Rejected";
 
+    private const string ListingNotificationType = "Listing";
+    private const string AdminSenderRole = "Admin";
+
     private readonly AppDbContext _context;
     private readonly IAdminActionLogService _adminActionLogService;
     private readonly INotificationService _notificationService;
@@ -33,16 +36,15 @@ public class AdminListingService : IAdminListingService
         int page = 1,
         int pageSize = 20)
     {
-        page = page <= 0 ? 1 : page;
-        pageSize = pageSize <= 0 ? 20 : pageSize;
+        page = NormalizePage(page);
+        pageSize = NormalizePageSize(pageSize);
 
         var query = _context.TeacherListings
             .AsNoTracking()
             .Where(x =>
                 !x.IsApproved &&
                 x.IsActive &&
-                x.Status == PendingApprovalStatus)
-            .AsQueryable();
+                x.Status == PendingApprovalStatus);
 
         var totalCount = await query.CountAsync();
 
@@ -134,9 +136,7 @@ public class AdminListingService : IAdminListingService
         string? ipAddress,
         string? userAgent)
     {
-        var listing = await _context.TeacherListings
-            .Include(x => x.TeacherProfile)
-            .FirstOrDefaultAsync(x => x.Id == listingId);
+        var listing = await GetListingForUpdateAsync(listingId);
 
         if (listing is null)
             return false;
@@ -149,25 +149,22 @@ public class AdminListingService : IAdminListingService
         await _context.SaveChangesAsync();
 
         await TrySendNotificationAsync(
-            listing.TeacherProfile.UserId,
-            "İlanınız onaylandı",
-            $"{listing.Title} başlıklı ilanınız onaylandı ve yayına alındı.",
-            "Listing",
-            adminUserId,
-            "Admin",
-            $"/tutor/listings/{listing.Id}",
-            listing.Id,
-            "İlan onaylandı fakat bildirim gönderilemedi.");
+            userId: listing.TeacherProfile.UserId,
+            title: "İlanınız onaylandı",
+            message: $"{listing.Title} başlıklı ilanınız onaylandı ve yayına alındı.",
+            senderUserId: adminUserId,
+            url: GetListingUrl(listing.Id),
+            listingId: listing.Id,
+            warningMessage: "İlan onaylandı fakat bildirim gönderilemedi.");
 
         await TryWriteAdminLogAsync(
-            adminUserId,
-            "ApproveListing",
-            "TeacherListing",
-            listing.Id,
-            "Admin ilanın durumunu Active yaptı.",
-            ipAddress,
-            userAgent,
-            "İlan onaylandı fakat admin action log yazılamadı.");
+            adminUserId: adminUserId,
+            action: "ApproveListing",
+            entityId: listing.Id,
+            description: "Admin ilanın durumunu Active yaptı.",
+            ipAddress: ipAddress,
+            userAgent: userAgent,
+            warningMessage: "İlan onaylandı fakat admin action log yazılamadı.");
 
         return true;
     }
@@ -179,9 +176,7 @@ public class AdminListingService : IAdminListingService
         string? ipAddress,
         string? userAgent)
     {
-        var listing = await _context.TeacherListings
-            .Include(x => x.TeacherProfile)
-            .FirstOrDefaultAsync(x => x.Id == listingId);
+        var listing = await GetListingForUpdateAsync(listingId);
 
         if (listing is null)
             return false;
@@ -197,44 +192,46 @@ public class AdminListingService : IAdminListingService
             ? $"{listing.Title} başlıklı ilanınız reddedildi."
             : $"{listing.Title} başlıklı ilanınız reddedildi. Sebep: {reason}";
 
-        await TrySendNotificationAsync(
-            listing.TeacherProfile.UserId,
-            "İlanınız reddedildi",
-            notificationMessage,
-            "Listing",
-            adminUserId,
-            "Admin",
-            $"/tutor/listings/{listing.Id}",
-            listing.Id,
-            "İlan reddedildi fakat bildirim gönderilemedi.");
-
         var logDescription = string.IsNullOrWhiteSpace(reason)
             ? "Admin ilanın durumunu Rejected yaptı."
             : $"Admin ilanın durumunu Rejected yaptı. Sebep: {reason}";
 
+        await TrySendNotificationAsync(
+            userId: listing.TeacherProfile.UserId,
+            title: "İlanınız reddedildi",
+            message: notificationMessage,
+            senderUserId: adminUserId,
+            url: GetListingUrl(listing.Id),
+            listingId: listing.Id,
+            warningMessage: "İlan reddedildi fakat bildirim gönderilemedi.");
+
         await TryWriteAdminLogAsync(
-            adminUserId,
-            "RejectListing",
-            "TeacherListing",
-            listing.Id,
-            logDescription,
-            ipAddress,
-            userAgent,
-            "İlan reddedildi fakat admin action log yazılamadı.");
+            adminUserId: adminUserId,
+            action: "RejectListing",
+            entityId: listing.Id,
+            description: logDescription,
+            ipAddress: ipAddress,
+            userAgent: userAgent,
+            warningMessage: "İlan reddedildi fakat admin action log yazılamadı.");
 
         return true;
+    }
+
+    private async Task<TeacherFind.Domain.Entities.TeacherListing?> GetListingForUpdateAsync(Guid listingId)
+    {
+        return await _context.TeacherListings
+            .Include(x => x.TeacherProfile)
+            .FirstOrDefaultAsync(x => x.Id == listingId);
     }
 
     private async Task TrySendNotificationAsync(
         Guid userId,
         string title,
         string message,
-        string type,
         Guid senderUserId,
-        string senderRole,
         string url,
         Guid listingId,
-        string logMessage)
+        string warningMessage)
     {
         try
         {
@@ -242,33 +239,36 @@ public class AdminListingService : IAdminListingService
                 userId,
                 title,
                 message,
-                type,
+                ListingNotificationType,
                 senderUserId,
-                senderRole,
+                AdminSenderRole,
                 url);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "{LogMessage} ListingId: {ListingId}", logMessage, listingId);
+            _logger.LogWarning(
+                ex,
+                "{WarningMessage} ListingId: {ListingId}",
+                warningMessage,
+                listingId);
         }
     }
 
     private async Task TryWriteAdminLogAsync(
         Guid adminUserId,
         string action,
-        string entityName,
         Guid entityId,
         string description,
         string? ipAddress,
         string? userAgent,
-        string logMessage)
+        string warningMessage)
     {
         try
         {
             await _adminActionLogService.LogAsync(
                 adminUserId,
                 action,
-                entityName,
+                "TeacherListing",
                 entityId,
                 description,
                 ipAddress,
@@ -276,7 +276,26 @@ public class AdminListingService : IAdminListingService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "{LogMessage} ListingId: {ListingId}", logMessage, entityId);
+            _logger.LogWarning(
+                ex,
+                "{WarningMessage} ListingId: {ListingId}",
+                warningMessage,
+                entityId);
         }
+    }
+
+    private static string GetListingUrl(Guid listingId)
+    {
+        return $"/tutor/listings/{listingId}";
+    }
+
+    private static int NormalizePage(int page)
+    {
+        return page <= 0 ? 1 : page;
+    }
+
+    private static int NormalizePageSize(int pageSize)
+    {
+        return pageSize <= 0 ? 20 : pageSize;
     }
 }
