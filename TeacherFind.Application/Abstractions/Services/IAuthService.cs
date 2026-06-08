@@ -8,4 +8,5 @@ public interface IAuthService
     Task<User> RegisterAsync(RegisterRequest request);
     Task<LoginResponse?> LoginAsync(string email, string password, bool rememberMe = false);
     Task<bool> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword);
+    Task<LoginResponse> SocialLoginAsync(string email, string fullName, string provider);
 }

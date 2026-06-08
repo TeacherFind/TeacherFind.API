@@ -63,4 +63,4 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./publish/
           server-dir: /api.ozeldersvip.com/
-          dangerous-clean-slate: true    # ← add this
+          dangerous-clean-slate: true 
