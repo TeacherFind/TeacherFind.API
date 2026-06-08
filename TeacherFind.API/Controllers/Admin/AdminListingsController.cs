@@ -94,7 +94,7 @@ public class AdminListingsController : ControllerBase
         });
     }
 
-    [HttpPut("{id:guid}/approve")]
+    [HttpPost("{id:guid}/approve")]
     public async Task<IActionResult> Approve(Guid id)
     {
         var adminUserId = GetCurrentUserId();
@@ -109,7 +109,7 @@ public class AdminListingsController : ControllerBase
         return Ok(new { message = "İlan onaylandı" });
     }
 
-    [HttpPut("{id:guid}/reject")]
+    [HttpPost("{id:guid}/reject")]
     public async Task<IActionResult> Reject(Guid id, [FromBody] RejectListingRequest request)
     {
         var adminUserId = GetCurrentUserId();

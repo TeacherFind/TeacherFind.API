@@ -36,7 +36,7 @@ public class AdminUsersController : ControllerBase
         return Ok(user);
     }
 
-    [HttpPut("{id:guid}/status")]
+    [HttpPost("{id:guid}/status")]
     public async Task<IActionResult> UpdateStatus(
         Guid id,
         [FromBody] UpdateUserStatusRequest request)
@@ -58,7 +58,7 @@ public class AdminUsersController : ControllerBase
         return Ok(new { message = "Kullanıcı durumu güncellendi" });
     }
 
-    [HttpPut("{id:guid}/role")]
+    [HttpPost("{id:guid}/role")]
     [Authorize(Policy = "SuperAdminOnly")]
     public async Task<IActionResult> UpdateRole(
         Guid id,
@@ -81,7 +81,7 @@ public class AdminUsersController : ControllerBase
         return Ok(new { message = "Kullanıcı rolü güncellendi" });
     }
 
-    [HttpPut("{id:guid}/make-admin")]
+    [HttpPost("{id:guid}/make-admin")]
     [Authorize(Policy = "SuperAdminOnly")]
     public async Task<IActionResult> MakeAdmin(Guid id)
     {

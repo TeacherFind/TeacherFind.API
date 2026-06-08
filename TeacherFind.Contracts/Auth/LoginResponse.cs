@@ -11,7 +11,7 @@ public class LoginResponse
 {
     public string Token { get; set; } = default!;
 
-    public Guid UserId { get; set; }
+    public string UserId { get; set; } = default!;
 
     public string FullName { get; set; } = default!;
 
@@ -25,4 +25,5 @@ public class LoginResponse
     public Guid? CityId { get; set; }
 
     public string? CityName { get; set; }
+
 }
