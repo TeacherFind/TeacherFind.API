@@ -70,6 +70,7 @@ jobs:
           local-dir: ./publish/
           server-dir: /api.ozeldersvip.com/
           dangerous-clean-slate: true
+          state-name: .ftp-deploy-sync-state-v2.json
 
       - name: Bring App Online
         if: always()
