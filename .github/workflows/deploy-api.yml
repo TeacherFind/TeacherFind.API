@@ -55,6 +55,12 @@ jobs:
       - name: Publish
         run: dotnet publish ./TeacherFind.API/TeacherFind.API.csproj -c Release -o ./publish
 
+      - name: Put App Offline
+        run: |
+          echo "<html><body>Site is updating. Please wait...</body></html>" > ./publish/app_offline.htm
+          curl -T ./publish/app_offline.htm ftp://${{ secrets.FTP_SERVER }}/api.ozeldersvip.com/app_offline.htm --user "${{ secrets.FTP_USERNAME }}:${{ secrets.FTP_PASSWORD }}"
+          sleep 5
+
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
@@ -63,4 +69,9 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./publish/
           server-dir: /api.ozeldersvip.com/
-          dangerous-clean-slate: true    # ← add this
+          dangerous-clean-slate: true
+
+      - name: Bring App Online
+        if: always()
+        run: |
+          curl -Q "-DELE /api.ozeldersvip.com/app_offline.htm" ftp://${{ secrets.FTP_SERVER }}/ --user "${{ secrets.FTP_USERNAME }}:${{ secrets.FTP_PASSWORD }}"
