@@ -40,4 +40,12 @@
     <Folder Include="wwwroot\uploads\certificates\" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <IsTransformWebConfigDisabled>true</IsTransformWebConfigDisabled>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="web.config" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
