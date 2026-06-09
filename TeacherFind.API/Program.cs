@@ -31,6 +31,8 @@ using TeacherFind.Infrastructure.Persistence.Seed;
 using TeacherFind.Infrastructure.Services.Admin;
 using TeacherFind.Infrastructure.Services.Education;
 using TeacherFind.Infrastructure.Services.Email;
+using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2;
 
 internal class Program
 {
@@ -46,6 +48,28 @@ internal class Program
             "appsettings.Local.json",
             optional: true,
             reloadOnChange: true);
+
+        // =====================================================
+        // Firebase Admin SDK
+        // =====================================================
+
+        var firebaseCredentialPath = builder.Configuration["Firebase:ServiceAccountPath"];
+
+        if (!string.IsNullOrWhiteSpace(firebaseCredentialPath) && File.Exists(firebaseCredentialPath))
+        {
+            FirebaseApp.Create(new AppOptions
+            {
+                Credential = GoogleCredential.FromFile(firebaseCredentialPath)
+            });
+        }
+        else
+        {
+            // Production: ortam değişkeninden oku (GOOGLE_APPLICATION_CREDENTIALS)
+            FirebaseApp.Create(new AppOptions
+            {
+                Credential = GoogleCredential.GetApplicationDefault()
+            });
+        }
 
         // =====================================================
         // Database

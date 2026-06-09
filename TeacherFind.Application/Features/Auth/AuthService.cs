@@ -116,7 +116,7 @@ public class AuthService : IAuthService
         return new LoginResponse
         {
             Token = token,
-            UserId = user.Id,
+            UserId = user.Id.ToString(),
             FullName = user.FullName,
             Email = user.Email,
             Role = user.Role.ToString(),
@@ -158,6 +158,52 @@ public class AuthService : IAuthService
         await _userRepository.SaveChangesAsync();
 
         return true;
+    }
+
+    public async Task<LoginResponse> SocialLoginAsync(string email, string fullName, string provider)
+    {
+        var normalizedEmail = NormalizeEmail(email);
+
+        var user = await _userRepository.GetByEmailAsync(normalizedEmail);
+
+        if (user is null)
+        {
+            // İlk kez giriş — otomatik kayıt (Student olarak)
+            user = new User
+            {
+                FullName = fullName.Trim(),
+                Email = normalizedEmail,
+                PasswordHash = string.Empty, // Sosyal giriş — şifre yok
+                Role = UserRole.Student,
+                IsActive = true,
+                IsEmailVerified = true, // Firebase zaten doğruladı
+                IsPhoneVerified = false,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            await _userRepository.AddAsync(user);
+            await _userRepository.SaveChangesAsync();
+        }
+        else if (!user.IsActive)
+        {
+            throw new Exception("Hesabınız devre dışı bırakılmış.");
+        }
+
+        var token = _jwtProvider.GenerateToken(user, rememberMe: false);
+
+        return new LoginResponse
+        {
+            Token = token,
+            UserId = user.Id.ToString(),
+            FullName = user.FullName,
+            Email = user.Email,
+            Role = user.Role.ToString(),
+            RoleValue = (int)user.Role,
+            PhoneNumber = user.PhoneNumber,
+            CityId = user.CityId,
+            CityName = user.City?.Name
+        };
     }
 
     private static TeacherProfile CreateTeacherProfile(

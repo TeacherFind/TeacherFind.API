@@ -16,7 +16,9 @@ namespace TeacherFind.Mobile.Core.Services
 
             // Canlı backend API adresi
             // Web, admin ve mobil aynı backend'e bağlanacak.
-            _httpClient.BaseAddress = new Uri("https://localhost:7196/");
+            _httpClient.BaseAddress = new Uri("https://sxmq5mp0-7196.euw.devtunnels.ms/");
+            // Microsoft'un araya soktuğu o güvenlik onay sayfasını kodla pas geçiyoruz
+            _httpClient.DefaultRequestHeaders.Add("X-Tunnel-Skip-AntiPhishing-Page", "true");
         }
 
         public async Task<T> GetAsync<T>(string endpoint)
