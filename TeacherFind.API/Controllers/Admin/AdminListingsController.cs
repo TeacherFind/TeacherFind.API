@@ -106,6 +106,29 @@ public class AdminListingsController : ControllerBase
         });
     }
 
+    [AllowAnonymous]
+    [HttpGet("version")]
+    public IActionResult Version()
+    {
+        return Ok(new
+        {
+            version = "admin-post-fix-2026-06-08-v1",
+            time = DateTime.UtcNow,
+            message = "Canli API bu yeni kodu calistiriyor"
+        });
+    }
+
+    [AllowAnonymous]
+    [HttpPost("post-test")]
+    public IActionResult PostTest()
+    {
+        return Ok(new
+        {
+            message = "POST calisiyor",
+            time = DateTime.UtcNow
+        });
+    }
+
     [HttpPut("{id:guid}/approve")]
     [HttpPost("{id:guid}/approve")]
     public async Task<IActionResult> Approve(Guid id)
