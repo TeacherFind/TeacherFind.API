@@ -41,4 +41,8 @@
     <Folder Include="wwwroot\uploads\certificates\" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <IsTransformWebConfigDisabled>true</IsTransformWebConfigDisabled>
+  </PropertyGroup>
+
 </Project>
