@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.Maui.Controls;
 using TeacherFind.Mobile.Features.Profile.Models;
 
@@ -30,8 +30,14 @@ public class MainShellPage : FlyoutPage
             return;
         }
 
+        Type targetType = item.TargetPage;
+        if (item.Id == "Profilim")
+        {
+            targetType = MainApp.IsTutor ? typeof(Features.Profile.Views.TutorProfilePage) : typeof(Features.Profile.Views.StudentProfilePage);
+        }
+
         // Tıklanan sayfayı senin katmandan (DI) otomatik üretip ekrana basıyor
-        var targetPageInstance = (ContentPage)_services.GetService(item.TargetPage);
+        var targetPageInstance = (ContentPage)_services.GetService(targetType);
         Detail = new NavigationPage(targetPageInstance);
 
         IsPresented = false; // Menüyü kapat

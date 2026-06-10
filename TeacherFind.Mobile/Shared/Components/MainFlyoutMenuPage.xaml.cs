@@ -25,7 +25,7 @@ public partial class MainFlyoutMenuPage : ContentPage
             new ProfileMenuItemModel { Id = "IlanVer", Title = "İlan Ver", Icon = "📢", TargetPage = typeof(HomePage) },
             new ProfileMenuItemModel { Id = "Musaitlik", Title = "Müsaitlik Ayarları", Icon = "⏱", TargetPage = typeof(ProfileSettingsPage) },
             new ProfileMenuItemModel { Id = "Derslerim", Title = "Derslerim", Icon = "📚", TargetPage = typeof(HomePage) },
-            new ProfileMenuItemModel { Id = "Profilim", Title = "Profilim", Icon = "👤", TargetPage = typeof(ProfilePage) },
+            new ProfileMenuItemModel { Id = "Profilim", Title = "Profilim", Icon = "👤", TargetPage = typeof(TutorProfilePage) },
             new ProfileMenuItemModel { Id = "Mesajlar", Title = "Mesajlar", Icon = "💬", TargetPage = typeof(HomePage) },
             new ProfileMenuItemModel { Id = "Guvenlik", Title = "Güvenlik", Icon = "🔒", TargetPage = typeof(ProfileSettingsPage) },
             new ProfileMenuItemModel { Id = "Cikis", Title = "Çıkış Yap", Icon = "🚪", TargetPage = typeof(HomePage) }

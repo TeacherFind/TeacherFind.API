@@ -52,7 +52,8 @@ namespace TeacherFind.Mobile
             builder.Services.AddTransient<TeacherFind.Mobile.Features.Teachers.ViewModels.TeacherListViewModel>();
 
             // --- Profil Modülü (Profile) ---
-            builder.Services.AddTransient<TeacherFind.Mobile.Features.Profile.Views.ProfilePage>();
+            builder.Services.AddTransient<TeacherFind.Mobile.Features.Profile.Views.TutorProfilePage>();
+            builder.Services.AddTransient<TeacherFind.Mobile.Features.Profile.Views.StudentProfilePage>();
             builder.Services.AddTransient<TeacherFind.Mobile.Features.Profile.ViewModels.ProfileViewModel>();
 
             builder.Services.AddTransient<TeacherFind.Mobile.Features.Profile.Views.ProfileSettingsPage>();
