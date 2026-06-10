@@ -1,103 +1,101 @@
 name: Deploy .NET API to IIS
 
 on:
-push:
-branches:
-- master
-workflow_dispatch:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
 
 jobs:
-deploy-api:
-runs-on: self-hosted
+  deploy-api:
+    runs-on: self-hosted
 
-```
-env:
-  PROJECT_PATH: TeacherFind.API/TeacherFind.API.csproj
-  PUBLISH_PATH: C:\Deploy\api-publish
-  SITE_PATH: C:\Sites\OzelDersVip\api
+    env:
+      PROJECT_PATH: TeacherFind.API/TeacherFind.API.csproj
+      PUBLISH_PATH: C:\Deploy\api-publish
+      SITE_PATH: C:\Sites\OzelDersVip\api
 
-steps:
-  - name: Checkout code
-    uses: actions/checkout@v4
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-  - name: Show .NET version
-    shell: powershell
-    run: dotnet --info
+      - name: Show .NET version
+        shell: powershell
+        run: dotnet --info
 
-  - name: Restore
-    shell: powershell
-    run: dotnet restore $env:PROJECT_PATH
+      - name: Restore
+        shell: powershell
+        run: dotnet restore $env:PROJECT_PATH
 
-  - name: Create Production appsettings
-    shell: powershell
-    run: |
-      $appsettings = @{
-        ConnectionStrings = @{
-          DefaultConnection = "${{ secrets.DB_CONNECTION_STRING }}"
-        }
-        Jwt = @{
-          Key = "${{ secrets.JWT_KEY }}"
-          Issuer = "TeacherFind"
-          Audience = "TeacherFind"
-          ExpireDays = 7
-          ExpiryMinutes = 120
-        }
-        Email = @{
-          Provider = "Brevo"
-          ApiKey = "${{ secrets.BREVO_API_KEY }}"
-          FromEmail = "destek@ozeldersvip.com"
-          FromName = "Özel Ders VIP"
-        }
-        Cors = @{
-          AllowedOrigins = @(
-            "https://ozeldersvip.com",
-            "https://www.ozeldersvip.com",
-            "http://ozeldersvip.com",
-            "http://www.ozeldersvip.com"
-          )
-        }
-        Firebase = @{
-          ServiceAccountPath = ""
-        }
-      }
+      - name: Create Production appsettings
+        shell: powershell
+        run: |
+          $appsettings = @{
+            ConnectionStrings = @{
+              DefaultConnection = "${{ secrets.DB_CONNECTION_STRING }}"
+            }
+            Jwt = @{
+              Key = "${{ secrets.JWT_KEY }}"
+              Issuer = "TeacherFind"
+              Audience = "TeacherFind"
+              ExpireDays = 7
+              ExpiryMinutes = 120
+            }
+            Email = @{
+              Provider = "Brevo"
+              ApiKey = "${{ secrets.BREVO_API_KEY }}"
+              FromEmail = "destek@ozeldersvip.com"
+              FromName = "Özel Ders VIP"
+            }
+            Cors = @{
+              AllowedOrigins = @(
+                "https://ozeldersvip.com",
+                "https://www.ozeldersvip.com",
+                "http://ozeldersvip.com",
+                "http://www.ozeldersvip.com"
+              )
+            }
+            Firebase = @{
+              ServiceAccountPath = ""
+            }
+          }
 
-      $json = $appsettings | ConvertTo-Json -Depth 10
-      $json | Set-Content -Path "TeacherFind.API/appsettings.Production.json" -Encoding UTF8
+          $json = $appsettings | ConvertTo-Json -Depth 10
+          $json | Set-Content -Path "TeacherFind.API/appsettings.Production.json" -Encoding UTF8
 
-  - name: Publish API
-    shell: powershell
-    run: |
-      if (Test-Path $env:PUBLISH_PATH) {
-        Remove-Item $env:PUBLISH_PATH -Recurse -Force
-      }
+      - name: Publish API
+        shell: powershell
+        run: |
+          if (Test-Path $env:PUBLISH_PATH) {
+            Remove-Item $env:PUBLISH_PATH -Recurse -Force
+          }
 
-      dotnet publish $env:PROJECT_PATH -c Release -o $env:PUBLISH_PATH
+          dotnet publish $env:PROJECT_PATH -c Release -o $env:PUBLISH_PATH
 
-  - name: Deploy to IIS folder
-    shell: powershell
-    run: |
-      $sitePath = $env:SITE_PATH
-      $publishPath = $env:PUBLISH_PATH
+      - name: Deploy to IIS folder
+        shell: powershell
+        run: |
+          $sitePath = $env:SITE_PATH
+          $publishPath = $env:PUBLISH_PATH
 
-      if (!(Test-Path $sitePath)) {
-        New-Item -ItemType Directory -Path $sitePath -Force | Out-Null
-      }
+          if (!(Test-Path $sitePath)) {
+            New-Item -ItemType Directory -Path $sitePath -Force | Out-Null
+          }
 
-      Set-Content -Path "$sitePath\app_offline.htm" -Value "<html><body>API updating...</body></html>" -Encoding UTF8
-      Start-Sleep -Seconds 5
+          Set-Content -Path "$sitePath\app_offline.htm" -Value "<html><body>API updating...</body></html>" -Encoding UTF8
+          Start-Sleep -Seconds 5
 
-      Get-ChildItem -Path $sitePath -Force |
-        Where-Object { $_.Name -ne "app_offline.htm" } |
-        Remove-Item -Recurse -Force
+          Get-ChildItem -Path $sitePath -Force |
+            Where-Object { $_.Name -ne "app_offline.htm" } |
+            Remove-Item -Recurse -Force
 
-      Copy-Item -Path "$publishPath\*" -Destination $sitePath -Recurse -Force
+          Copy-Item -Path "$publishPath\*" -Destination $sitePath -Recurse -Force
 
-      Remove-Item -Path "$sitePath\app_offline.htm" -Force -ErrorAction SilentlyContinue
+          Remove-Item -Path "$sitePath\app_offline.htm" -Force -ErrorAction SilentlyContinue
 
-  - name: Test API domain
-    shell: powershell
-    continue-on-error: true
-    run: |
-      Start-Sleep -Seconds 5
-      Invoke-WebRequest -UseBasicParsing https://api.ozeldersvip.com/api/listings -TimeoutSec 30 | Select-Object StatusCode, Content
-```
+      - name: Test API domain
+        shell: powershell
+        continue-on-error: true
+        run: |
+          Start-Sleep -Seconds 5
+          Invoke-WebRequest -UseBasicParsing https://api.ozeldersvip.com/api/listings -TimeoutSec 30 | Select-Object StatusCode, Content
