@@ -5,8 +5,9 @@
              Title="Giriş Yap"
              BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundColorLight}, Dark={StaticResource PageBackgroundColorDark}}">
 
-    <ScrollView>
-        <Grid Padding="20" VerticalOptions="Center">
+    <RefreshView IsRefreshing="{Binding IsRefreshing}" Command="{Binding RefreshCommand}">
+        <ScrollView>
+            <Grid Padding="20" VerticalOptions="Center">
             
             <!-- Form Container -->
             <Border Stroke="{AppThemeBinding Light={StaticResource BorderLightColor}, Dark=#334155}"
@@ -22,6 +23,19 @@
                 </Border.StrokeShape>
 
                 <VerticalStackLayout Spacing="20">
+                    
+                    <!-- Close / Back Button -->
+                    <Grid>
+                        <Label Text="✕ Kapat" 
+                               FontSize="14" 
+                               FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light={StaticResource TextSecondaryColor}, Dark=#94a3b8}"
+                               HorizontalOptions="End">
+                            <Label.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding CloseCommand}" />
+                            </Label.GestureRecognizers>
+                        </Label>
+                    </Grid>
                     
                     <!-- Header -->
                     <VerticalStackLayout Spacing="5" HorizontalOptions="Center" Margin="0,0,0,10">
@@ -207,5 +221,6 @@
                 </VerticalStackLayout>
             </Border>
         </Grid>
-    </ScrollView>
+        </ScrollView>
+    </RefreshView>
 </ContentPage>

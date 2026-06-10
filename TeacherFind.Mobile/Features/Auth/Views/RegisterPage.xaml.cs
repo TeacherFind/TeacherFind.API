@@ -17,6 +17,13 @@ public partial class RegisterPage : ContentPage
         set { _isStep0 = value; OnPropertyChanged(); }
     }
 
+    private bool _isRefreshing;
+    public bool IsRefreshing
+    {
+        get => _isRefreshing;
+        set { _isRefreshing = value; OnPropertyChanged(); }
+    }
+
     private bool _isStep1 = false;
     public bool IsStep1
     {
@@ -135,10 +142,15 @@ public partial class RegisterPage : ContentPage
     public ICommand SelectTutorRoleCommand { get; }
     public ICommand GoBackToStep0Command { get; }
     public ICommand NavigateToLoginCommand { get; }
+    public ICommand RefreshCommand { get; }
+    public ICommand CloseCommand { get; }
 
-    public RegisterPage(IApiService apiService)
+    private readonly IServiceProvider _services;
+
+    public RegisterPage(IApiService apiService, IServiceProvider services)
     {
         _apiService = apiService;
+        _services = services;
         InitializeComponent();
 
         if (Application.Current.RequestedTheme == AppTheme.Dark)
@@ -211,6 +223,20 @@ public partial class RegisterPage : ContentPage
             await Navigation.PopAsync();
         });
 
+        RefreshCommand = new Command(async () => {
+            IsRefreshing = true;
+            await LoadCitiesAsync();
+            IsRefreshing = false;
+        });
+
+        CloseCommand = new Command(() => {
+            if (Application.Current.MainPage is FlyoutPage flyout)
+            {
+                var homePage = _services.GetService(typeof(TeacherFind.Mobile.Features.Home.Views.HomePage)) as Page;
+                flyout.Detail = new NavigationPage(homePage);
+            }
+        });
+
         BindingContext = this; // SET AFTER COMMANDS ARE INITIALIZED
         
         // Load cities initially
@@ -219,32 +245,80 @@ public partial class RegisterPage : ContentPage
 
     private async Task LoadCitiesAsync()
     {
-        var cities = await _apiService.GetAsync<List<CityDto>>("/api/locations/cities");
-        if (cities != null)
+        try
         {
-            Cities.Clear();
-            foreach (var city in cities) Cities.Add(city);
+            var cities = await _apiService.GetAsync<List<CityDto>>("/api/locations/cities");
+            if (cities != null)
+            {
+                Cities.Clear();
+                foreach (var city in cities) Cities.Add(city);
+            }
+        }
+        catch (Exception ex)
+        {
+            await Application.Current.MainPage.DisplayAlert("Hata", $"Şehirler yüklenemedi: {ex.Message}", "Tamam");
         }
     }
 
     private async Task LoadDistrictsAsync(Guid cityId)
     {
-        var districts = await _apiService.GetAsync<List<DistrictDto>>($"/api/locations/districts?cityId={cityId}");
-        if (districts != null)
+        try
         {
+            var districts = await _apiService.GetAsync<List<DistrictDto>>($"/api/locations/districts?cityId={cityId}");
             Districts.Clear();
             Neighborhoods.Clear();
-            foreach (var dist in districts) Districts.Add(dist);
+            if (districts != null)
+            {
+                foreach (var dist in districts) Districts.Add(dist);
+            }
+        }
+        catch (Exception ex)
+        {
+            await Application.Current.MainPage.DisplayAlert("Hata", $"İlçeler yüklenemedi: {ex.Message}", "Tamam");
         }
     }
 
     private async Task LoadNeighborhoodsAsync(Guid districtId)
     {
-        var neighborhoods = await _apiService.GetAsync<List<NeighborhoodDto>>($"/api/locations/neighborhoods?districtId={districtId}");
-        if (neighborhoods != null)
+        try
+        {
+            var neighborhoods = await _apiService.GetAsync<List<NeighborhoodDto>>($"/api/locations/neighborhoods?districtId={districtId}");
+            Neighborhoods.Clear();
+            if (neighborhoods != null)
+            {
+                foreach (var neigh in neighborhoods) Neighborhoods.Add(neigh);
+            }
+        }
+        catch (Exception ex)
+        {
+            await Application.Current.MainPage.DisplayAlert("Hata", $"Mahalleler yüklenemedi: {ex.Message}", "Tamam");
+        }
+    }
+
+    private void OnCitySelectedIndexChanged(object sender, EventArgs e)
+    {
+        var picker = sender as Picker;
+        if (picker?.SelectedItem is CityDto selectedCity)
+        {
+            _ = LoadDistrictsAsync(selectedCity.Id);
+        }
+        else
+        {
+            Districts.Clear();
+            Neighborhoods.Clear();
+        }
+    }
+
+    private void OnDistrictSelectedIndexChanged(object sender, EventArgs e)
+    {
+        var picker = sender as Picker;
+        if (picker?.SelectedItem is DistrictDto selectedDistrict)
+        {
+            _ = LoadNeighborhoodsAsync(selectedDistrict.Id);
+        }
+        else
         {
             Neighborhoods.Clear();
-            foreach (var neigh in neighborhoods) Neighborhoods.Add(neigh);
         }
     }
 

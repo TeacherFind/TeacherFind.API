@@ -2,25 +2,64 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="TeacherFind.Mobile.Shared.Components.MainFlyoutMenuPage"
-             Title="MainFlyoutMenuPage"
-             BackgroundColor="#FFFFFF">
+             Title="TeacherFind Menü"
+             BackgroundColor="{AppThemeBinding Light=#f1f5f9, Dark=#0f172a}">
 
     <Grid RowDefinitions="Auto, *" Padding="20,40,20,20">
 
-        <VerticalStackLayout Grid.Row="0" Margin="0,0,0,30" Spacing="2">
-            <Label Text="Öğrenmenin" FontSize="20" FontAttributes="Bold" TextColor="#212121"/>
-            <Label Text="Çilingirleri" FontSize="16" FontAttributes="Bold" TextColor="#3498db"/>
-        </VerticalStackLayout>
+        <!-- Header / Branding Area -->
+        <Border Grid.Row="0" 
+                Margin="0,0,0,30" 
+                Padding="20"
+                Stroke="Transparent"
+                BackgroundColor="{AppThemeBinding Light=#111827, Dark=#1e3a8a}">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="16" />
+            </Border.StrokeShape>
+            
+            <VerticalStackLayout Spacing="4">
+                <Label Text="🎓" FontSize="28" Margin="0,0,0,8"/>
+                <Label Text="Özelders" FontSize="20" FontAttributes="Bold" TextColor="White"/>
+                <Label Text="VİP" FontSize="16" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#93c5fd, Dark=#bfdbfe}"/>
+            </VerticalStackLayout>
+        </Border>
 
+        <!-- Menu Items -->
         <CollectionView Grid.Row="1" x:Name="MenuCollectionView" SelectionMode="Single">
             <CollectionView.ItemTemplate>
                 <DataTemplate>
-                    <Grid ColumnDefinitions="Auto, *" Padding="10,15">
-                        <Label Grid.Column="0" Text="{Binding Icon}" FontSize="18" 
-                               WidthRequest="30" VerticalOptions="Center" HorizontalTextAlignment="Center"/>
-                        <Label Grid.Column="1" Text="{Binding Title}" FontSize="15" 
-                               TextColor="#555555" VerticalOptions="Center" Margin="10,0,0,0"/>
-                    </Grid>
+                    <!-- Visual State Manager'i destekleyen bir yapı için Border kullanıyoruz -->
+                    <Border Stroke="{AppThemeBinding Light=#e2e8f0, Dark=#334155}" 
+                            StrokeThickness="1" 
+                            BackgroundColor="{AppThemeBinding Light=#ffffff, Dark=#1e293b}"
+                            Margin="0,0,0,10"
+                            Padding="15">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="12" />
+                        </Border.StrokeShape>
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroupList>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal" />
+                                    <VisualState x:Name="Selected">
+                                        <VisualState.Setters>
+                                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#eff6ff, Dark=#3b82f6}" />
+                                            <Setter Property="Stroke" Value="{AppThemeBinding Light=#bfdbfe, Dark=#60a5fa}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateGroupList>
+                        </VisualStateManager.VisualStateGroups>
+
+                        <Grid ColumnDefinitions="Auto, *">
+                            <Label Grid.Column="0" Text="{Binding Icon}" FontSize="20" 
+                                   WidthRequest="30" VerticalOptions="Center" HorizontalTextAlignment="Center"
+                                   TextColor="{AppThemeBinding Light=#1e293b, Dark=#ffffff}"/>
+                            <Label Grid.Column="1" Text="{Binding Title}" FontSize="15" FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light=#1e293b, Dark=#ffffff}" 
+                                   VerticalOptions="Center" Margin="10,0,0,0"/>
+                        </Grid>
+                    </Border>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
         </CollectionView>
