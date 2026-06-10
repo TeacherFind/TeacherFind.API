@@ -53,22 +53,33 @@ internal class Program
         // Firebase Admin SDK
         // =====================================================
 
-        var firebaseCredentialPath = builder.Configuration["Firebase:ServiceAccountPath"];
+        try
+        {
+            var firebaseCredentialPath = builder.Configuration["Firebase:ServiceAccountPath"];
+            var googleApplicationCredentials = Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS");
 
-        if (!string.IsNullOrWhiteSpace(firebaseCredentialPath) && File.Exists(firebaseCredentialPath))
-        {
-            FirebaseApp.Create(new AppOptions
+            if (!string.IsNullOrWhiteSpace(firebaseCredentialPath) && File.Exists(firebaseCredentialPath))
             {
-                Credential = GoogleCredential.FromFile(firebaseCredentialPath)
-            });
+                FirebaseApp.Create(new AppOptions
+                {
+                    Credential = GoogleCredential.FromFile(firebaseCredentialPath)
+                });
+            }
+            else if (!string.IsNullOrWhiteSpace(googleApplicationCredentials) && File.Exists(googleApplicationCredentials))
+            {
+                FirebaseApp.Create(new AppOptions
+                {
+                    Credential = GoogleCredential.GetApplicationDefault()
+                });
+            }
+            else
+            {
+                Console.WriteLine("Firebase credential bulunamadı. Firebase Admin SDK başlatılmadı.");
+            }
         }
-        else
+        catch (Exception ex)
         {
-            // Production: ortam değişkeninden oku (GOOGLE_APPLICATION_CREDENTIALS)
-            FirebaseApp.Create(new AppOptions
-            {
-                Credential = GoogleCredential.GetApplicationDefault()
-            });
+            Console.WriteLine($"Firebase initialization skipped: {ex.Message}");
         }
 
         // =====================================================
