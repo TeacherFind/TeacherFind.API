@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using System.Net.Http; // HttpClient için ekledik!
 using TeacherFind.Mobile.App;
 
@@ -38,6 +38,10 @@ namespace TeacherFind.Mobile
             // =======================================================
             // 3. SAYFA VE MOTOR KAYITLARI (Features)
             // =======================================================
+
+            // --- Auth Modülü ---
+            builder.Services.AddTransient<TeacherFind.Mobile.Features.Auth.Views.LoginPage>();
+            builder.Services.AddTransient<TeacherFind.Mobile.Features.Auth.Views.RegisterPage>();
 
             // --- Ana Sayfa Modülü (Home) ---
             builder.Services.AddTransient<TeacherFind.Mobile.Features.Home.Views.HomePage>();
