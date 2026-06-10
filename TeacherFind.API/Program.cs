@@ -1,3 +1,5 @@
+using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
@@ -5,6 +7,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -31,8 +34,6 @@ using TeacherFind.Infrastructure.Persistence.Seed;
 using TeacherFind.Infrastructure.Services.Admin;
 using TeacherFind.Infrastructure.Services.Education;
 using TeacherFind.Infrastructure.Services.Email;
-using FirebaseAdmin;
-using Google.Apis.Auth.OAuth2;
 
 internal class Program
 {
@@ -427,17 +428,32 @@ internal class Program
         app.MapHub<ChatHub>("/chat");
         app.MapControllers();
 
-        // =====================================================
-        // Database Migration + Seed
-        // =====================================================
+       // =====================================================
+      // Database Migration + Seed
+       // =====================================================
 
-        using (var scope = app.Services.CreateScope())
-        {
+            using (var scope = app.Services.CreateScope())
+            {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
             try
             {
-                db.Database.Migrate();
+                var pendingMigrations = await db.Database.GetPendingMigrationsAsync();
+
+                if (pendingMigrations.Any())
+                {
+                    app.Logger.LogInformation(
+                        "Pending migrations found: {Migrations}",
+                        string.Join(", ", pendingMigrations));
+
+                    await db.Database.MigrateAsync();
+
+                    app.Logger.LogInformation("Database migrations applied successfully.");
+                }
+                else
+                {
+                    app.Logger.LogInformation("No pending migrations found.");
+                }
 
                 await CitySeed.SeedAsync(db);
                 await DistrictSeed.SeedAsync(db);
@@ -448,13 +464,18 @@ internal class Program
 
                 await SuperAdminSeed.SeedAsync(db, builder.Configuration);
 
-                Console.WriteLine("Database migrated and seeded successfully.");
+                app.Logger.LogInformation("Database seeded successfully.");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Migration/Seed error: {ex.Message}");
+                app.Logger.LogError(ex, "Database migration or seed failed.");
+
+                if (app.Environment.IsProduction())
+                    throw;
             }
         }
+
+
 
         app.Run();
     }
