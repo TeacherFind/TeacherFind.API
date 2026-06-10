@@ -865,8 +865,11 @@ public class TutorService : ITutorService
         return normalizedPrice;
     }
 
-    private static int GetDayOrder(string day)
+    private static int GetDayOrder(string? day)
     {
+        if (string.IsNullOrWhiteSpace(day))
+            return 99;
+
         return day.Trim().ToLowerInvariant() switch
         {
             "monday" or "pazartesi" => 1,
