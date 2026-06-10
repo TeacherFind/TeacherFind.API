@@ -4,6 +4,8 @@ using Microsoft.Maui.Controls;
 using TeacherFind.Mobile.Features.Profile.Models;
 using TeacherFind.Mobile.Features.Profile.Views;
 using TeacherFind.Mobile.Features.Home.Views;
+using TeacherFind.Mobile.Features.Auth.Views;
+
 namespace TeacherFind.Mobile.Shared.Components;
 
 public partial class MainFlyoutMenuPage : ContentPage
@@ -14,18 +16,19 @@ public partial class MainFlyoutMenuPage : ContentPage
     {
         InitializeComponent();
 
-        // Senin klasöründeki gerçek sayfa tiplerini buraya eşliyoruz
         var menuItems = new List<ProfileMenuItemModel>
         {
-            new ProfileMenuItemModel { Id = "Panel", Title = "Panel", Icon = "??", TargetPage = typeof(HomePage) },
-            new ProfileMenuItemModel { Id = "IlanVer", Title = "İlan Ver", Icon = "?", TargetPage = typeof(HomePage) },
-            new ProfileMenuItemModel { Id = "Musaitlik", Title = "Müsaitlik Ayarları", Icon = "??", TargetPage = typeof(ProfileSettingsPage) },
-            // Başına 'Profile' takısını ekleyerek listeyle tamamen eşitliyoruz:
-            new ProfileMenuItemModel { Id = "Derslerim", Title = "Derslerim", Icon = "??", TargetPage = typeof(HomePage) },
-            new ProfileMenuItemModel { Id = "Profilim", Title = "Profilim", Icon = "??", TargetPage = typeof(ProfilePage) },
-            new ProfileMenuItemModel { Id = "Mesajlar", Title = "Mesajlar", Icon = "??", TargetPage = typeof(HomePage) },
-            new ProfileMenuItemModel { Id = "Guvenlik", Title = "Güvenlik", Icon = "???", TargetPage = typeof(ProfileSettingsPage) },
-            new ProfileMenuItemModel { Id = "Cikis", Title = "Çıkış Yap", Icon = "??", TargetPage = typeof(HomePage) }
+            // Login eklendi
+            new ProfileMenuItemModel { Id = "Login", Title = "GiriÅŸ Yap", Icon = "ğŸ”‘", TargetPage = typeof(LoginPage) },
+            
+            new ProfileMenuItemModel { Id = "Panel", Title = "Panel", Icon = "ğŸ“Š", TargetPage = typeof(HomePage) },
+            new ProfileMenuItemModel { Id = "IlanVer", Title = "Ä°lan Ver", Icon = "ğŸ“¢", TargetPage = typeof(HomePage) },
+            new ProfileMenuItemModel { Id = "Musaitlik", Title = "MÃ¼saitlik AyarlarÄ±", Icon = "â±", TargetPage = typeof(ProfileSettingsPage) },
+            new ProfileMenuItemModel { Id = "Derslerim", Title = "Derslerim", Icon = "ğŸ“š", TargetPage = typeof(HomePage) },
+            new ProfileMenuItemModel { Id = "Profilim", Title = "Profilim", Icon = "ğŸ‘¤", TargetPage = typeof(ProfilePage) },
+            new ProfileMenuItemModel { Id = "Mesajlar", Title = "Mesajlar", Icon = "ğŸ’¬", TargetPage = typeof(HomePage) },
+            new ProfileMenuItemModel { Id = "Guvenlik", Title = "GÃ¼venlik", Icon = "ğŸ”’", TargetPage = typeof(ProfileSettingsPage) },
+            new ProfileMenuItemModel { Id = "Cikis", Title = "Ã‡Ä±kÄ±ÅŸ Yap", Icon = "ğŸšª", TargetPage = typeof(HomePage) }
         };
 
         MenuCollectionView.ItemsSource = menuItems;
