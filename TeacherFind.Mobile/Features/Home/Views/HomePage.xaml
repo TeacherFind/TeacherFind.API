@@ -2,12 +2,14 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewmodel="clr-namespace:TeacherFind.Mobile.Features.Home.ViewModels"
+             xmlns:components="clr-namespace:TeacherFind.Mobile.Shared.Components"
              x:Class="TeacherFind.Mobile.Features.Home.Views.HomePage"
              Title="Ana Sayfa"
              NavigationPage.HasNavigationBar="False"
              BackgroundColor="#F5F7FA">
 
-    <RefreshView IsRefreshing="{Binding IsRefreshing}" 
+    <Grid>
+        <RefreshView IsRefreshing="{Binding IsRefreshing}" 
                  Command="{Binding RefreshCommand}" 
                  RefreshColor="#0A194F">
 
@@ -151,5 +153,10 @@
             </Grid>
         </ScrollView>
 
-    </RefreshView>
+        </RefreshView>
+
+        <!-- Floating Bottom Navigation Bar -->
+        <components:BottomNavBar />
+
+    </Grid>
 </ContentPage>

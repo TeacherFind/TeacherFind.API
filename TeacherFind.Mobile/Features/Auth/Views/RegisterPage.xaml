@@ -5,8 +5,9 @@
              Title="Kayıt Ol"
              BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundColorLight}, Dark={StaticResource PageBackgroundColorDark}}">
 
-    <ScrollView>
-        <Grid Padding="20" VerticalOptions="Center">
+    <RefreshView IsRefreshing="{Binding IsRefreshing}" Command="{Binding RefreshCommand}">
+        <ScrollView>
+            <Grid Padding="20" VerticalOptions="Center">
 
             <!-- Main Container -->
             <Border Stroke="{AppThemeBinding Light={StaticResource BorderLightColor}, Dark=#334155}"
@@ -17,10 +18,24 @@
                     HorizontalOptions="Center"
                     MaximumWidthRequest="600">
                 <Border.StrokeShape>
-                    <RoundRectangle CornerRadius="32" />
+                    <RoundRectangle CornerRadius="28" />
                 </Border.StrokeShape>
 
-                <VerticalStackLayout Spacing="0">
+                <VerticalStackLayout Spacing="20">
+                    
+                    <!-- Close / Back Button -->
+                    <Grid>
+                        <Label Text="✕ Kapat" 
+                               FontSize="14" 
+                               FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light={StaticResource TextSecondaryColor}, Dark=#94a3b8}"
+                               HorizontalOptions="End">
+                            <Label.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding CloseCommand}" />
+                            </Label.GestureRecognizers>
+                        </Label>
+                    </Grid>
+
                     <!-- ============================================== -->
                     <!-- STEP 0: ROL SEÇİMİ -->
                     <!-- ============================================== -->
@@ -159,10 +174,12 @@
                                     <Label Text="Şehir" FontSize="14" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#475569, Dark=#cbd5e1}"/>
                                     <Border Stroke="{Binding DefaultBorderColor}" StrokeThickness="1.5" BackgroundColor="{AppThemeBinding Light={StaticResource BgLightColor}, Dark=#0f172a}" HeightRequest="52" Padding="15,0">
                                         <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
-                                        <Picker Title="Şehir Seçin" 
+                                        <Picker x:Name="CityPicker"
+                                                Title="Şehir Seçin" 
                                                 ItemsSource="{Binding Cities}"
                                                 ItemDisplayBinding="{Binding Name}"
-                                                SelectedItem="{Binding SelectedCity}"
+                                                SelectedItem="{Binding SelectedCity, Mode=TwoWay}"
+                                                SelectedIndexChanged="OnCitySelectedIndexChanged"
                                                 TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource TextWhiteColor}}" 
                                                 BackgroundColor="Transparent">
                                         </Picker>
@@ -186,10 +203,12 @@
                                     <Label Text="İlçe" FontSize="14" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#475569, Dark=#cbd5e1}"/>
                                     <Border Stroke="{Binding DefaultBorderColor}" StrokeThickness="1.5" BackgroundColor="{AppThemeBinding Light={StaticResource BgLightColor}, Dark=#0f172a}" HeightRequest="52" Padding="15,0">
                                         <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
-                                        <Picker Title="İlçe Seçin" 
+                                        <Picker x:Name="DistrictPicker"
+                                                Title="İlçe Seçin" 
                                                 ItemsSource="{Binding Districts}"
                                                 ItemDisplayBinding="{Binding Name}"
-                                                SelectedItem="{Binding SelectedDistrict}"
+                                                SelectedItem="{Binding SelectedDistrict, Mode=TwoWay}"
+                                                SelectedIndexChanged="OnDistrictSelectedIndexChanged"
                                                 TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource TextWhiteColor}}" 
                                                 BackgroundColor="Transparent"/>
                                     </Border>
@@ -200,10 +219,11 @@
                                     <Label Text="Mahalle" FontSize="14" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#475569, Dark=#cbd5e1}"/>
                                     <Border Stroke="{Binding DefaultBorderColor}" StrokeThickness="1.5" BackgroundColor="{AppThemeBinding Light={StaticResource BgLightColor}, Dark=#0f172a}" HeightRequest="52" Padding="15,0">
                                         <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
-                                        <Picker Title="Mahalle Seçin" 
+                                        <Picker x:Name="NeighborhoodPicker"
+                                                Title="Mahalle Seçin" 
                                                 ItemsSource="{Binding Neighborhoods}"
                                                 ItemDisplayBinding="{Binding Name}"
-                                                SelectedItem="{Binding SelectedNeighborhood}"
+                                                SelectedItem="{Binding SelectedNeighborhood, Mode=TwoWay}"
                                                 TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource TextWhiteColor}}" 
                                                 BackgroundColor="Transparent"/>
                                     </Border>
@@ -263,18 +283,17 @@
                         <!-- Submit Butonu -->
                         <Button Text="Kaydı Tamamla →"
                                 Command="{Binding SubmitCommand}"
-                                BackgroundColor="{StaticResource PrimaryColor}"
+                                BackgroundColor="{AppThemeBinding Light=#111827, Dark=#3b82f6}"
                                 TextColor="White"
                                 FontAttributes="Bold"
-                                FontSize="15"
+                                FontSize="16"
                                 HeightRequest="52"
                                 CornerRadius="14"
-                                HorizontalOptions="End"
-                                Margin="0,15,0,0"
-                                Padding="32,0"/>
+                                Margin="0,15,0,0"/>
                     </VerticalStackLayout>
                 </VerticalStackLayout>
             </Border>
         </Grid>
     </ScrollView>
+</RefreshView>
 </ContentPage>
