@@ -1,78 +1,101 @@
-name: Deploy .NET API to Plesk via FTP
+name: Deploy .NET API to IIS
 
 on:
   push:
     branches:
-      - Develop
-      - main
       - master
+  workflow_dispatch:
 
 jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
+  deploy-api:
+    runs-on: self-hosted
+
+    env:
+      PROJECT_PATH: TeacherFind.API/TeacherFind.API.csproj
+      PUBLISH_PATH: C:\Deploy\api-publish
+      SITE_PATH: C:\Sites\OzelDersVip\api
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
+      - name: Show .NET version
+        shell: powershell
+        run: dotnet --info
 
       - name: Restore
-        run: dotnet restore ./TeacherFind.API/TeacherFind.API.csproj
+        shell: powershell
+        run: dotnet restore $env:PROJECT_PATH
 
       - name: Create Production appsettings
+        shell: powershell
         run: |
-          cat > ./TeacherFind.API/appsettings.Production.json << 'EOF'
-          {
-            "ConnectionStrings": {
-              "DefaultConnection": "${{ secrets.DB_CONNECTION_STRING }}"
-            },
-            "Jwt": {
-              "Key": "${{ secrets.JWT_KEY }}",
-              "Issuer": "TeacherFind",
-              "Audience": "TeacherFind",
-              "ExpiryMinutes": "120"
-            },
-            "Email": {
-              "Provider": "Brevo",
-              "ApiKey": "${{ secrets.BREVO_API_KEY }}",
-              "FromEmail": "destek@ozeldersvip.com",
-              "FromName": "Özel Ders VIP"
-            },
-            "Cors": {
-              "AllowedOrigins": [
-                 "http://ozeldersvip.com",
-                 "https://ozeldersvip.com",
-                 "http://www.ozeldersvip.com",
-                 "https://www.ozeldersvip.com",
-                 "http://45.195.231.69"
-              ]
+          $appsettings = @{
+            ConnectionStrings = @{
+              DefaultConnection = "${{ secrets.DB_CONNECTION_STRING }}"
+            }
+            Jwt = @{
+              Key = "${{ secrets.JWT_KEY }}"
+              Issuer = "TeacherFind"
+              Audience = "TeacherFind"
+              ExpireDays = 7
+              ExpiryMinutes = 120
+            }
+            Email = @{
+              Provider = "Brevo"
+              ApiKey = "${{ secrets.BREVO_API_KEY }}"
+              FromEmail = "destek@ozeldersvip.com"
+              FromName = "Özel Ders VIP"
+            }
+            Cors = @{
+              AllowedOrigins = @(
+                "https://ozeldersvip.com",
+                "https://www.ozeldersvip.com",
+                "http://ozeldersvip.com",
+                "http://www.ozeldersvip.com"
+              )
+            }
+            Firebase = @{
+              ServiceAccountPath = ""
             }
           }
-          EOF
 
-      - name: Publish
-        run: dotnet publish ./TeacherFind.API/TeacherFind.API.csproj -c Release -o ./publish
+          $json = $appsettings | ConvertTo-Json -Depth 10
+          $json | Set-Content -Path "TeacherFind.API/appsettings.Production.json" -Encoding UTF8
 
-      - name: Put App Offline
+      - name: Publish API
+        shell: powershell
         run: |
-          echo "<html><body>Site is updating. Please wait...</body></html>" > ./publish/app_offline.htm
-          curl -T ./publish/app_offline.htm ftp://${{ secrets.FTP_SERVER }}/api.ozeldersvip.com/app_offline.htm --user "${{ secrets.FTP_USERNAME }}:${{ secrets.FTP_PASSWORD }}"
-          sleep 5
+          if (Test-Path $env:PUBLISH_PATH) {
+            Remove-Item $env:PUBLISH_PATH -Recurse -Force
+          }
 
-      - name: Deploy via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./publish/
-          server-dir: /api.ozeldersvip.com/
-          dangerous-clean-slate: true
-          state-name: .ftp-deploy-sync-state-v2.json
+          dotnet publish $env:PROJECT_PATH -c Release -o $env:PUBLISH_PATH
 
-      - name: Bring App Online
-        if: always()
+      - name: Deploy to IIS folder
+        shell: powershell
         run: |
-          curl -Q "-DELE /api.ozeldersvip.com/app_offline.htm" ftp://${{ secrets.FTP_SERVER }}/ --user "${{ secrets.FTP_USERNAME }}:${{ secrets.FTP_PASSWORD }}"
+          $sitePath = $env:SITE_PATH
+          $publishPath = $env:PUBLISH_PATH
+
+          if (!(Test-Path $sitePath)) {
+            New-Item -ItemType Directory -Path $sitePath -Force | Out-Null
+          }
+
+          Set-Content -Path "$sitePath\app_offline.htm" -Value "<html><body>API updating...</body></html>" -Encoding UTF8
+          Start-Sleep -Seconds 5
+
+          Get-ChildItem -Path $sitePath -Force |
+            Where-Object { $_.Name -ne "app_offline.htm" } |
+            Remove-Item -Recurse -Force
+
+          Copy-Item -Path "$publishPath\*" -Destination $sitePath -Recurse -Force
+
+          Remove-Item -Path "$sitePath\app_offline.htm" -Force -ErrorAction SilentlyContinue
+
+      - name: Test API domain
+        shell: powershell
+        continue-on-error: true
+        run: |
+          Start-Sleep -Seconds 5
+          Invoke-WebRequest -UseBasicParsing https://api.ozeldersvip.com/api/listings -TimeoutSec 30 | Select-Object StatusCode, Content
