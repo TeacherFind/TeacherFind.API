@@ -30,6 +30,8 @@ namespace TeacherFind.Mobile.Core.Services
         {
             _httpClient = httpClient;
             _httpClient.BaseAddress ??= CreateDefaultBaseAddress();
+
+            Console.WriteLine($"API BaseAddress: {_httpClient.BaseAddress}");
         }
 
         public async Task<T> GetAsync<T>(string endpoint)
@@ -39,6 +41,7 @@ namespace TeacherFind.Mobile.Core.Services
                 await AttachAuthorizationHeaderAsync();
 
                 var response = await _httpClient.GetAsync(NormalizeEndpoint(endpoint));
+
                 if (!response.IsSuccessStatusCode)
                 {
                     await LogApiErrorAsync(response);
@@ -101,7 +104,10 @@ namespace TeacherFind.Mobile.Core.Services
 
                 form.Add(content, formFieldName, file.FileName);
 
-                var response = await _httpClient.PostAsync(NormalizeEndpoint(endpoint), form);
+                var response = await _httpClient.PostAsync(
+                    NormalizeEndpoint(endpoint),
+                    form);
+
                 if (!response.IsSuccessStatusCode)
                 {
                     await LogApiErrorAsync(response);
@@ -129,14 +135,21 @@ namespace TeacherFind.Mobile.Core.Services
                 return relativeOrAbsoluteUrl;
 
             var baseAddress = _httpClient.BaseAddress ?? CreateDefaultBaseAddress();
-            return new Uri(baseAddress, relativeOrAbsoluteUrl.TrimStart('/')).ToString();
+
+            return new Uri(
+                baseAddress,
+                relativeOrAbsoluteUrl.TrimStart('/')).ToString();
         }
 
         private static Uri CreateDefaultBaseAddress()
         {
 #if ANDROID
-            return new Uri("http://10.0.2.2:5288/");
+            // Gerçek Android telefon + USB ADB reverse için.
+            // CMD:
+            // adb reverse tcp:5288 tcp:5288
+            return new Uri("http://127.0.0.1:5288/");
 #else
+            // Windows Machine için.
             return new Uri("http://127.0.0.1:5288/");
 #endif
         }
@@ -157,11 +170,13 @@ namespace TeacherFind.Mobile.Core.Services
             foreach (var key in TokenKeys)
             {
                 var token = await SecureStorage.Default.GetAsync(key);
+
                 if (string.IsNullOrWhiteSpace(token))
                     continue;
 
                 _httpClient.DefaultRequestHeaders.Authorization =
                     new AuthenticationHeaderValue("Bearer", token);
+
                 return;
             }
         }
@@ -169,7 +184,9 @@ namespace TeacherFind.Mobile.Core.Services
         private static async Task LogApiErrorAsync(HttpResponseMessage response)
         {
             var body = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"API Hatası: {(int)response.StatusCode} {response.ReasonPhrase} {body}");
+
+            Console.WriteLine(
+                $"API Hatası: {(int)response.StatusCode} {response.ReasonPhrase} {body}");
         }
     }
 }
