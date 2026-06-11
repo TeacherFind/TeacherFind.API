@@ -59,14 +59,21 @@ public class ChatService : IChatService
 
         await _messageRepository.AddAsync(message);
         await _messageRepository.SaveChangesAsync();
-        await _notificationService.SendNotificationAsync(
-    request.ReceiverId,
-    "Yeni mesaj",
-    $"{sender.FullName} size yeni bir mesaj gönderdi.",
-    "Message",
-    senderId,
-    sender.FullName,
-    $"/messages/{senderId}");
+        try
+        {
+            await _notificationService.SendNotificationAsync(
+                request.ReceiverId,
+                "Yeni mesaj",
+                $"{sender.FullName} size yeni bir mesaj gönderdi.",
+                "Message",
+                senderId,
+                sender.FullName,
+                $"/messages/{senderId}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Notification error while sending message: {ex.Message}");
+        }
 
         return Map(message);
     }
