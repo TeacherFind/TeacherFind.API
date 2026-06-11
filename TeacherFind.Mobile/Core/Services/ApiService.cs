@@ -104,7 +104,10 @@ namespace TeacherFind.Mobile.Core.Services
 
                 form.Add(content, formFieldName, file.FileName);
 
-                var response = await _httpClient.PostAsync(NormalizeEndpoint(endpoint), form);
+                var response = await _httpClient.PostAsync(
+                    NormalizeEndpoint(endpoint),
+                    form);
+
                 if (!response.IsSuccessStatusCode)
                 {
                     await LogApiErrorAsync(response);
@@ -131,8 +134,24 @@ namespace TeacherFind.Mobile.Core.Services
             if (Uri.TryCreate(relativeOrAbsoluteUrl, UriKind.Absolute, out _))
                 return relativeOrAbsoluteUrl;
 
-            var baseAddress = _httpClient.BaseAddress ?? new Uri("https://localhost:7196/");
-            return new Uri(baseAddress, relativeOrAbsoluteUrl.TrimStart('/')).ToString();
+            var baseAddress = _httpClient.BaseAddress ?? CreateDefaultBaseAddress();
+
+            return new Uri(
+                baseAddress,
+                relativeOrAbsoluteUrl.TrimStart('/')).ToString();
+        }
+
+        private static Uri CreateDefaultBaseAddress()
+        {
+#if ANDROID
+            // Gerçek Android telefon + USB ADB reverse için.
+            // CMD:
+            // adb reverse tcp:5288 tcp:5288
+            return new Uri("http://127.0.0.1:5288/");
+#else
+            // Windows Machine için.
+            return new Uri("http://127.0.0.1:5288/");
+#endif
         }
 
         private static string NormalizeEndpoint(string endpoint)
