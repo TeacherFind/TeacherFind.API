@@ -34,6 +34,7 @@ public class AppDbContext : DbContext
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<VerificationCode> VerificationCodes => Set<VerificationCode>();
     public DbSet<Report> Reports => Set<Report>();
+    public DbSet<UserDevice> UserDevices => Set<UserDevice>();
 
     // =====================================================
     // Reference Data
@@ -77,6 +78,7 @@ public class AppDbContext : DbContext
         ConfigureTeacherProfileSubject(modelBuilder);
         ConfigureListingPhoto(modelBuilder);
         ConfigureSystemSetting(modelBuilder);
+        ConfigureUserDevice(modelBuilder);
     }
 
     private static void ConfigureUser(ModelBuilder modelBuilder)
@@ -657,6 +659,29 @@ public class AppDbContext : DbContext
 
             entity.Property(x => x.SocialLinksJson)
                 .IsRequired();
+        });
+    }
+    private static void ConfigureUserDevice(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<UserDevice>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.FcmToken)
+                .IsRequired()
+                .HasMaxLength(512);
+
+            entity.Property(x => x.Platform)
+                .IsRequired()
+                .HasMaxLength(20);
+
+            entity.HasOne<User>()
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(x => x.FcmToken).IsUnique();
+            entity.HasIndex(x => x.UserId);
         });
     }
 }
