@@ -59,14 +59,21 @@ public class ChatService : IChatService
 
         await _messageRepository.AddAsync(message);
         await _messageRepository.SaveChangesAsync();
-        await _notificationService.SendNotificationAsync(
-    request.ReceiverId,
-    "Yeni mesaj",
-    $"{sender.FullName} size yeni bir mesaj gönderdi.",
-    "Message",
-    senderId,
-    sender.FullName,
-    $"/messages/{senderId}");
+        try
+        {
+            await _notificationService.SendNotificationAsync(
+                request.ReceiverId,
+                "Yeni mesaj",
+                $"{sender.FullName} size yeni bir mesaj gönderdi.",
+                "Message",
+                senderId,
+                sender.FullName,
+                $"/messages/{senderId}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Notification error while sending message: {ex.Message}");
+        }
 
         return Map(message);
     }
@@ -104,6 +111,7 @@ public class ChatService : IChatService
         foreach (var conv in conversations)
         {
             var otherUserId = conv.User1Id == currentUserId ? conv.User2Id : conv.User1Id;
+            var otherUser = await _userRepository.GetByIdAsync(otherUserId);
             var messages = conv.Messages.OrderByDescending(x => x.SentAt).ToList();
             var last = messages.FirstOrDefault();
             var unread = messages.Count(x => x.ReceiverId == currentUserId && !x.IsRead);
@@ -112,6 +120,8 @@ public class ChatService : IChatService
             {
                 ConversationId = conv.Id,
                 OtherUserId = otherUserId,
+                OtherUserName = ResolveDisplayName(otherUser),
+                DebugVersion = "chat-name-fix-2026-06-11",
                 LastMessage = last?.Content ?? "",
                 LastMessageAt = last?.SentAt,
                 UnreadCount = unread
@@ -137,4 +147,39 @@ public class ChatService : IChatService
         IsRead = m.IsRead,
         SentAt = m.SentAt
     };
+
+    private static string ResolveDisplayName(User? user)
+    {
+        if (user is null)
+            return "Kullanıcı";
+
+        var fullName = NormalizeName(user.FullName);
+        if (fullName is not null)
+            return fullName;
+
+        var name = GetStringProperty(user, "Name");
+        if (name is not null)
+            return name;
+
+        var firstName = GetStringProperty(user, "FirstName");
+        var lastName = GetStringProperty(user, "LastName");
+        var firstAndLastName = NormalizeName($"{firstName} {lastName}");
+        if (firstAndLastName is not null)
+            return firstAndLastName;
+
+        return GetStringProperty(user, "UserName")
+            ?? NormalizeName(user.Email)
+            ?? "Kullanıcı";
+    }
+
+    private static string? GetStringProperty(User user, string propertyName)
+        => NormalizeName(user.GetType().GetProperty(propertyName)?.GetValue(user) as string);
+
+    private static string? NormalizeName(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+
+        return value.Trim();
+    }
 }

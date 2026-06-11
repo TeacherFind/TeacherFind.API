@@ -28,6 +28,7 @@ using TeacherFind.Application.Features.Reviews;
 using TeacherFind.Application.Features.Students;
 using TeacherFind.Application.Features.Tutors;
 using TeacherFind.Infrastructure.Identity;
+using TeacherFind.Infrastructure.Notifications;
 using TeacherFind.Infrastructure.Persistence;
 using TeacherFind.Infrastructure.Persistence.Repositories;
 using TeacherFind.Infrastructure.Persistence.Seed;
@@ -354,9 +355,11 @@ internal class Program
         builder.Services.AddScoped<IConversationRepository, ConversationRepository>();
         builder.Services.AddScoped<IMessageRepository, MessageRepository>();
         builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+        builder.Services.AddScoped<IUserDeviceRepository, UserDeviceRepository>();
         builder.Services.AddScoped<IVerificationRepository, VerificationRepository>();
         builder.Services.AddScoped<IReportRepository, ReportRepository>();
         builder.Services.AddScoped<IBookingRepository, BookingRepository>();
+        builder.Services.AddScoped<IPushNotificationService, FcmPushNotificationService>();
 
         // =====================================================
         // Dependency Injection — Application Services
@@ -371,6 +374,7 @@ internal class Program
         builder.Services.AddScoped<IReviewService, ReviewService>();
         builder.Services.AddScoped<IChatService, ChatService>();
         builder.Services.AddScoped<INotificationService, NotificationService>();
+        builder.Services.AddScoped<IPushNotificationService, FcmPushNotificationService>();
         builder.Services.AddScoped<IReportService, ReportService>();
         builder.Services.AddScoped<IBookingService, BookingService>();
         builder.Services.AddScoped<IEducationService, EducationService>();
@@ -413,7 +417,10 @@ internal class Program
 
         app.UseForwardedHeaders();
         app.UseMiddleware<ExceptionHandlingMiddleware>();
-        app.UseHttpsRedirection();
+        if (!app.Environment.IsDevelopment())
+        {
+            app.UseHttpsRedirection();
+        }
         app.UseStaticFiles();
         app.UseRouting();
         app.UseCors("Frontend");

@@ -10,12 +10,10 @@ namespace TeacherFind.API.Hubs;
 public class ChatHub : Hub
 {
     private readonly IChatService _chatService;
-    private readonly INotificationService _notificationService;
 
-    public ChatHub(IChatService chatService, INotificationService notificationService)
+    public ChatHub(IChatService chatService)
     {
         _chatService = chatService;
-        _notificationService = notificationService;
     }
 
     public override async Task OnConnectedAsync()
@@ -53,14 +51,6 @@ public class ChatHub : Hub
 
         //  mesajı kaydet
         var message = await _chatService.SendMessageAsync(senderId, request);
-
-        //  notification oluştur
-        await _notificationService.SendNotificationAsync(
-            message.ReceiverId,
-            "Yeni mesaj",
-            message.Content,
-            "Message"
-        );
 
         //  karşı tarafa mesaj gönder
         await Clients.Group($"user-{message.ReceiverId}")
