@@ -413,7 +413,10 @@ internal class Program
 
         app.UseForwardedHeaders();
         app.UseMiddleware<ExceptionHandlingMiddleware>();
-        app.UseHttpsRedirection();
+        if (!app.Environment.IsDevelopment())
+        {
+            app.UseHttpsRedirection();
+        }
         app.UseStaticFiles();
         app.UseRouting();
         app.UseCors("Frontend");
