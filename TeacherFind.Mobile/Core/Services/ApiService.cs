@@ -29,7 +29,7 @@ namespace TeacherFind.Mobile.Core.Services
         public ApiService(HttpClient httpClient)
         {
             _httpClient = httpClient;
-            _httpClient.BaseAddress ??= new Uri("http://127.0.0.1:5288/");
+            _httpClient.BaseAddress ??= CreateDefaultBaseAddress();
         }
 
         public async Task<T> GetAsync<T>(string endpoint)
@@ -128,8 +128,17 @@ namespace TeacherFind.Mobile.Core.Services
             if (Uri.TryCreate(relativeOrAbsoluteUrl, UriKind.Absolute, out _))
                 return relativeOrAbsoluteUrl;
 
-            var baseAddress = _httpClient.BaseAddress ?? new Uri("https://localhost:7196/");
+            var baseAddress = _httpClient.BaseAddress ?? CreateDefaultBaseAddress();
             return new Uri(baseAddress, relativeOrAbsoluteUrl.TrimStart('/')).ToString();
+        }
+
+        private static Uri CreateDefaultBaseAddress()
+        {
+#if ANDROID
+            return new Uri("http://10.0.2.2:5288/");
+#else
+            return new Uri("http://127.0.0.1:5288/");
+#endif
         }
 
         private static string NormalizeEndpoint(string endpoint)
