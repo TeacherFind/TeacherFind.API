@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using System.Security.Claims;
 using TeacherFind.Application.Abstractions.Services;
 using TeacherFind.Contracts.Chat;
@@ -12,8 +13,15 @@ namespace TeacherFind.API.Controllers;
 public class MessagesController : ControllerBase
 {
     private readonly IChatService _chatService;
+    private readonly ILogger<MessagesController> _logger;
 
-    public MessagesController(IChatService chatService) => _chatService = chatService;
+    public MessagesController(
+        IChatService chatService,
+        ILogger<MessagesController> logger)
+    {
+        _chatService = chatService;
+        _logger = logger;
+    }
 
     // GET /api/messages/conversations
     [HttpGet("conversations")]
@@ -58,7 +66,16 @@ public class MessagesController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(new { message = ex.Message });
+            _logger.LogError(
+                ex,
+                "SendMessage failed. Inner exception: {InnerMessage}",
+                ex.InnerException?.Message);
+
+            return BadRequest(new
+            {
+                message = ex.Message,
+                inner = ex.InnerException?.Message
+            });
         }
     }
 

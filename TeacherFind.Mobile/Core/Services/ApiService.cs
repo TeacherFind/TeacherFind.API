@@ -29,7 +29,9 @@ namespace TeacherFind.Mobile.Core.Services
         public ApiService(HttpClient httpClient)
         {
             _httpClient = httpClient;
-            _httpClient.BaseAddress ??= new Uri("https://localhost:7196/");
+            _httpClient.BaseAddress ??= CreateDefaultBaseAddress();
+
+            Console.WriteLine($"API BaseAddress: {_httpClient.BaseAddress}");
         }
 
         public async Task<T> GetAsync<T>(string endpoint)
@@ -39,6 +41,7 @@ namespace TeacherFind.Mobile.Core.Services
                 await AttachAuthorizationHeaderAsync();
 
                 var response = await _httpClient.GetAsync(NormalizeEndpoint(endpoint));
+
                 if (!response.IsSuccessStatusCode)
                 {
                     await LogApiErrorAsync(response);
@@ -148,11 +151,13 @@ namespace TeacherFind.Mobile.Core.Services
             foreach (var key in TokenKeys)
             {
                 var token = await SecureStorage.Default.GetAsync(key);
+
                 if (string.IsNullOrWhiteSpace(token))
                     continue;
 
                 _httpClient.DefaultRequestHeaders.Authorization =
                     new AuthenticationHeaderValue("Bearer", token);
+
                 return;
             }
         }
@@ -160,7 +165,9 @@ namespace TeacherFind.Mobile.Core.Services
         private static async Task LogApiErrorAsync(HttpResponseMessage response)
         {
             var body = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"API Hatası: {(int)response.StatusCode} {response.ReasonPhrase} {body}");
+
+            Console.WriteLine(
+                $"API Hatası: {(int)response.StatusCode} {response.ReasonPhrase} {body}");
         }
     }
 }
