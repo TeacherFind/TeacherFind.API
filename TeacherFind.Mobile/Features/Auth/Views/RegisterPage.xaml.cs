@@ -62,6 +62,102 @@ public partial class RegisterPage : ContentPage
 
     private string _selectedRole = "";
 
+    // UI States
+    private bool _isSubmitting;
+    public bool IsSubmitting
+    {
+        get => _isSubmitting;
+        set { 
+            _isSubmitting = value; 
+            OnPropertyChanged(); 
+            OnPropertyChanged(nameof(IsNotSubmitting)); 
+        }
+    }
+
+    public bool IsNotSubmitting => !IsSubmitting;
+
+    private bool _isPopupVisible;
+    public bool IsPopupVisible
+    {
+        get => _isPopupVisible;
+        set { _isPopupVisible = value; OnPropertyChanged(); }
+    }
+
+    private string _popupTitle = "";
+    public string PopupTitle
+    {
+        get => _popupTitle;
+        set { _popupTitle = value; OnPropertyChanged(); }
+    }
+
+    private string _popupMessage = "";
+    public string PopupMessage
+    {
+        get => _popupMessage;
+        set { _popupMessage = value; OnPropertyChanged(); }
+    }
+
+    private Color _popupColor = Colors.Green;
+    public Color PopupColor
+    {
+        get => _popupColor;
+        set { _popupColor = value; OnPropertyChanged(); }
+    }
+
+    private string _popupIcon = "✔";
+    public string PopupIcon
+    {
+        get => _popupIcon;
+        set { _popupIcon = value; OnPropertyChanged(); }
+    }
+
+    private bool _isSuccessPopup;
+
+    public ICommand ClosePopupCommand { get; }
+
+    // Form Fields
+    private string _fullName = "";
+    public string FullName
+    {
+        get => _fullName;
+        set { _fullName = value; OnPropertyChanged(); }
+    }
+
+    private string _email = "";
+    public string Email
+    {
+        get => _email;
+        set { _email = value; OnPropertyChanged(); }
+    }
+
+    private string _phoneNumber = "";
+    public string PhoneNumber
+    {
+        get => _phoneNumber;
+        set { _phoneNumber = value; OnPropertyChanged(); }
+    }
+
+    private string _password = "";
+    public string Password
+    {
+        get => _password;
+        set { _password = value; OnPropertyChanged(); }
+    }
+
+    private string _confirmPassword = "";
+    public string ConfirmPassword
+    {
+        get => _confirmPassword;
+        set { _confirmPassword = value; OnPropertyChanged(); }
+    }
+
+    private string _gender = "";
+    public string Gender
+    {
+        get => _gender;
+        set { _gender = value; OnPropertyChanged(); }
+    }
+
     // Card Colors
     private Color _studentCardBorderColor = Color.FromArgb("#f1f5f9");
     public Color StudentCardBorderColor
@@ -220,6 +316,7 @@ public partial class RegisterPage : ContentPage
     public ICommand NavigateToLoginCommand { get; }
     public ICommand RefreshCommand { get; }
     public ICommand CloseCommand { get; }
+    public ICommand SubmitCommand { get; }
 
     public RegisterPage(IApiService apiService, IServiceProvider services)
     {
@@ -295,6 +392,17 @@ public partial class RegisterPage : ContentPage
             {
                 var homePage = _services.GetService(typeof(TeacherFind.Mobile.Features.Home.Views.HomePage)) as Page;
                 flyout.Detail = new NavigationPage(homePage);
+            }
+        });
+
+        SubmitCommand = new Command(async () => await SubmitRegistrationAsync());
+        
+        ClosePopupCommand = new Command(async () => 
+        {
+            IsPopupVisible = false;
+            if (_isSuccessPopup) 
+            {
+                await Navigation.PopAsync(); // Başarılıysa girişe dön
             }
         });
 
@@ -433,5 +541,69 @@ public partial class RegisterPage : ContentPage
     private void OnToggleConfirmPasswordClicked(object sender, EventArgs e)
     {
         IsConfirmPasswordHidden = !IsConfirmPasswordHidden;
+    }
+
+    private void ShowPopup(string title, string message, bool isSuccess)
+    {
+        PopupTitle = title;
+        PopupMessage = message;
+        PopupColor = isSuccess ? Color.FromArgb("#10b981") : Color.FromArgb("#ef4444"); // Emerald Green : Red
+        PopupIcon = isSuccess ? "✔" : "✖";
+        _isSuccessPopup = isSuccess;
+        IsPopupVisible = true;
+    }
+
+    private async Task SubmitRegistrationAsync()
+    {
+        if (string.IsNullOrWhiteSpace(FullName) || 
+            string.IsNullOrWhiteSpace(Email) || 
+            string.IsNullOrWhiteSpace(Password))
+        {
+            ShowPopup("Eksik Bilgi", "Lütfen Ad, E-posta ve Şifre gibi zorunlu alanları doldurun.", false);
+            return;
+        }
+
+        if (Password != ConfirmPassword)
+        {
+            ShowPopup("Hata", "Şifreler eşleşmiyor. Lütfen kontrol edin.", false);
+            return;
+        }
+
+        IsSubmitting = true;
+
+        try
+        {
+            var request = new
+            {
+                FullName = FullName,
+                Email = Email,
+                Password = Password,
+                Role = IsTutor ? 1 : 2, // Assuming 1 = Tutor, 2 = Student
+                PhoneNumber = PhoneNumber,
+                CityId = SelectedCity?.Id,
+                DistrictId = SelectedDistrict?.Id,
+                NeighborhoodId = SelectedNeighborhood?.Id
+            };
+
+            // PostAsync is used for registration. Using object as TResponse or a specific type if known.
+            var response = await _apiService.PostAsync<object, object>("api/auth/register", request);
+            
+            if (response != null)
+            {
+                ShowPopup("Başarılı", "Kayıt başarıyla oluşturuldu! Şimdi giriş yapabilirsiniz.", true);
+            }
+            else
+            {
+                ShowPopup("Kayıt Başarısız", "Kayıt oluşturulamadı. Bilgilerinizi kontrol edip tekrar deneyin.", false);
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowPopup("Kayıt Hatası", $"Bir hata oluştu: {ex.Message}", false);
+        }
+        finally
+        {
+            IsSubmitting = false;
+        }
     }
 }
