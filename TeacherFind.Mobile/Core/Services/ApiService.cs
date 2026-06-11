@@ -29,7 +29,7 @@ namespace TeacherFind.Mobile.Core.Services
         public ApiService(HttpClient httpClient)
         {
             _httpClient = httpClient;
-            _httpClient.BaseAddress ??= new Uri("https://localhost:7196/");
+            _httpClient.BaseAddress ??= new Uri("http://127.0.0.1:5288/");
         }
 
         public async Task<T> GetAsync<T>(string endpoint)
