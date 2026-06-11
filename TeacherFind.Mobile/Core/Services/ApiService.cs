@@ -29,7 +29,7 @@ namespace TeacherFind.Mobile.Core.Services
         public ApiService(HttpClient httpClient)
         {
             _httpClient = httpClient;
-            _httpClient.BaseAddress ??= CreateDefaultBaseAddress();
+            _httpClient.BaseAddress ??= new Uri("https://sxmq5mp0-7196.euw.devtunnels.ms/");
 
             Console.WriteLine($"API BaseAddress: {_httpClient.BaseAddress}");
         }
