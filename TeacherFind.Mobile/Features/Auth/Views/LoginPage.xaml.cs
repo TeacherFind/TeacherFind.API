@@ -44,7 +44,21 @@ public partial class LoginPage : ContentPage
         }
     }
 
+    private bool _isRefreshing;
+    public bool IsRefreshing
+    {
+        get => _isRefreshing;
+        set
+        {
+            _isRefreshing = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public ICommand LoginCommand { get; }
     public ICommand NavigateToRegisterCommand { get; }
+    public ICommand RefreshCommand { get; }
+    public ICommand CloseCommand { get; }
     private readonly IServiceProvider _services;
 
     public LoginPage(IServiceProvider services)
@@ -73,6 +87,24 @@ public partial class LoginPage : ContentPage
             catch (Exception ex)
             {
                 await Application.Current.MainPage.DisplayAlert("Hata", ex.Message, "Tamam");
+            }
+        });
+
+        RefreshCommand = new Command(async () => {
+            IsRefreshing = true;
+            
+            // Re-evaluate themes or reset fields if needed. Here we just mock a refresh.
+            await Task.Delay(1000); 
+
+            IsRefreshing = false;
+        });
+
+        CloseCommand = new Command(() => {
+            // Uygulamanın ana iskeletini (FlyoutPage) alıp, içeriğini Ana Sayfa'ya çeviriyoruz:
+            if (Application.Current.MainPage is FlyoutPage flyout)
+            {
+                var homePage = _services.GetService(typeof(TeacherFind.Mobile.Features.Home.Views.HomePage)) as Page;
+                flyout.Detail = new NavigationPage(homePage);
             }
         });
 

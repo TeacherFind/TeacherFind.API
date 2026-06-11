@@ -1,17 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using TeacherFind.Domain.Entities;
+using Microsoft.Maui.Storage;
 
 namespace TeacherFind.Mobile.Core.Abstractions
 {
     public interface IApiService
     {
-        // VERİTABANINDAN VERİ ÇEKMEK İÇİN GEREKEN METOT TANIMI
-        // api/teachers gibi bir endpoint yolu alır ve geriye User listesi döner.
         Task<T> GetAsync<T>(string endpoint);
 
+        Task<bool> PutAsync<TRequest>(string endpoint, TRequest request);
+
+        Task<TResponse> UploadFileAsync<TResponse>(
+            string endpoint,
+            FileResult file,
+            string formFieldName = "file");
+
+        string ToAbsoluteUrl(string? relativeOrAbsoluteUrl);
     }
 }
