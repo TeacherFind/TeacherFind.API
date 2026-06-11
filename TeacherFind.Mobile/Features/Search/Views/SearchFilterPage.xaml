@@ -3,70 +3,107 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="TeacherFind.Mobile.Features.Search.Views.SearchFilterPage"
              Title="Filtreler"
-             BackgroundColor="#F8F9FA">
+             BackgroundColor="{AppThemeBinding Light=#ffffff, Dark=#1e293b}">
 
-    <Grid RowDefinitions="Auto, *, Auto" Padding="20">
+    <Grid RowDefinitions="Auto, *, Auto" Padding="24">
 
-        <Grid Grid.Row="0" ColumnDefinitions="Auto, *, Auto" Margin="0,0,0,20">
-            <Label Grid.Column="0" Text="🎛️" FontSize="20" VerticalOptions="Center" Margin="0,0,10,0"/>
-            <Label Grid.Column="1" Text="Filtreler" FontSize="22" FontAttributes="Bold" TextColor="#0A194F" VerticalOptions="Center"/>
-            <Button Grid.Column="2" Text="✕" FontSize="18" TextColor="Gray" BackgroundColor="Transparent" Clicked="OnCloseButtonClicked"/>
+        <!-- Header -->
+        <Grid Grid.Row="0" ColumnDefinitions="Auto, *, Auto" Margin="0,0,0,24" Padding="0,0,0,16">
+            <Line X1="0" Y1="1" X2="1000" Y2="1" Stroke="{AppThemeBinding Light=#f1f5f9, Dark=#334155}" StrokeThickness="1" VerticalOptions="End" Grid.ColumnSpan="3" Margin="-24,0,-24,0"/>
+            <HorizontalStackLayout Grid.Column="0" Spacing="10" VerticalOptions="Center">
+                <Label Text="⚙️" FontSize="20" TextColor="#2d79f3"/>
+                <Label Text="Filtreler" FontSize="20" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#0f172a, Dark=#ffffff}"/>
+            </HorizontalStackLayout>
+            
+            <Border Grid.Column="2" Stroke="Transparent" BackgroundColor="{AppThemeBinding Light=#f8fafc, Dark=#334155}" WidthRequest="36" HeightRequest="36" HorizontalOptions="End" VerticalOptions="Center">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="18" />
+                </Border.StrokeShape>
+                <Label Text="✕" FontSize="16" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#64748b, Dark=#cbd5e1}" HorizontalOptions="Center" VerticalOptions="Center"/>
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnCloseButtonClicked" />
+                </Border.GestureRecognizers>
+            </Border>
         </Grid>
 
+        <!-- Filter Content -->
         <ScrollView Grid.Row="1" VerticalScrollBarVisibility="Never" Margin="0,0,0,20">
-            <VerticalStackLayout Spacing="20">
+            <VerticalStackLayout Spacing="24">
 
+                <!-- Search -->
                 <VerticalStackLayout Spacing="8">
-                    <Label Text="🔍 ARAMA" FontSize="12" FontAttributes="Bold" TextColor="Gray"/>
-                    <Border StrokeShape="RoundRectangle 10" Stroke="#E0E0E0" BackgroundColor="White" Padding="15,5">
-                        <Entry Text="{Binding SearchText}" Placeholder="İsim veya konu..." TextColor="#212121" PlaceholderColor="#A0A0A0" BackgroundColor="Transparent" ClearButtonVisibility="WhileEditing"/>
+                    <Label Text="🔍 ARAMA" FontSize="11" FontAttributes="Bold" CharacterSpacing="1" TextColor="{AppThemeBinding Light=#94a3b8, Dark=#64748b}"/>
+                    <Border Stroke="{AppThemeBinding Light=#f1f5f9, Dark=#475569}" StrokeThickness="2" BackgroundColor="{AppThemeBinding Light=#f8fafc, Dark=#334155}" Padding="15,2">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="16" />
+                        </Border.StrokeShape>
+                        <Entry Text="{Binding SearchText}" Placeholder="İsim veya konu..." FontSize="15" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#1e293b, Dark=#ffffff}" PlaceholderColor="{AppThemeBinding Light=#94a3b8, Dark=#94a3b8}" BackgroundColor="Transparent" ClearButtonVisibility="WhileEditing"/>
                     </Border>
                 </VerticalStackLayout>
 
+                <!-- Category -->
                 <VerticalStackLayout Spacing="8">
-                    <Label Text="📁 KATEGORİ" FontSize="12" FontAttributes="Bold" TextColor="Gray"/>
-                    <Border StrokeShape="RoundRectangle 10" Stroke="#E0E0E0" BackgroundColor="White" Padding="15,0">
+                    <Label Text="📚 KATEGORİ" FontSize="11" FontAttributes="Bold" CharacterSpacing="1" TextColor="{AppThemeBinding Light=#94a3b8, Dark=#64748b}"/>
+                    <Border Stroke="{AppThemeBinding Light=#f1f5f9, Dark=#475569}" StrokeThickness="2" BackgroundColor="{AppThemeBinding Light=#f8fafc, Dark=#334155}" Padding="15,0">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="16" />
+                        </Border.StrokeShape>
                         <Grid ColumnDefinitions="*, Auto">
-                            <Picker Grid.Column="0" Title="Tüm Kategoriler" TextColor="#212121" TitleColor="#212121" BackgroundColor="Transparent" 
+                            <Picker Grid.Column="0" Title="Tüm Kategoriler" FontSize="15" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#1e293b, Dark=#ffffff}" TitleColor="{AppThemeBinding Light=#94a3b8, Dark=#94a3b8}" BackgroundColor="Transparent" 
                                     ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}"/>
-                            <Label Grid.Column="1" Text="▼" FontSize="12" TextColor="Gray" VerticalOptions="Center" Margin="0,0,5,0" InputTransparent="True"/>
+                            <Label Grid.Column="1" Text="▼" FontSize="10" TextColor="{AppThemeBinding Light=#94a3b8, Dark=#64748b}" VerticalOptions="Center" Margin="0,0,5,0" InputTransparent="True"/>
                         </Grid>
                     </Border>
                 </VerticalStackLayout>
 
+                <!-- Location -->
                 <VerticalStackLayout Spacing="8">
-                    <Label Text="📍 KONUM" FontSize="12" FontAttributes="Bold" TextColor="Gray"/>
-                    <Border StrokeShape="RoundRectangle 10" Stroke="#E0E0E0" BackgroundColor="White" Padding="15,0">
+                    <Label Text="📍 KONUM" FontSize="11" FontAttributes="Bold" CharacterSpacing="1" TextColor="{AppThemeBinding Light=#94a3b8, Dark=#64748b}"/>
+                    <Border Stroke="{AppThemeBinding Light=#f1f5f9, Dark=#475569}" StrokeThickness="2" BackgroundColor="{AppThemeBinding Light=#f8fafc, Dark=#334155}" Padding="15,0">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="16" />
+                        </Border.StrokeShape>
                         <Grid ColumnDefinitions="*, Auto">
-                            <Picker Grid.Column="0" Title="Fark Etmez" TextColor="#212121" TitleColor="#212121" BackgroundColor="Transparent"
+                            <Picker Grid.Column="0" Title="Fark Etmez" FontSize="15" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#1e293b, Dark=#ffffff}" TitleColor="{AppThemeBinding Light=#94a3b8, Dark=#94a3b8}" BackgroundColor="Transparent"
                                     ItemsSource="{Binding Locations}" SelectedItem="{Binding SelectedLocation}"/>
-                            <Label Grid.Column="1" Text="▼" FontSize="12" TextColor="Gray" VerticalOptions="Center" Margin="0,0,5,0" InputTransparent="True"/>
+                            <Label Grid.Column="1" Text="▼" FontSize="10" TextColor="{AppThemeBinding Light=#94a3b8, Dark=#64748b}" VerticalOptions="Center" Margin="0,0,5,0" InputTransparent="True"/>
                         </Grid>
                     </Border>
                 </VerticalStackLayout>
 
+                <!-- Lesson Type -->
                 <VerticalStackLayout Spacing="8">
-                    <Label Text="💻 DERS TİPİ" FontSize="12" FontAttributes="Bold" TextColor="Gray"/>
-                    <Border StrokeShape="RoundRectangle 10" Stroke="#E0E0E0" BackgroundColor="White" Padding="15,0">
+                    <Label Text="🔲 DERS TİPİ" FontSize="11" FontAttributes="Bold" CharacterSpacing="1" TextColor="{AppThemeBinding Light=#94a3b8, Dark=#64748b}"/>
+                    <Border Stroke="{AppThemeBinding Light=#f1f5f9, Dark=#475569}" StrokeThickness="2" BackgroundColor="{AppThemeBinding Light=#f8fafc, Dark=#334155}" Padding="15,0">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="16" />
+                        </Border.StrokeShape>
                         <Grid ColumnDefinitions="*, Auto">
-                            <Picker Grid.Column="0" Title="Tümü" TextColor="#212121" TitleColor="#212121" BackgroundColor="Transparent"
+                            <Picker Grid.Column="0" Title="Tümü" FontSize="15" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#1e293b, Dark=#ffffff}" TitleColor="{AppThemeBinding Light=#94a3b8, Dark=#94a3b8}" BackgroundColor="Transparent"
                                     ItemsSource="{Binding LessonTypes}" SelectedItem="{Binding SelectedLessonType}"/>
-                            <Label Grid.Column="1" Text="▼" FontSize="12" TextColor="Gray" VerticalOptions="Center" Margin="0,0,5,0" InputTransparent="True"/>
+                            <Label Grid.Column="1" Text="▼" FontSize="10" TextColor="{AppThemeBinding Light=#94a3b8, Dark=#64748b}" VerticalOptions="Center" Margin="0,0,5,0" InputTransparent="True"/>
                         </Grid>
                     </Border>
                 </VerticalStackLayout>
 
+                <!-- Price Range -->
                 <VerticalStackLayout Spacing="8">
-                    <Label Text="💰 FİYAT ARALIĞI" FontSize="12" FontAttributes="Bold" TextColor="Gray"/>
-                    <Grid ColumnDefinitions="*, Auto, *" ColumnSpacing="10" VerticalOptions="Center">
-                        <Border Grid.Column="0" StrokeShape="RoundRectangle 10" Stroke="#E0E0E0" BackgroundColor="White" Padding="15,0">
-                            <Entry Text="{Binding MinPrice}" Placeholder="Min" Keyboard="Numeric" TextColor="#212121" HorizontalTextAlignment="Center" BackgroundColor="Transparent"/>
+                    <Label Text="💲 FİYAT ARALIĞI" FontSize="11" FontAttributes="Bold" CharacterSpacing="1" TextColor="{AppThemeBinding Light=#94a3b8, Dark=#64748b}"/>
+                    <Grid ColumnDefinitions="*, Auto, *" ColumnSpacing="15" VerticalOptions="Center">
+                        <Border Grid.Column="0" Stroke="{AppThemeBinding Light=#f1f5f9, Dark=#475569}" StrokeThickness="2" BackgroundColor="{AppThemeBinding Light=#f8fafc, Dark=#334155}" Padding="15,2">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="16" />
+                            </Border.StrokeShape>
+                            <Entry Text="{Binding MinPrice}" Placeholder="Min ₺" FontSize="15" FontAttributes="Bold" Keyboard="Numeric" TextColor="{AppThemeBinding Light=#1e293b, Dark=#ffffff}" PlaceholderColor="{AppThemeBinding Light=#94a3b8, Dark=#94a3b8}" HorizontalTextAlignment="Center" BackgroundColor="Transparent"/>
                         </Border>
 
-                        <Label Grid.Column="1" Text="-" FontSize="18" TextColor="Gray" VerticalOptions="Center"/>
+                        <Label Grid.Column="1" Text="—" FontSize="14" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#94a3b8, Dark=#64748b}" VerticalOptions="Center"/>
 
-                        <Border Grid.Column="2" StrokeShape="RoundRectangle 10" Stroke="#E0E0E0" BackgroundColor="White" Padding="15,0">
-                            <Entry Text="{Binding MaxPrice}" Placeholder="Max" Keyboard="Numeric" TextColor="#212121" HorizontalTextAlignment="Center" BackgroundColor="Transparent"/>
+                        <Border Grid.Column="2" Stroke="{AppThemeBinding Light=#f1f5f9, Dark=#475569}" StrokeThickness="2" BackgroundColor="{AppThemeBinding Light=#f8fafc, Dark=#334155}" Padding="15,2">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="16" />
+                            </Border.StrokeShape>
+                            <Entry Text="{Binding MaxPrice}" Placeholder="Max ₺" FontSize="15" FontAttributes="Bold" Keyboard="Numeric" TextColor="{AppThemeBinding Light=#1e293b, Dark=#ffffff}" PlaceholderColor="{AppThemeBinding Light=#94a3b8, Dark=#94a3b8}" HorizontalTextAlignment="Center" BackgroundColor="Transparent"/>
                         </Border>
                     </Grid>
                 </VerticalStackLayout>
@@ -74,8 +111,13 @@
             </VerticalStackLayout>
         </ScrollView>
 
-        <Button Grid.Row="2" Text="Filtreleri Uygula" Command="{Binding ApplyFiltersCommand}" BackgroundColor="#2D68FE" TextColor="White" 
-                FontAttributes="Bold" FontSize="16" CornerRadius="12" HeightRequest="55" Margin="0,10,0,0"/>
+        <!-- Apply Button -->
+        <Button Grid.Row="2" Text="Filtreleri Uygula" Command="{Binding ApplyFiltersCommand}" BackgroundColor="#2d79f3" TextColor="White" 
+                FontAttributes="Bold" FontSize="16" CornerRadius="16" HeightRequest="56" Margin="0,10,0,0">
+            <Button.Shadow>
+                <Shadow Brush="#2d79f3" Offset="0,4" Radius="10" Opacity="0.3" />
+            </Button.Shadow>
+        </Button>
 
     </Grid>
 </ContentPage>

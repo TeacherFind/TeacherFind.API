@@ -1,72 +1,121 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:components="clr-namespace:TeacherFind.Mobile.Shared.Components"
              x:Class="TeacherFind.Mobile.Features.Teachers.Views.TeacherListPage"
              Title="Eğitmenleri Keşfedin"
-             BackgroundColor="#F5F7FA">
+             BackgroundColor="{AppThemeBinding Light=#f8fafc, Dark=#0f172a}"
+             NavigationPage.HasNavigationBar="False">
 
-    <Grid RowDefinitions="Auto, *">
+    <Grid RowDefinitions="Auto, Auto, *">
 
-        <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Padding="20,15" BackgroundColor="White">
-            <Border Grid.Column="0" StrokeShape="RoundRectangle 20" Stroke="Transparent" BackgroundColor="#E8EEFC" Padding="15,8" HorizontalOptions="Start">
-                <Label Text="{Binding TotalCountText}" TextColor="#0A194F" FontAttributes="Bold" FontSize="12"/>
-            </Border>
-
-            <Button Grid.Column="1" Text="🎛 Filtrele &amp; Sırala" 
-                    BackgroundColor="Transparent" TextColor="#0A194F" FontAttributes="Bold"
-                    Clicked="OnFilterButtonClicked"/>
+        <!-- Custom Purple Header -->
+        <Grid Grid.Row="0" BackgroundColor="#5b21b6" Padding="15,20,15,20" ColumnDefinitions="Auto, *">
+            <!-- Back Button -->
+            <Label Grid.Column="0" Text="←" FontSize="24" TextColor="White" FontAttributes="Bold" VerticalOptions="Center" Margin="0,0,15,0">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnBackButtonClicked" />
+                </Label.GestureRecognizers>
+            </Label>
+            
+            <!-- Title -->
+            <Label Grid.Column="1" Text="Eğitmenleri Keşfedin" FontSize="22" FontAttributes="Bold" TextColor="White" VerticalOptions="Center"/>
         </Grid>
 
-        <Grid Grid.Row="1" Padding="20">
+        <!-- Info & Filter Bar -->
+        <Grid Grid.Row="1" ColumnDefinitions="*, Auto" Padding="20,15" BackgroundColor="{AppThemeBinding Light=#ffffff, Dark=#1e293b}">
+            
+            <!-- Count Pill -->
+            <Border Grid.Column="0" Stroke="Transparent" BackgroundColor="{AppThemeBinding Light=#eef2ff, Dark=#312e81}" HorizontalOptions="Start" VerticalOptions="Center" Padding="15,10">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="20" />
+                </Border.StrokeShape>
+                <Label Text="{Binding TotalCountText}" TextColor="{AppThemeBinding Light=#3730a3, Dark=#c7d2fe}" FontAttributes="Bold" FontSize="14"/>
+            </Border>
+
+            <!-- Filter Button -->
+            <HorizontalStackLayout Grid.Column="1" Spacing="8" VerticalOptions="Center">
+                <Label Text="🎛️" FontSize="16" VerticalOptions="Center"/>
+                <Label Text="Filtrele &amp; Sırala" TextColor="{AppThemeBinding Light=#1e293b, Dark=#e2e8f0}" FontAttributes="Bold" FontSize="15" VerticalOptions="Center">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnFilterButtonClicked" />
+                    </Label.GestureRecognizers>
+                </Label>
+            </HorizontalStackLayout>
+        </Grid>
+
+        <!-- Tutor List -->
+        <Grid Grid.Row="2" Padding="20">
             <CollectionView ItemsSource="{Binding Teachers}" VerticalScrollBarVisibility="Never">
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
-                        <Border StrokeShape="RoundRectangle 20" Stroke="Transparent" BackgroundColor="White" Margin="0,0,0,20" Padding="20">
+                        <Border Stroke="{AppThemeBinding Light=#e2e8f0, Dark=#334155}" StrokeThickness="1" BackgroundColor="{AppThemeBinding Light=#ffffff, Dark=#1e293b}" Margin="0,0,0,20" Padding="20">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="24" />
+                            </Border.StrokeShape>
                             <Border.Shadow>
-                                <Shadow Brush="Black" Offset="0,5" Radius="15" Opacity="0.05" />
+                                <Shadow Brush="{AppThemeBinding Light=#94a3b8, Dark=#000000}" Offset="0,4" Radius="12" Opacity="0.1" />
                             </Border.Shadow>
 
                             <VerticalStackLayout Spacing="15">
 
+                                <!-- Top Area: Avatar & Info -->
                                 <Grid ColumnDefinitions="Auto, *, Auto">
-                                    <Grid Grid.Column="0" WidthRequest="60" HeightRequest="60">
-                                        <Border StrokeShape="RoundRectangle 30" Stroke="Transparent" WidthRequest="60" HeightRequest="60">
+                                    
+                                    <!-- Avatar -->
+                                    <Grid Grid.Column="0" WidthRequest="70" HeightRequest="70">
+                                        <Border StrokeShape="RoundRectangle 35" Stroke="Transparent" WidthRequest="70" HeightRequest="70">
                                             <Image Source="{Binding AvatarUrl}" Aspect="AspectFill"/>
                                         </Border>
-                                        <Border IsVisible="{Binding IsOnline}" BackgroundColor="#2ECC71" Stroke="White" StrokeThickness="2" StrokeShape="RoundRectangle 7.5" WidthRequest="15" HeightRequest="15" HorizontalOptions="End" VerticalOptions="End" Margin="0,0,5,5"/>
+                                        <!-- Online Badge -->
+                                        <Border IsVisible="{Binding IsOnline}" BackgroundColor="#22c55e" Stroke="White" StrokeThickness="2" WidthRequest="18" HeightRequest="18" HorizontalOptions="End" VerticalOptions="End" Margin="0,0,2,2">
+                                            <Border.StrokeShape>
+                                                <RoundRectangle CornerRadius="9" />
+                                            </Border.StrokeShape>
+                                        </Border>
                                     </Grid>
 
+                                    <!-- Basic Info -->
                                     <VerticalStackLayout Grid.Column="1" Margin="15,0,0,0" VerticalOptions="Center">
-                                        <Label Text="{Binding Name}" FontAttributes="Bold" FontSize="16" TextColor="#212121"/>
-                                        <HorizontalStackLayout Spacing="5" Margin="0,2,0,0">
-                                            <Label Text="⭐" FontSize="12"/>
-                                            <Label Text="{Binding Rating}" TextColor="#FFA000" FontAttributes="Bold" FontSize="12"/>
-                                            <Label Text="{Binding ReviewCount}" TextColor="Gray" FontSize="11"/>
+                                        <Label Text="{Binding Name}" FontAttributes="Bold" FontSize="18" TextColor="{AppThemeBinding Light=#0f172a, Dark=#ffffff}"/>
+                                        
+                                        <HorizontalStackLayout Spacing="5" Margin="0,4,0,0" VerticalOptions="Center">
+                                            <Label Text="⭐" FontSize="12" VerticalOptions="Center"/>
+                                            <Label Text="{Binding Rating}" TextColor="#eab308" FontAttributes="Bold" FontSize="13" VerticalOptions="Center"/>
+                                            <Label Text="{Binding ReviewCount}" TextColor="{AppThemeBinding Light=#64748b, Dark=#94a3b8}" FontSize="12" VerticalOptions="Center"/>
                                         </HorizontalStackLayout>
-                                        <Label Text="{Binding Price}" TextColor="#2962FF" FontAttributes="Bold" FontSize="14" Margin="0,5,0,0"/>
+                                        
+                                        <Label Text="{Binding Price}" TextColor="#2d79f3" FontAttributes="Bold" FontSize="16" Margin="0,8,0,0"/>
                                     </VerticalStackLayout>
 
-                                    <Label Grid.Column="2" Text="♡" FontSize="24" TextColor="Gray" VerticalOptions="Start"/>
+                                    <!-- Favorite Icon -->
+                                    <Label Grid.Column="2" Text="♡" FontSize="26" TextColor="{AppThemeBinding Light=#94a3b8, Dark=#cbd5e1}" VerticalOptions="Start"/>
                                 </Grid>
 
-                                <VerticalStackLayout Spacing="5">
-                                    <Label Text="{Binding Title}" FontAttributes="Bold" FontSize="14" TextColor="#212121"/>
-                                    <Label Text="{Binding Description}" FontSize="12" TextColor="Gray" LineBreakMode="TailTruncation" MaxLines="2"/>
+                                <!-- Title & Description -->
+                                <VerticalStackLayout Spacing="6" Margin="0,5,0,0">
+                                    <Label Text="{Binding Title}" FontAttributes="Bold" FontSize="15" TextColor="{AppThemeBinding Light=#1e293b, Dark=#f8fafc}"/>
+                                    <Label Text="{Binding Description}" FontSize="13" TextColor="{AppThemeBinding Light=#64748b, Dark=#94a3b8}" LineBreakMode="TailTruncation" MaxLines="2"/>
                                 </VerticalStackLayout>
 
-                                <CollectionView ItemsSource="{Binding Badges}" ItemsLayout="HorizontalList" HeightRequest="30">
+                                <!-- Badges -->
+                                <CollectionView ItemsSource="{Binding Badges}" ItemsLayout="HorizontalList" HeightRequest="32" Margin="0,5,0,0">
                                     <CollectionView.ItemTemplate>
                                         <DataTemplate>
-                                            <Border StrokeShape="RoundRectangle 10" Stroke="#E0E0E0" BackgroundColor="#F9FAFC" Padding="10,5" Margin="0,0,8,0">
-                                                <Label Text="{Binding Text}" FontSize="10" TextColor="#555555" VerticalOptions="Center"/>
+                                            <Border Stroke="{AppThemeBinding Light=#e2e8f0, Dark=#475569}" StrokeThickness="1" BackgroundColor="{AppThemeBinding Light=#f8fafc, Dark=#334155}" Padding="12,6" Margin="0,0,8,0">
+                                                <Border.StrokeShape>
+                                                    <RoundRectangle CornerRadius="8" />
+                                                </Border.StrokeShape>
+                                                <Label Text="{Binding Text}" FontSize="11" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#475569, Dark=#cbd5e1}" VerticalOptions="Center"/>
                                             </Border>
                                         </DataTemplate>
                                     </CollectionView.ItemTemplate>
                                 </CollectionView>
 
-                                <Grid ColumnDefinitions="*, *" ColumnSpacing="10" Margin="0,10,0,0">
-                                    <Button Grid.Column="0" Text="Profili İncele" BackgroundColor="#2962FF" TextColor="White" CornerRadius="10" HeightRequest="45" FontSize="13" FontAttributes="Bold"/>
-                                    <Button Grid.Column="1" Text="Mesaj Gönder" BackgroundColor="Transparent" TextColor="#212121" BorderColor="#E0E0E0" BorderWidth="1" CornerRadius="10" HeightRequest="45" FontSize="13" FontAttributes="Bold"/>
+                                <!-- Action Buttons -->
+                                <Grid ColumnDefinitions="*, *" ColumnSpacing="15" Margin="0,15,0,0">
+                                    <Button Grid.Column="0" Text="Profili İncele" BackgroundColor="#2d79f3" TextColor="White" CornerRadius="12" HeightRequest="48" FontSize="14" FontAttributes="Bold"/>
+                                    <Button Grid.Column="1" Text="Mesaj Gönder" BackgroundColor="Transparent" TextColor="{AppThemeBinding Light=#0f172a, Dark=#ffffff}" BorderColor="{AppThemeBinding Light=#cbd5e1, Dark=#475569}" BorderWidth="1" CornerRadius="12" HeightRequest="48" FontSize="14" FontAttributes="Bold"/>
                                 </Grid>
 
                             </VerticalStackLayout>
@@ -75,6 +124,9 @@
                 </CollectionView.ItemTemplate>
             </CollectionView>
         </Grid>
+
+        <!-- Floating Bottom Bar -->
+        <components:BottomNavBar Grid.Row="2" VerticalOptions="End" />
 
     </Grid>
 </ContentPage>

@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Maui.Controls;
 using TeacherFind.Mobile.Features.Teachers.ViewModels;
 
@@ -18,16 +19,22 @@ public partial class TeacherListPage : ContentPage
     {
         base.OnAppearing();
 
-        // Sayfa ekrana her geldiðinde veritabanýndan listeyi çekecek
+        // Sayfa ekrana her geldiginde veritabanindan listeyi cekecek
         await _viewModel.LoadTeachersAsync();
     }
+
     private async void OnFilterButtonClicked(object sender, EventArgs e)
     {
-        // Mobilde filtre ekranlarý genellikle Navigation.PushModalAsync ile
-        // alttan yukarý doðru þýk bir þekilde kayarak açýlýr.
+        // Mobilde filtre ekranlari genellikle Navigation.PushModalAsync ile
+        // alttan yukari dogru sik bir sekilde kayarak acilir.
 
-        // Doðrudan 'Search' klasöründeki yeni filtremizi çaðýrýyoruz
+        // Dogrudan 'Search' klasorundeki yeni filtremizi cagiriyoruz
         var filterPage = Handler.MauiContext.Services.GetService<TeacherFind.Mobile.Features.Search.Views.SearchFilterPage>();
         await Navigation.PushModalAsync(filterPage);
+    }
+
+    private async void OnBackButtonClicked(object sender, EventArgs e)
+    {
+        await Navigation.PopAsync();
     }
 }
