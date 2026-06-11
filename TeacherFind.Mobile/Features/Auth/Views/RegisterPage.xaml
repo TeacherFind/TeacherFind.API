@@ -9,291 +9,471 @@
         <ScrollView>
             <Grid Padding="20" VerticalOptions="Center">
 
-            <!-- Main Container -->
-            <Border Stroke="{AppThemeBinding Light={StaticResource BorderLightColor}, Dark=#334155}"
-                    StrokeThickness="1"
-                    BackgroundColor="{AppThemeBinding Light=#E6FFFFFF, Dark=#1e293b}"
-                    Padding="30"
-                    VerticalOptions="Center"
-                    HorizontalOptions="Center"
-                    MaximumWidthRequest="600">
-                <Border.StrokeShape>
-                    <RoundRectangle CornerRadius="28" />
-                </Border.StrokeShape>
+                <!-- Main Container -->
+                <Border Stroke="{AppThemeBinding Light={StaticResource BorderLightColor}, Dark=#334155}"
+                        StrokeThickness="1"
+                        BackgroundColor="{AppThemeBinding Light=#E6FFFFFF, Dark=#1e293b}"
+                        Padding="30"
+                        VerticalOptions="Center"
+                        HorizontalOptions="Center"
+                        MaximumWidthRequest="600">
 
-                <VerticalStackLayout Spacing="20">
-                    
-                    <!-- Close / Back Button -->
-                    <Grid>
-                        <Label Text="✕ Kapat" 
-                               FontSize="14" 
-                               FontAttributes="Bold"
-                               TextColor="{AppThemeBinding Light={StaticResource TextSecondaryColor}, Dark=#94a3b8}"
-                               HorizontalOptions="End">
-                            <Label.GestureRecognizers>
-                                <TapGestureRecognizer Command="{Binding CloseCommand}" />
-                            </Label.GestureRecognizers>
-                        </Label>
-                    </Grid>
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="28" />
+                    </Border.StrokeShape>
 
-                    <!-- ============================================== -->
-                    <!-- STEP 0: ROL SEÇİMİ -->
-                    <!-- ============================================== -->
-                    <VerticalStackLayout IsVisible="{Binding IsStep0}" Spacing="20">
-                        <Label Text="Hoş Geldiniz" 
-                               FontSize="26" 
-                               FontAttributes="Bold" 
-                               TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource TextWhiteColor}}"
-                               HorizontalOptions="Center" />
-                        
-                        <Label Text="Devam etmek için size uygun olan rolü seçin" 
-                               FontSize="14" 
-                               TextColor="{AppThemeBinding Light={StaticResource TextSecondaryColor}, Dark=#94a3b8}"
-                               HorizontalOptions="Center"
-                               Margin="0,0,0,20"/>
+                    <VerticalStackLayout Spacing="20">
 
-                        <!-- Kartlar -->
-                        <Grid ColumnDefinitions="*,*" ColumnSpacing="20">
-                            <!-- Öğrenci Kartı -->
-                            <Border Grid.Column="0"
-                                    Stroke="{Binding StudentCardBorderColor}"
-                                    StrokeThickness="2"
-                                    BackgroundColor="{Binding StudentCardBackgroundColor}"
-                                    Padding="20"
-                                    HeightRequest="220">
-                                <Border.StrokeShape>
-                                    <RoundRectangle CornerRadius="24" />
-                                </Border.StrokeShape>
-                                <Border.GestureRecognizers>
-                                    <TapGestureRecognizer Command="{Binding SelectStudentRoleCommand}" />
-                                </Border.GestureRecognizers>
-                                
-                                <VerticalStackLayout Spacing="10" VerticalOptions="Center" HorizontalOptions="Center">
-                                    <Image Source="https://img.icons8.com/3d-fluency/188/student-male--v2.png" 
-                                           HeightRequest="80" 
-                                           WidthRequest="80" />
-                                    <Label Text="Öğrenci Olmak İstiyorum" 
-                                           FontSize="15" 
-                                           FontAttributes="Bold" 
-                                           TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource TextWhiteColor}}"
-                                           HorizontalTextAlignment="Center"/>
-                                    <Label Text="En iyi eğitmenlerden ders al." 
-                                           FontSize="12" 
-                                           TextColor="{AppThemeBinding Light={StaticResource TextSecondaryColor}, Dark=#94a3b8}"
-                                           HorizontalTextAlignment="Center"/>
-                                </VerticalStackLayout>
-                            </Border>
-
-                            <!-- Eğitmen Kartı -->
-                            <Border Grid.Column="1"
-                                    Stroke="{Binding TutorCardBorderColor}"
-                                    StrokeThickness="2"
-                                    BackgroundColor="{Binding TutorCardBackgroundColor}"
-                                    Padding="20"
-                                    HeightRequest="220">
-                                <Border.StrokeShape>
-                                    <RoundRectangle CornerRadius="24" />
-                                </Border.StrokeShape>
-                                <Border.GestureRecognizers>
-                                    <TapGestureRecognizer Command="{Binding SelectTutorRoleCommand}" />
-                                </Border.GestureRecognizers>
-
-                                <VerticalStackLayout Spacing="10" VerticalOptions="Center" HorizontalOptions="Center">
-                                    <Image Source="https://img.icons8.com/3d-fluency/188/training.png" 
-                                           HeightRequest="80" 
-                                           WidthRequest="80" />
-                                    <Label Text="Eğitmen Olmak İstiyorum" 
-                                           FontSize="15" 
-                                           FontAttributes="Bold" 
-                                           TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource TextWhiteColor}}"
-                                           HorizontalTextAlignment="Center"/>
-                                    <Label Text="Bilgini paylaş ve kazan." 
-                                           FontSize="12" 
-                                           TextColor="{AppThemeBinding Light={StaticResource TextSecondaryColor}, Dark=#94a3b8}"
-                                           HorizontalTextAlignment="Center"/>
-                                </VerticalStackLayout>
-                            </Border>
-                        </Grid>
-                        
-                        <!-- Login Link -->
-                        <HorizontalStackLayout HorizontalOptions="Center" Spacing="5" Margin="0,20,0,0">
-                            <Label Text="Zaten hesabınız var mı?" TextColor="{AppThemeBinding Light=#4b5563, Dark=#94a3b8}" FontSize="14" />
-                            <Label Text="Giriş Yap" TextColor="{StaticResource PrimaryColor}" FontSize="14" FontAttributes="Bold">
-                                <Label.GestureRecognizers>
-                                    <TapGestureRecognizer Command="{Binding NavigateToLoginCommand}" />
-                                </Label.GestureRecognizers>
-                            </Label>
-                        </HorizontalStackLayout>
-                    </VerticalStackLayout>
-
-                    <!-- ============================================== -->
-                    <!-- STEP 1: HESAP BİLGİLERİ (FORM) -->
-                    <!-- ============================================== -->
-                    <VerticalStackLayout IsVisible="{Binding IsStep1}" Spacing="20">
-                        
-                        <!-- Geri Butonu ve Başlık -->
-                        <HorizontalStackLayout Spacing="10" Margin="0,0,0,10">
-                            <Label Text="← Geri" 
-                                   TextColor="{AppThemeBinding Light={StaticResource TextSecondaryColor}, Dark=#94a3b8}"
-                                   FontAttributes="Bold"
+                        <!-- Close / Back Button -->
+                        <Grid>
+                            <Label Text="✕ Kapat"
                                    FontSize="14"
-                                   VerticalOptions="Center">
+                                   FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light={StaticResource TextSecondaryColor}, Dark=#94a3b8}"
+                                   HorizontalOptions="End">
                                 <Label.GestureRecognizers>
-                                    <TapGestureRecognizer Command="{Binding GoBackToStep0Command}" />
+                                    <TapGestureRecognizer Command="{Binding CloseCommand}" />
                                 </Label.GestureRecognizers>
                             </Label>
-                        </HorizontalStackLayout>
-                        
-                        <Label Text="Hesap Bilgileri" FontSize="24" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource TextWhiteColor}}" />
-                        <Label Text="Hesabınızı oluşturmak için temel bilgilerinizi girin." FontSize="14" TextColor="{AppThemeBinding Light={StaticResource TextSecondaryColor}, Dark=#94a3b8}" Margin="0,0,0,10" />
+                        </Grid>
 
-                        <!-- Form Grid -->
-                        <VerticalStackLayout Spacing="15">
-                            
-                            <!-- Ad Soyad -->
-                            <VerticalStackLayout Spacing="6">
-                                <Label Text="Ad Soyad" FontSize="14" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#475569, Dark=#cbd5e1}"/>
-                                <Border Stroke="{Binding DefaultBorderColor}" StrokeThickness="1.5" BackgroundColor="{AppThemeBinding Light={StaticResource BgLightColor}, Dark=#0f172a}" HeightRequest="52" Padding="15,0">
-                                    <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
-                                    <Entry Placeholder="Adınız ve Soyadınız" TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource TextWhiteColor}}" BackgroundColor="Transparent"/>
+                        <!-- STEP 0: ROL SEÇİMİ -->
+                        <VerticalStackLayout IsVisible="{Binding IsStep0}" Spacing="20">
+
+                            <Label Text="Hoş Geldiniz"
+                                   FontSize="26"
+                                   FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource TextWhiteColor}}"
+                                   HorizontalOptions="Center" />
+
+                            <Label Text="Devam etmek için size uygun olan rolü seçin"
+                                   FontSize="14"
+                                   TextColor="{AppThemeBinding Light={StaticResource TextSecondaryColor}, Dark=#94a3b8}"
+                                   HorizontalOptions="Center"
+                                   Margin="0,0,0,20"/>
+
+                            <!-- Kartlar -->
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="20">
+
+                                <!-- Öğrenci Kartı -->
+                                <Border Grid.Column="0"
+                                        Stroke="{Binding StudentCardBorderColor}"
+                                        StrokeThickness="2"
+                                        BackgroundColor="{Binding StudentCardBackgroundColor}"
+                                        Padding="20"
+                                        HeightRequest="220">
+
+                                    <Border.StrokeShape>
+                                        <RoundRectangle CornerRadius="24" />
+                                    </Border.StrokeShape>
+
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding SelectStudentRoleCommand}" />
+                                    </Border.GestureRecognizers>
+
+                                    <VerticalStackLayout Spacing="10"
+                                                         VerticalOptions="Center"
+                                                         HorizontalOptions="Center">
+
+                                        <Image Source="https://img.icons8.com/3d-fluency/188/student-male--v2.png"
+                                               HeightRequest="80"
+                                               WidthRequest="80" />
+
+                                        <Label Text="Öğrenci Olmak İstiyorum"
+                                               FontSize="15"
+                                               FontAttributes="Bold"
+                                               TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource TextWhiteColor}}"
+                                               HorizontalTextAlignment="Center"/>
+
+                                        <Label Text="En iyi eğitmenlerden ders al."
+                                               FontSize="12"
+                                               TextColor="{AppThemeBinding Light={StaticResource TextSecondaryColor}, Dark=#94a3b8}"
+                                               HorizontalTextAlignment="Center"/>
+
+                                    </VerticalStackLayout>
                                 </Border>
-                            </VerticalStackLayout>
 
-                            <!-- E-posta -->
-                            <VerticalStackLayout Spacing="6">
-                                <Label Text="E-posta" FontSize="14" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#475569, Dark=#cbd5e1}"/>
-                                <Border Stroke="{Binding DefaultBorderColor}" StrokeThickness="1.5" BackgroundColor="{AppThemeBinding Light={StaticResource BgLightColor}, Dark=#0f172a}" HeightRequest="52" Padding="15,0">
-                                    <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
-                                    <Entry Keyboard="Email" Placeholder="ornek@mail.com" TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource TextWhiteColor}}" BackgroundColor="Transparent"/>
+                                <!-- Eğitmen Kartı -->
+                                <Border Grid.Column="1"
+                                        Stroke="{Binding TutorCardBorderColor}"
+                                        StrokeThickness="2"
+                                        BackgroundColor="{Binding TutorCardBackgroundColor}"
+                                        Padding="20"
+                                        HeightRequest="220">
+
+                                    <Border.StrokeShape>
+                                        <RoundRectangle CornerRadius="24" />
+                                    </Border.StrokeShape>
+
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding SelectTutorRoleCommand}" />
+                                    </Border.GestureRecognizers>
+
+                                    <VerticalStackLayout Spacing="10"
+                                                         VerticalOptions="Center"
+                                                         HorizontalOptions="Center">
+
+                                        <Image Source="https://img.icons8.com/3d-fluency/188/training.png"
+                                               HeightRequest="80"
+                                               WidthRequest="80" />
+
+                                        <Label Text="Eğitmen Olmak İstiyorum"
+                                               FontSize="15"
+                                               FontAttributes="Bold"
+                                               TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource TextWhiteColor}}"
+                                               HorizontalTextAlignment="Center"/>
+
+                                        <Label Text="Bilgini paylaş ve kazan."
+                                               FontSize="12"
+                                               TextColor="{AppThemeBinding Light={StaticResource TextSecondaryColor}, Dark=#94a3b8}"
+                                               HorizontalTextAlignment="Center"/>
+
+                                    </VerticalStackLayout>
                                 </Border>
-                            </VerticalStackLayout>
 
-                            <Grid ColumnDefinitions="*,*" ColumnSpacing="15">
-                                <!-- Şehir -->
-                                <VerticalStackLayout Grid.Column="0" Spacing="6">
-                                    <Label Text="Şehir" FontSize="14" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#475569, Dark=#cbd5e1}"/>
-                                    <Border Stroke="{Binding DefaultBorderColor}" StrokeThickness="1.5" BackgroundColor="{AppThemeBinding Light={StaticResource BgLightColor}, Dark=#0f172a}" HeightRequest="52" Padding="15,0">
-                                        <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
-                                        <Picker x:Name="CityPicker"
-                                                Title="Şehir Seçin" 
-                                                ItemsSource="{Binding Cities}"
-                                                ItemDisplayBinding="{Binding Name}"
-                                                SelectedItem="{Binding SelectedCity, Mode=TwoWay}"
-                                                SelectedIndexChanged="OnCitySelectedIndexChanged"
-                                                TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource TextWhiteColor}}" 
+                            </Grid>
+
+                            <!-- Login Link -->
+                            <HorizontalStackLayout HorizontalOptions="Center"
+                                                   Spacing="5"
+                                                   Margin="0,20,0,0">
+
+                                <Label Text="Zaten hesabınız var mı?"
+                                       TextColor="{AppThemeBinding Light=#4b5563, Dark=#94a3b8}"
+                                       FontSize="14" />
+
+                                <Label Text="Giriş Yap"
+                                       TextColor="{StaticResource PrimaryColor}"
+                                       FontSize="14"
+                                       FontAttributes="Bold">
+                                    <Label.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding NavigateToLoginCommand}" />
+                                    </Label.GestureRecognizers>
+                                </Label>
+
+                            </HorizontalStackLayout>
+                        </VerticalStackLayout>
+
+                        <!-- STEP 1: HESAP BİLGİLERİ -->
+                        <VerticalStackLayout IsVisible="{Binding IsStep1}" Spacing="20">
+
+                            <!-- Geri Butonu -->
+                            <HorizontalStackLayout Spacing="10" Margin="0,0,0,10">
+                                <Label Text="← Geri"
+                                       TextColor="{AppThemeBinding Light={StaticResource TextSecondaryColor}, Dark=#94a3b8}"
+                                       FontAttributes="Bold"
+                                       FontSize="14"
+                                       VerticalOptions="Center">
+                                    <Label.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding GoBackToStep0Command}" />
+                                    </Label.GestureRecognizers>
+                                </Label>
+                            </HorizontalStackLayout>
+
+                            <Label Text="Hesap Bilgileri"
+                                   FontSize="24"
+                                   FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource TextWhiteColor}}" />
+
+                            <Label Text="Hesabınızı oluşturmak için temel bilgilerinizi girin."
+                                   FontSize="14"
+                                   TextColor="{AppThemeBinding Light={StaticResource TextSecondaryColor}, Dark=#94a3b8}"
+                                   Margin="0,0,0,10" />
+
+                            <!-- Form Grid -->
+                            <VerticalStackLayout Spacing="15">
+
+                                <!-- Ad Soyad -->
+                                <VerticalStackLayout Spacing="6">
+                                    <Label Text="Ad Soyad"
+                                           FontSize="14"
+                                           FontAttributes="Bold"
+                                           TextColor="{AppThemeBinding Light=#475569, Dark=#cbd5e1}"/>
+
+                                    <Border Stroke="{Binding DefaultBorderColor}"
+                                            StrokeThickness="1.5"
+                                            BackgroundColor="{AppThemeBinding Light={StaticResource BgLightColor}, Dark=#0f172a}"
+                                            HeightRequest="52"
+                                            Padding="15,0">
+
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="14"/>
+                                        </Border.StrokeShape>
+
+                                        <Entry Placeholder="Adınız ve Soyadınız"
+                                               TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource TextWhiteColor}}"
+                                               BackgroundColor="Transparent"/>
+                                    </Border>
+                                </VerticalStackLayout>
+
+                                <!-- E-posta -->
+                                <VerticalStackLayout Spacing="6">
+                                    <Label Text="E-posta"
+                                           FontSize="14"
+                                           FontAttributes="Bold"
+                                           TextColor="{AppThemeBinding Light=#475569, Dark=#cbd5e1}"/>
+
+                                    <Border Stroke="{Binding DefaultBorderColor}"
+                                            StrokeThickness="1.5"
+                                            BackgroundColor="{AppThemeBinding Light={StaticResource BgLightColor}, Dark=#0f172a}"
+                                            HeightRequest="52"
+                                            Padding="15,0">
+
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="14"/>
+                                        </Border.StrokeShape>
+
+                                        <Entry Keyboard="Email"
+                                               Placeholder="ornek@mail.com"
+                                               TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource TextWhiteColor}}"
+                                               BackgroundColor="Transparent"/>
+                                    </Border>
+                                </VerticalStackLayout>
+
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="15">
+
+                                    <!-- Şehir -->
+                                    <VerticalStackLayout Grid.Column="0" Spacing="6">
+                                        <Label Text="Şehir"
+                                               FontSize="14"
+                                               FontAttributes="Bold"
+                                               TextColor="{AppThemeBinding Light=#475569, Dark=#cbd5e1}"/>
+
+                                        <Border Stroke="{Binding DefaultBorderColor}"
+                                                StrokeThickness="1.5"
+                                                BackgroundColor="{AppThemeBinding Light={StaticResource BgLightColor}, Dark=#0f172a}"
+                                                HeightRequest="52"
+                                                Padding="15,0">
+
+                                            <Border.StrokeShape>
+                                                <RoundRectangle CornerRadius="14"/>
+                                            </Border.StrokeShape>
+
+                                            <Picker x:Name="CityPicker"
+                                                    Title="Şehir Seçin"
+                                                    ItemsSource="{Binding Cities}"
+                                                    ItemDisplayBinding="{Binding Name}"
+                                                    SelectedItem="{Binding SelectedCity, Mode=TwoWay}"
+                                                    TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource TextWhiteColor}}"
+                                                    BackgroundColor="Transparent"/>
+                                        </Border>
+                                    </VerticalStackLayout>
+
+                                    <!-- Telefon -->
+                                    <VerticalStackLayout Grid.Column="1" Spacing="6">
+                                        <Label Text="Telefon"
+                                               FontSize="14"
+                                               FontAttributes="Bold"
+                                               TextColor="{AppThemeBinding Light=#475569, Dark=#cbd5e1}"/>
+
+                                        <Border Stroke="{Binding DefaultBorderColor}"
+                                                StrokeThickness="1.5"
+                                                BackgroundColor="{AppThemeBinding Light={StaticResource BgLightColor}, Dark=#0f172a}"
+                                                HeightRequest="52"
+                                                Padding="15,0">
+
+                                            <Border.StrokeShape>
+                                                <RoundRectangle CornerRadius="14"/>
+                                            </Border.StrokeShape>
+
+                                            <Entry Keyboard="Telephone"
+                                                   Placeholder="05XX XXX XX XX"
+                                                   TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource TextWhiteColor}}"
+                                                   BackgroundColor="Transparent"/>
+                                        </Border>
+                                    </VerticalStackLayout>
+
+                                </Grid>
+
+                                <!-- İlçe ve Mahalle -->
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="15" IsVisible="{Binding IsTutor}">
+
+                                    <!-- İlçe -->
+                                    <VerticalStackLayout Grid.Column="0" Spacing="6">
+                                        <Label Text="İlçe"
+                                               FontSize="14"
+                                               FontAttributes="Bold"
+                                               TextColor="{AppThemeBinding Light=#475569, Dark=#cbd5e1}"/>
+
+                                        <Border Stroke="{Binding DefaultBorderColor}"
+                                                StrokeThickness="1.5"
+                                                BackgroundColor="{AppThemeBinding Light={StaticResource BgLightColor}, Dark=#0f172a}"
+                                                HeightRequest="52"
+                                                Padding="15,0">
+
+                                            <Border.StrokeShape>
+                                                <RoundRectangle CornerRadius="14"/>
+                                            </Border.StrokeShape>
+
+                                            <Picker x:Name="DistrictPicker"
+                                                    Title="İlçe Seçin"
+                                                    ItemsSource="{Binding Districts}"
+                                                    ItemDisplayBinding="{Binding Name}"
+                                                    SelectedItem="{Binding SelectedDistrict, Mode=TwoWay}"
+                                                    TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource TextWhiteColor}}"
+                                                    BackgroundColor="Transparent"/>
+                                        </Border>
+                                    </VerticalStackLayout>
+
+                                    <!-- Mahalle -->
+                                    <VerticalStackLayout Grid.Column="1" Spacing="6">
+                                        <Label Text="Mahalle"
+                                               FontSize="14"
+                                               FontAttributes="Bold"
+                                               TextColor="{AppThemeBinding Light=#475569, Dark=#cbd5e1}"/>
+
+                                        <Border Stroke="{Binding DefaultBorderColor}"
+                                                StrokeThickness="1.5"
+                                                BackgroundColor="{AppThemeBinding Light={StaticResource BgLightColor}, Dark=#0f172a}"
+                                                HeightRequest="52"
+                                                Padding="15,0">
+
+                                            <Border.StrokeShape>
+                                                <RoundRectangle CornerRadius="14"/>
+                                            </Border.StrokeShape>
+
+                                            <Picker x:Name="NeighborhoodPicker"
+                                                    Title="Mahalle Seçin"
+                                                    ItemsSource="{Binding Neighborhoods}"
+                                                    ItemDisplayBinding="{Binding Name}"
+                                                    SelectedItem="{Binding SelectedNeighborhood, Mode=TwoWay}"
+                                                    TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource TextWhiteColor}}"
+                                                    BackgroundColor="Transparent"/>
+                                        </Border>
+                                    </VerticalStackLayout>
+
+                                </Grid>
+
+                                <!-- Cinsiyet -->
+                                <VerticalStackLayout Spacing="6">
+                                    <Label Text="Cinsiyet"
+                                           FontSize="14"
+                                           FontAttributes="Bold"
+                                           TextColor="{AppThemeBinding Light=#475569, Dark=#cbd5e1}"/>
+
+                                    <Border Stroke="{Binding DefaultBorderColor}"
+                                            StrokeThickness="1.5"
+                                            BackgroundColor="{AppThemeBinding Light={StaticResource BgLightColor}, Dark=#0f172a}"
+                                            HeightRequest="52"
+                                            Padding="15,0">
+
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="14"/>
+                                        </Border.StrokeShape>
+
+                                        <Picker Title="Cinsiyet Seçin"
+                                                TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource TextWhiteColor}}"
                                                 BackgroundColor="Transparent">
+                                            <Picker.Items>
+                                                <x:String>Kadın</x:String>
+                                                <x:String>Erkek</x:String>
+                                            </Picker.Items>
                                         </Picker>
                                     </Border>
                                 </VerticalStackLayout>
 
-                                <!-- Telefon -->
-                                <VerticalStackLayout Grid.Column="1" Spacing="6">
-                                    <Label Text="Telefon" FontSize="14" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#475569, Dark=#cbd5e1}"/>
-                                    <Border Stroke="{Binding DefaultBorderColor}" StrokeThickness="1.5" BackgroundColor="{AppThemeBinding Light={StaticResource BgLightColor}, Dark=#0f172a}" HeightRequest="52" Padding="15,0">
-                                        <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
-                                        <Entry Keyboard="Telephone" Placeholder="05XX XXX XX XX" TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource TextWhiteColor}}" BackgroundColor="Transparent"/>
-                                    </Border>
-                                </VerticalStackLayout>
-                            </Grid>
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="15">
 
-                            <!-- İlçe ve Mahalle (Sadece Eğitmen) -->
-                            <Grid ColumnDefinitions="*,*" ColumnSpacing="15" IsVisible="{Binding IsTutor}">
-                                <!-- İlçe -->
-                                <VerticalStackLayout Grid.Column="0" Spacing="6">
-                                    <Label Text="İlçe" FontSize="14" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#475569, Dark=#cbd5e1}"/>
-                                    <Border Stroke="{Binding DefaultBorderColor}" StrokeThickness="1.5" BackgroundColor="{AppThemeBinding Light={StaticResource BgLightColor}, Dark=#0f172a}" HeightRequest="52" Padding="15,0">
-                                        <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
-                                        <Picker x:Name="DistrictPicker"
-                                                Title="İlçe Seçin" 
-                                                ItemsSource="{Binding Districts}"
-                                                ItemDisplayBinding="{Binding Name}"
-                                                SelectedItem="{Binding SelectedDistrict, Mode=TwoWay}"
-                                                SelectedIndexChanged="OnDistrictSelectedIndexChanged"
-                                                TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource TextWhiteColor}}" 
-                                                BackgroundColor="Transparent"/>
-                                    </Border>
-                                </VerticalStackLayout>
+                                    <!-- Şifre -->
+                                    <VerticalStackLayout Grid.Column="0" Spacing="6">
+                                        <Label Text="Şifre"
+                                               FontSize="14"
+                                               FontAttributes="Bold"
+                                               TextColor="{AppThemeBinding Light=#475569, Dark=#cbd5e1}"/>
 
-                                <!-- Mahalle -->
-                                <VerticalStackLayout Grid.Column="1" Spacing="6">
-                                    <Label Text="Mahalle" FontSize="14" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#475569, Dark=#cbd5e1}"/>
-                                    <Border Stroke="{Binding DefaultBorderColor}" StrokeThickness="1.5" BackgroundColor="{AppThemeBinding Light={StaticResource BgLightColor}, Dark=#0f172a}" HeightRequest="52" Padding="15,0">
-                                        <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
-                                        <Picker x:Name="NeighborhoodPicker"
-                                                Title="Mahalle Seçin" 
-                                                ItemsSource="{Binding Neighborhoods}"
-                                                ItemDisplayBinding="{Binding Name}"
-                                                SelectedItem="{Binding SelectedNeighborhood, Mode=TwoWay}"
-                                                TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource TextWhiteColor}}" 
-                                                BackgroundColor="Transparent"/>
-                                    </Border>
-                                </VerticalStackLayout>
-                            </Grid>
+                                        <Border Stroke="{Binding DefaultBorderColor}"
+                                                StrokeThickness="1.5"
+                                                BackgroundColor="{AppThemeBinding Light={StaticResource BgLightColor}, Dark=#0f172a}"
+                                                HeightRequest="52"
+                                                Padding="15,0">
 
-                            <!-- Cinsiyet -->
-                            <VerticalStackLayout Spacing="6">
-                                <Label Text="Cinsiyet" FontSize="14" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#475569, Dark=#cbd5e1}"/>
-                                <Border Stroke="{Binding DefaultBorderColor}" StrokeThickness="1.5" BackgroundColor="{AppThemeBinding Light={StaticResource BgLightColor}, Dark=#0f172a}" HeightRequest="52" Padding="15,0">
-                                    <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
-                                    <Picker Title="Cinsiyet Seçin" TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource TextWhiteColor}}" BackgroundColor="Transparent">
-                                        <Picker.Items>
-                                            <x:String>Kadın</x:String>
-                                            <x:String>Erkek</x:String>
-                                        </Picker.Items>
-                                    </Picker>
-                                </Border>
+                                            <Border.StrokeShape>
+                                                <RoundRectangle CornerRadius="14"/>
+                                            </Border.StrokeShape>
+
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <Entry IsPassword="{Binding IsPasswordHidden}"
+                                                       Placeholder="********"
+                                                       TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource TextWhiteColor}}"
+                                                       BackgroundColor="Transparent"/>
+
+                                                <ImageButton Grid.Column="1"
+                                                             Clicked="OnTogglePasswordClicked"
+                                                             BackgroundColor="Transparent"
+                                                             WidthRequest="24"
+                                                             HeightRequest="24"
+                                                             VerticalOptions="Center">
+                                                    <ImageButton.Source>
+                                                        <FontImageSource FontFamily="OpenSansRegular"
+                                                                         Glyph="{Binding PasswordIconGlyph}"
+                                                                         Color="{AppThemeBinding Light={StaticResource TextSecondaryColor}, Dark=#94a3b8}"
+                                                                         Size="18" />
+                                                    </ImageButton.Source>
+                                                </ImageButton>
+                                            </Grid>
+                                        </Border>
+                                    </VerticalStackLayout>
+
+                                    <!-- Şifre Tekrar -->
+                                    <VerticalStackLayout Grid.Column="1" Spacing="6">
+                                        <Label Text="Şifre Tekrar"
+                                               FontSize="14"
+                                               FontAttributes="Bold"
+                                               TextColor="{AppThemeBinding Light=#475569, Dark=#cbd5e1}"/>
+
+                                        <Border Stroke="{Binding DefaultBorderColor}"
+                                                StrokeThickness="1.5"
+                                                BackgroundColor="{AppThemeBinding Light={StaticResource BgLightColor}, Dark=#0f172a}"
+                                                HeightRequest="52"
+                                                Padding="15,0">
+
+                                            <Border.StrokeShape>
+                                                <RoundRectangle CornerRadius="14"/>
+                                            </Border.StrokeShape>
+
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <Entry IsPassword="{Binding IsConfirmPasswordHidden}"
+                                                       Placeholder="********"
+                                                       TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource TextWhiteColor}}"
+                                                       BackgroundColor="Transparent"/>
+
+                                                <ImageButton Grid.Column="1"
+                                                             Clicked="OnToggleConfirmPasswordClicked"
+                                                             BackgroundColor="Transparent"
+                                                             WidthRequest="24"
+                                                             HeightRequest="24"
+                                                             VerticalOptions="Center">
+                                                    <ImageButton.Source>
+                                                        <FontImageSource FontFamily="OpenSansRegular"
+                                                                         Glyph="{Binding ConfirmPasswordIconGlyph}"
+                                                                         Color="{AppThemeBinding Light={StaticResource TextSecondaryColor}, Dark=#94a3b8}"
+                                                                         Size="18" />
+                                                    </ImageButton.Source>
+                                                </ImageButton>
+                                            </Grid>
+                                        </Border>
+                                    </VerticalStackLayout>
+
+                                </Grid>
+
                             </VerticalStackLayout>
 
-                            <Grid ColumnDefinitions="*,*" ColumnSpacing="15">
-                                <!-- Şifre -->
-                                <VerticalStackLayout Grid.Column="0" Spacing="6">
-                                    <Label Text="Şifre" FontSize="14" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#475569, Dark=#cbd5e1}"/>
-                                    <Border Stroke="{Binding DefaultBorderColor}" StrokeThickness="1.5" BackgroundColor="{AppThemeBinding Light={StaticResource BgLightColor}, Dark=#0f172a}" HeightRequest="52" Padding="15,0">
-                                        <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
-                                        <Grid ColumnDefinitions="*,Auto">
-                                            <Entry IsPassword="{Binding IsPasswordHidden}" Placeholder="********" TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource TextWhiteColor}}" BackgroundColor="Transparent"/>
-                                            <ImageButton Grid.Column="1" Clicked="OnTogglePasswordClicked" BackgroundColor="Transparent" WidthRequest="24" HeightRequest="24" VerticalOptions="Center">
-                                                <ImageButton.Source>
-                                                    <FontImageSource FontFamily="OpenSansRegular" Glyph="{Binding PasswordIconGlyph}" Color="{AppThemeBinding Light={StaticResource TextSecondaryColor}, Dark=#94a3b8}" Size="18" />
-                                                </ImageButton.Source>
-                                            </ImageButton>
-                                        </Grid>
-                                    </Border>
-                                </VerticalStackLayout>
-
-                                <!-- Şifre Tekrar -->
-                                <VerticalStackLayout Grid.Column="1" Spacing="6">
-                                    <Label Text="Şifre Tekrar" FontSize="14" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#475569, Dark=#cbd5e1}"/>
-                                    <Border Stroke="{Binding DefaultBorderColor}" StrokeThickness="1.5" BackgroundColor="{AppThemeBinding Light={StaticResource BgLightColor}, Dark=#0f172a}" HeightRequest="52" Padding="15,0">
-                                        <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
-                                        <Grid ColumnDefinitions="*,Auto">
-                                            <Entry IsPassword="{Binding IsConfirmPasswordHidden}" Placeholder="********" TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource TextWhiteColor}}" BackgroundColor="Transparent"/>
-                                            <ImageButton Grid.Column="1" Clicked="OnToggleConfirmPasswordClicked" BackgroundColor="Transparent" WidthRequest="24" HeightRequest="24" VerticalOptions="Center">
-                                                <ImageButton.Source>
-                                                    <FontImageSource FontFamily="OpenSansRegular" Glyph="{Binding ConfirmPasswordIconGlyph}" Color="{AppThemeBinding Light={StaticResource TextSecondaryColor}, Dark=#94a3b8}" Size="18" />
-                                                </ImageButton.Source>
-                                            </ImageButton>
-                                        </Grid>
-                                    </Border>
-                                </VerticalStackLayout>
-                            </Grid>
+                            <!-- Submit Butonu -->
+                            <Button Text="Kaydı Tamamla →"
+                                    Command="{Binding SubmitCommand}"
+                                    BackgroundColor="{AppThemeBinding Light=#111827, Dark=#3b82f6}"
+                                    TextColor="White"
+                                    FontAttributes="Bold"
+                                    FontSize="16"
+                                    HeightRequest="52"
+                                    CornerRadius="14"
+                                    Margin="0,15,0,0"/>
 
                         </VerticalStackLayout>
 
-                        <!-- Submit Butonu -->
-                        <Button Text="Kaydı Tamamla →"
-                                Command="{Binding SubmitCommand}"
-                                BackgroundColor="{AppThemeBinding Light=#111827, Dark=#3b82f6}"
-                                TextColor="White"
-                                FontAttributes="Bold"
-                                FontSize="16"
-                                HeightRequest="52"
-                                CornerRadius="14"
-                                Margin="0,15,0,0"/>
                     </VerticalStackLayout>
-                </VerticalStackLayout>
-            </Border>
-        </Grid>
-    </ScrollView>
-</RefreshView>
+                </Border>
+            </Grid>
+        </ScrollView>
+    </RefreshView>
 </ContentPage>
