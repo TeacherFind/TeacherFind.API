@@ -1,5 +1,4 @@
-using System;
-using Microsoft.Maui.Controls;
+using TeacherFind.Mobile.Core.Navigation;
 using TeacherFind.Mobile.Features.Profile.Models;
 
 namespace TeacherFind.Mobile.Shared.Components;
@@ -16,30 +15,38 @@ public class MainShellPage : FlyoutPage
 
         Flyout = _menuPage;
 
-        // Uygulama ilk açıldığında sağ tarafta HomePage (Panel) dursun
         var initialPage = (ContentPage)_services.GetService(typeof(Features.Home.Views.HomePage));
         Detail = new NavigationPage(initialPage);
 
         _menuPage.OnMenuItemSelected += MenuPage_OnMenuItemSelected;
     }
 
-    private void MenuPage_OnMenuItemSelected(ProfileMenuItemModel item)
+    private async void MenuPage_OnMenuItemSelected(ProfileMenuItemModel item)
     {
         if (item.Id == "Cikis")
+            return;
+
+        if (item.Id == "Profilim")
         {
+            var profilePage = await ProfileNavigationHelper.CreateCurrentUserProfilePageAsync(_services);
+            if (profilePage is null)
+            {
+                await Application.Current.MainPage.DisplayAlert(
+                    "Bilgi",
+                    "Profil sayfası için oturum bilgisi alınamadı. Lütfen tekrar giriş yapın.",
+                    "Tamam");
+                IsPresented = false;
+                return;
+            }
+
+            Detail = new NavigationPage(profilePage);
+            IsPresented = false;
             return;
         }
 
-        Type targetType = item.TargetPage;
-        if (item.Id == "Profilim")
-        {
-            targetType = MainApp.IsTutor ? typeof(Features.Profile.Views.TutorProfilePage) : typeof(Features.Profile.Views.StudentProfilePage);
-        }
-
-        // Tıklanan sayfayı senin katmandan (DI) otomatik üretip ekrana basıyor
-        var targetPageInstance = (ContentPage)_services.GetService(targetType);
+        var targetPageInstance = (ContentPage)_services.GetService(item.TargetPage);
         Detail = new NavigationPage(targetPageInstance);
 
-        IsPresented = false; // Menüyü kapat
+        IsPresented = false;
     }
 }

@@ -1,8 +1,8 @@
-using System;
 using System.Collections.ObjectModel;
-using System.Threading.Tasks;
 using System.Windows.Input;
-using Microsoft.Maui.Controls;
+using Microsoft.Maui.Media;
+using TeacherFind.Contracts.Education;
+using TeacherFind.Contracts.Tutors;
 using TeacherFind.Mobile.Core.Abstractions;
 
 namespace TeacherFind.Mobile.Features.Profile.Views;
@@ -10,8 +10,9 @@ namespace TeacherFind.Mobile.Features.Profile.Views;
 public partial class TutorProfilePage : ContentPage
 {
     private readonly IApiService _apiService;
+    private Guid? _loadedDepartmentsUniversityId;
+    private bool _isApplyingEducationSelection;
 
-    // Loading State
     private bool _isBusy;
     public bool IsBusy
     {
@@ -19,57 +20,71 @@ public partial class TutorProfilePage : ContentPage
         set { _isBusy = value; OnPropertyChanged(); }
     }
 
-    // Properties
-    private string _fullName;
+    private string _fullName = string.Empty;
     public string FullName { get => _fullName; set { _fullName = value; OnPropertyChanged(); } }
 
-    private string _email;
+    private string _email = string.Empty;
     public string Email { get => _email; set { _email = value; OnPropertyChanged(); } }
 
-    private string _phone;
+    private string _phone = string.Empty;
     public string Phone { get => _phone; set { _phone = value; OnPropertyChanged(); } }
 
-    private string _headline;
+    private string _headline = string.Empty;
     public string Headline { get => _headline; set { _headline = value; OnPropertyChanged(); } }
 
-    private string _bio;
+    private string _bio = string.Empty;
     public string Bio { get => _bio; set { _bio = value; OnPropertyChanged(); } }
 
-    private string _teachingStyle;
+    private string _teachingStyle = string.Empty;
     public string TeachingStyle { get => _teachingStyle; set { _teachingStyle = value; OnPropertyChanged(); } }
 
-    private string _experience;
+    private string _experience = string.Empty;
     public string Experience { get => _experience; set { _experience = value; OnPropertyChanged(); } }
 
-    private string _profileImageUrl = "default_avatar.png"; // Placeholder
+    private string _profileImageUrl = "default_avatar.png";
     public string ProfileImageUrl { get => _profileImageUrl; set { _profileImageUrl = value; OnPropertyChanged(); } }
 
-    // Dropdown Data
-    public ObservableCollection<UniversityModel> Universities { get; } = new();
-    public ObservableCollection<DepartmentModel> Departments { get; } = new();
+    public ObservableCollection<UniversityDto> Universities { get; } = new();
+    public ObservableCollection<DepartmentDto> Departments { get; } = new();
 
-    private UniversityModel _selectedUniversity;
-    public UniversityModel SelectedUniversity
+    private UniversityDto? _selectedUniversity;
+    public UniversityDto? SelectedUniversity
     {
         get => _selectedUniversity;
         set
         {
+            if (_selectedUniversity?.Id == value?.Id)
+                return;
+
             _selectedUniversity = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(IsDepartmentEnabled));
-            if (value != null)
+
+            Departments.Clear();
+            _loadedDepartmentsUniversityId = null;
+            SelectedDepartment = null;
+
+            if (value is not null && !_isApplyingEducationSelection)
                 _ = LoadDepartmentsAsync(value.Id);
-            else
-                Departments.Clear();
         }
     }
 
-    private DepartmentModel _selectedDepartment;
-    public DepartmentModel SelectedDepartment { get => _selectedDepartment; set { _selectedDepartment = value; OnPropertyChanged(); } }
+    private DepartmentDto? _selectedDepartment;
+    public DepartmentDto? SelectedDepartment
+    {
+        get => _selectedDepartment;
+        set
+        {
+            if (_selectedDepartment?.Id == value?.Id)
+                return;
 
-    public bool IsDepartmentEnabled => SelectedUniversity != null;
+            _selectedDepartment = value;
+            OnPropertyChanged();
+        }
+    }
 
-    // Commands
+    public bool IsDepartmentEnabled => SelectedUniversity is not null;
+
     public ICommand SaveCommand { get; }
     public ICommand UploadAvatarCommand { get; }
 
@@ -87,30 +102,12 @@ public partial class TutorProfilePage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        await LoadProfileAsync();
-        await LoadUniversitiesAsync();
-    }
 
-    private async Task LoadProfileAsync()
-    {
         IsBusy = true;
         try
         {
-            // Placeholder: await _apiService.GetAsync<MyProfileModel>("api/tutors/my-profile");
-            await Task.Delay(500); // Simulate network
-
-            // Mock Data
-            FullName = "Ferit";
-            Email = "ferit@example.com";
-            Phone = "05554443322";
-            Headline = "Deneyimli Matematik Eğitmeni";
-            Bio = "10 yıllık özel ders tecrübem var.";
-            TeachingStyle = "Bol soru çözümü.";
-            Experience = "Çeşitli kurumlarda çalıştım.";
-        }
-        catch (Exception ex)
-        {
-            await DisplayAlert("Hata", "Profil yüklenemedi: " + ex.Message, "Tamam");
+            await LoadUniversitiesAsync();
+            await LoadProfileAsync();
         }
         finally
         {
@@ -118,19 +115,92 @@ public partial class TutorProfilePage : ContentPage
         }
     }
 
-    private async Task LoadUniversitiesAsync()
+    private async Task LoadProfileAsync()
     {
-        // Placeholder
-        Universities.Add(new UniversityModel { Id = 1, Name = "İstanbul Üniversitesi" });
-        Universities.Add(new UniversityModel { Id = 2, Name = "Ankara Üniversitesi" });
+        try
+        {
+            var profile = await _apiService.GetAsync<TutorProfileDto>("api/tutors/profile");
+            if (profile is null)
+            {
+                await DisplayAlert("Hata", "Profil bilgileri alınamadı.", "Tamam");
+                return;
+            }
+
+            FullName = profile.FullName ?? string.Empty;
+            Email = profile.Email ?? string.Empty;
+            Phone = profile.PhoneNumber ?? string.Empty;
+            Headline = profile.Headline ?? profile.Title ?? string.Empty;
+            Bio = profile.Bio ?? string.Empty;
+            TeachingStyle = profile.TeachingStyle ?? string.Empty;
+            Experience = profile.EducationLevel ?? string.Empty;
+            ProfileImageUrl = _apiService.ToAbsoluteUrl(profile.AvatarUrl ?? profile.ProfileImageUrl);
+
+            await ApplyEducationSelectionAsync(profile.UniversityId, profile.DepartmentId);
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert("Hata", "Profil yüklenemedi: " + ex.Message, "Tamam");
+        }
     }
 
-    private async Task LoadDepartmentsAsync(int universityId)
+    private async Task LoadUniversitiesAsync()
     {
+        if (Universities.Count > 0)
+            return;
+
+        var universities = await _apiService.GetAsync<List<UniversityDto>>("api/education/universities");
+        Universities.Clear();
+
+        if (universities is null || universities.Count == 0)
+            return;
+
+        foreach (var university in universities)
+            Universities.Add(university);
+    }
+
+    private async Task LoadDepartmentsAsync(Guid universityId)
+    {
+        if (universityId == Guid.Empty)
+            return;
+
+        if (_loadedDepartmentsUniversityId == universityId && Departments.Count > 0)
+            return;
+
+        var departments = await _apiService.GetAsync<List<DepartmentDto>>(
+            $"api/education/departments?universityId={universityId}");
+
         Departments.Clear();
-        // Placeholder
-        Departments.Add(new DepartmentModel { Id = 101, Name = "Bilgisayar Mühendisliği" });
-        Departments.Add(new DepartmentModel { Id = 102, Name = "Matematik Öğretmenliği" });
+        _loadedDepartmentsUniversityId = universityId;
+
+        if (departments is null || departments.Count == 0)
+            return;
+
+        foreach (var department in departments)
+            Departments.Add(department);
+    }
+
+    private async Task ApplyEducationSelectionAsync(Guid? universityId, Guid? departmentId)
+    {
+        _isApplyingEducationSelection = true;
+        try
+        {
+            SelectedUniversity = universityId.HasValue
+                ? Universities.FirstOrDefault(x => x.Id == universityId.Value)
+                : null;
+        }
+        finally
+        {
+            _isApplyingEducationSelection = false;
+        }
+
+        if (SelectedUniversity is null)
+            return;
+
+        await LoadDepartmentsAsync(SelectedUniversity.Id);
+
+        SelectedDepartment = departmentId.HasValue
+            ? Departments.FirstOrDefault(x => x.Id == departmentId.Value)
+            : null;
     }
 
     private async Task SaveProfileAsync()
@@ -138,13 +208,24 @@ public partial class TutorProfilePage : ContentPage
         IsBusy = true;
         try
         {
-            // Placeholder: Save logic
-            await Task.Delay(1000);
-            await DisplayAlert("Başarılı", "Profiliniz başarıyla güncellendi!", "Tamam");
+            var request = new UpdateTutorProfileDto
+            {
+                Headline = Headline,
+                Bio = Bio,
+                TeachingStyle = TeachingStyle,
+                UniversityId = SelectedUniversity?.Id,
+                DepartmentId = SelectedDepartment?.Id
+            };
+
+            var isSaved = await _apiService.PutAsync("api/tutors/profile", request);
+            await DisplayAlert(
+                isSaved ? "Başarılı" : "Hata",
+                isSaved ? "Profiliniz başarıyla güncellendi." : "Profil kaydedilemedi.",
+                "Tamam");
         }
         catch (Exception ex)
         {
-            await DisplayAlert("Hata", "Kaydedilirken bir hata oluştu.", "Tamam");
+            await DisplayAlert("Hata", "Kaydedilirken bir hata oluştu: " + ex.Message, "Tamam");
         }
         finally
         {
@@ -156,36 +237,40 @@ public partial class TutorProfilePage : ContentPage
     {
         try
         {
-            var result = await MediaPicker.PickPhotoAsync(new MediaPickerOptions
+            var result = await MediaPicker.Default.PickPhotoAsync(new MediaPickerOptions
             {
-                Title = "Profil Resmi Seçin"
+                Title = "Profil resmi seçin"
             });
 
-            if (result != null)
+            if (result is null)
+                return;
+
+            IsBusy = true;
+            var response = await _apiService.UploadFileAsync<AvatarUploadResponse>(
+                "api/tutors/avatar",
+                result);
+
+            if (response?.ProfileImageUrl is null)
             {
-                IsBusy = true;
-                // Upload logic placeholder
-                await Task.Delay(1000);
-                ProfileImageUrl = result.FullPath;
-                IsBusy = false;
-                await DisplayAlert("Başarılı", "Profil resmi seçildi (Simülasyon).", "Tamam");
+                await DisplayAlert("Hata", "Profil resmi yüklenemedi.", "Tamam");
+                return;
             }
+
+            ProfileImageUrl = _apiService.ToAbsoluteUrl(response.ProfileImageUrl);
+            await DisplayAlert("Başarılı", "Profil resmi güncellendi.", "Tamam");
         }
         catch (Exception ex)
         {
-            await DisplayAlert("Hata", "Resim seçilemedi.", "Tamam");
+            await DisplayAlert("Hata", "Resim yüklenemedi: " + ex.Message, "Tamam");
+        }
+        finally
+        {
+            IsBusy = false;
         }
     }
-}
 
-public class UniversityModel
-{
-    public int Id { get; set; }
-    public string Name { get; set; }
-}
-
-public class DepartmentModel
-{
-    public int Id { get; set; }
-    public string Name { get; set; }
+    private sealed class AvatarUploadResponse
+    {
+        public string? ProfileImageUrl { get; set; }
+    }
 }
