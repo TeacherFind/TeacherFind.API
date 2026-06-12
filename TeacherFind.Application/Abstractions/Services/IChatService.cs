@@ -14,4 +14,6 @@ public interface IChatService
     Task<List<MessageDto>> GetMessagesByUserIdAsync(Guid currentUserId, Guid otherUserId); // NEW
     Task<List<ConversationDto>> GetMyConversationsAsync(Guid currentUserId);
     Task MarkAsReadAsync(Guid conversationId, Guid currentUserId);
+    Task DeleteMessagesAsync(Guid userId, List<Guid> messageIds);
+    Task UpdateUserPresenceAsync(Guid userId, bool isOnline, DateTime lastSeenAt);
 }

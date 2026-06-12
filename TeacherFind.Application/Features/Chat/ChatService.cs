@@ -42,6 +42,9 @@ public class ChatService : IChatService
         var conversation = await _conversationRepository
             .GetBetweenUsersAsync(senderId, request.ReceiverId);
 
+        if (conversation == null && request.ReplyToMessageId.HasValue)
+            throw new Exception("Yanıtlanan mesaj bu konuşmaya ait değil.");
+
         if (conversation == null)
         {
             conversation = new Conversation { User1Id = senderId, User2Id = request.ReceiverId };
@@ -49,12 +52,30 @@ public class ChatService : IChatService
             await _conversationRepository.SaveChangesAsync();
         }
 
+        Message? replyToMessage = null;
+        if (request.ReplyToMessageId is Guid replyToMessageId)
+        {
+            replyToMessage = await _messageRepository.GetByIdAsync(replyToMessageId)
+                ?? throw new Exception("Yanıtlanan mesaj bulunamadı.");
+
+            if (replyToMessage.ConversationId != conversation.Id ||
+                !IsMessageBetweenUsers(replyToMessage, senderId, request.ReceiverId))
+            {
+                throw new Exception("Yanıtlanan mesaj bu konuşmaya ait değil.");
+            }
+
+            if (!CanUserSeeMessage(replyToMessage, senderId))
+                throw new Exception("Yanıtlanan mesaja erişiminiz yok.");
+        }
+
         var message = new Message
         {
             ConversationId = conversation.Id,
             SenderId = senderId,
             ReceiverId = request.ReceiverId,
-            Content = request.Content.Trim()
+            Content = request.Content.Trim(),
+            ReplyToMessageId = replyToMessage?.Id,
+            ReplyToMessage = replyToMessage
         };
 
         await _messageRepository.AddAsync(message);
@@ -80,7 +101,7 @@ public class ChatService : IChatService
 
     public async Task<List<MessageDto>> GetMessagesAsync(Guid conversationId, Guid currentUserId)
     {
-        var messages = await _messageRepository.GetConversationMessagesAsync(conversationId);
+        var messages = await _messageRepository.GetVisibleConversationMessagesAsync(conversationId, currentUserId);
         return messages.Select(Map).ToList();
     }
 
@@ -94,7 +115,7 @@ public class ChatService : IChatService
             return new List<MessageDto>();
 
         var messages = await _messageRepository
-            .GetConversationMessagesAsync(conversation.Id);
+            .GetVisibleMessagesBetweenUsersAsync(currentUserId, otherUserId);
 
         // Auto mark as read when messages are fetched
         await _messageRepository.MarkConversationAsReadAsync(conversation.Id, currentUserId);
@@ -112,15 +133,21 @@ public class ChatService : IChatService
         {
             var otherUserId = conv.User1Id == currentUserId ? conv.User2Id : conv.User1Id;
             var otherUser = await _userRepository.GetByIdAsync(otherUserId);
-            var messages = conv.Messages.OrderByDescending(x => x.SentAt).ToList();
+            var messages = conv.Messages
+                .Where(x => CanUserSeeMessage(x, currentUserId))
+                .OrderByDescending(x => x.SentAt)
+                .ToList();
             var last = messages.FirstOrDefault();
-            var unread = messages.Count(x => x.ReceiverId == currentUserId && !x.IsRead);
+            var unread = messages.Count(x => x.ReceiverId == currentUserId && !x.IsDeletedByReceiver && !x.IsRead);
+            var now = DateTime.UtcNow;
 
             result.Add(new ConversationDto
             {
                 ConversationId = conv.Id,
                 OtherUserId = otherUserId,
                 OtherUserName = ResolveDisplayName(otherUser),
+                OtherUserIsOnline = IsUserOnline(otherUser, now),
+                OtherUserLastSeenAt = otherUser?.LastSeenAt,
                 DebugVersion = "chat-name-fix-2026-06-11",
                 LastMessage = last?.Content ?? "",
                 LastMessageAt = last?.SentAt,
@@ -137,6 +164,31 @@ public class ChatService : IChatService
         await _messageRepository.SaveChangesAsync();
     }
 
+    public async Task DeleteMessagesAsync(Guid userId, List<Guid> messageIds)
+    {
+        if (messageIds == null || messageIds.Count == 0)
+            return;
+
+        var messages = await _messageRepository.GetMessagesForUserAsync(userId, messageIds);
+
+        foreach (var message in messages)
+        {
+            if (message.SenderId == userId)
+                message.IsDeletedBySender = true;
+
+            if (message.ReceiverId == userId)
+                message.IsDeletedByReceiver = true;
+        }
+
+        await _messageRepository.SaveChangesAsync();
+    }
+
+    public async Task UpdateUserPresenceAsync(Guid userId, bool isOnline, DateTime lastSeenAt)
+    {
+        await _userRepository.UpdatePresenceAsync(userId, isOnline, lastSeenAt);
+        await _userRepository.SaveChangesAsync();
+    }
+
     private static MessageDto Map(Message m) => new()
     {
         Id = m.Id,
@@ -144,9 +196,26 @@ public class ChatService : IChatService
         SenderId = m.SenderId,
         ReceiverId = m.ReceiverId,
         Content = m.Content,
+        ReplyToMessageId = m.ReplyToMessageId,
+        ReplyToMessageContent = m.ReplyToMessage?.Content,
+        ReplyToMessageSenderId = m.ReplyToMessage?.SenderId,
+        IsDeletedBySender = m.IsDeletedBySender,
+        IsDeletedByReceiver = m.IsDeletedByReceiver,
         IsRead = m.IsRead,
         SentAt = m.SentAt
     };
+
+    private static bool IsMessageBetweenUsers(Message message, Guid user1Id, Guid user2Id)
+        => (message.SenderId == user1Id && message.ReceiverId == user2Id) ||
+           (message.SenderId == user2Id && message.ReceiverId == user1Id);
+
+    private static bool CanUserSeeMessage(Message message, Guid userId)
+        => (message.SenderId == userId && !message.IsDeletedBySender) ||
+           (message.ReceiverId == userId && !message.IsDeletedByReceiver);
+
+    private static bool IsUserOnline(User? user, DateTime now)
+        => user is not null &&
+           (user.IsOnline || (user.LastSeenAt.HasValue && user.LastSeenAt.Value >= now.AddMinutes(-2)));
 
     private static string ResolveDisplayName(User? user)
     {

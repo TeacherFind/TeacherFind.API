@@ -79,6 +79,18 @@ public class MessagesController : ControllerBase
         }
     }
 
+    // DELETE /api/messages/delete
+    [HttpDelete("delete")]
+    public async Task<IActionResult> DeleteMessages([FromBody] DeleteMessagesDto dto)
+    {
+        if (dto == null || dto.MessageIds == null || dto.MessageIds.Count == 0)
+            return BadRequest(new { message = "Silinecek mesaj seçilmedi." });
+
+        await _chatService.DeleteMessagesAsync(GetUserId(), dto.MessageIds);
+
+        return Ok(new { message = "Seçili mesajlar silindi." });
+    }
+
     private Guid GetUserId()
         => Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 }

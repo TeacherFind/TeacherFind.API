@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using TeacherFind.Domain.Entities;
 
 namespace TeacherFind.Infrastructure.Persistence;
@@ -136,11 +136,17 @@ public class AppDbContext : DbContext
                 .HasForeignKey(x => x.ReceiverId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            entity.HasOne(x => x.ReplyToMessage)
+                .WithMany()
+                .HasForeignKey(x => x.ReplyToMessageId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             entity.Property(x => x.Content)
                 .IsRequired()
                 .HasMaxLength(2000);
 
             entity.HasIndex(x => x.ConversationId);
+            entity.HasIndex(x => x.ReplyToMessageId);
             entity.HasIndex(x => x.SenderId);
             entity.HasIndex(x => x.ReceiverId);
             entity.HasIndex(x => new { x.ReceiverId, x.IsRead });

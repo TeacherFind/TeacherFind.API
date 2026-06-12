@@ -11,6 +11,8 @@ public class ConversationDto
     public Guid ConversationId { get; set; }
     public Guid OtherUserId { get; set; }
     public string OtherUserName { get; set; } = "Kullanıcı";
+    public bool OtherUserIsOnline { get; set; }
+    public DateTime? OtherUserLastSeenAt { get; set; }
     public string DebugVersion { get; set; } = "chat-name-fix-2026-06-11";
     public string LastMessage { get; set; } = "";
     public DateTime? LastMessageAt { get; set; }

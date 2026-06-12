@@ -21,6 +21,13 @@ public class Message
 
     public string Content { get; set; } = string.Empty;
 
+    public Guid? ReplyToMessageId { get; set; }
+    public Message? ReplyToMessage { get; set; }
+
+    public bool IsDeletedBySender { get; set; } = false;
+
+    public bool IsDeletedByReceiver { get; set; } = false;
+
     public bool IsRead { get; set; } = false;
 
     public DateTime SentAt { get; set; } = DateTime.UtcNow;
