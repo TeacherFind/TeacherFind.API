@@ -5,7 +5,8 @@
              Title="Kayıt Ol"
              BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundColorLight}, Dark={StaticResource PageBackgroundColorDark}}">
 
-    <RefreshView IsRefreshing="{Binding IsRefreshing}" Command="{Binding RefreshCommand}">
+    <Grid>
+        <RefreshView IsRefreshing="{Binding IsRefreshing}" Command="{Binding RefreshCommand}">
         <ScrollView>
             <Grid Padding="20" VerticalOptions="Center">
 
@@ -201,6 +202,7 @@
                                         </Border.StrokeShape>
 
                                         <Entry Placeholder="Adınız ve Soyadınız"
+                                               Text="{Binding FullName, Mode=TwoWay}"
                                                TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource TextWhiteColor}}"
                                                BackgroundColor="Transparent"/>
                                     </Border>
@@ -225,6 +227,7 @@
 
                                         <Entry Keyboard="Email"
                                                Placeholder="ornek@mail.com"
+                                               Text="{Binding Email, Mode=TwoWay}"
                                                TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource TextWhiteColor}}"
                                                BackgroundColor="Transparent"/>
                                     </Border>
@@ -278,6 +281,7 @@
 
                                             <Entry Keyboard="Telephone"
                                                    Placeholder="05XX XXX XX XX"
+                                                   Text="{Binding PhoneNumber, Mode=TwoWay}"
                                                    TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource TextWhiteColor}}"
                                                    BackgroundColor="Transparent"/>
                                         </Border>
@@ -362,6 +366,7 @@
                                         </Border.StrokeShape>
 
                                         <Picker Title="Cinsiyet Seçin"
+                                                SelectedItem="{Binding Gender, Mode=TwoWay}"
                                                 TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource TextWhiteColor}}"
                                                 BackgroundColor="Transparent">
                                             <Picker.Items>
@@ -394,6 +399,7 @@
                                             <Grid ColumnDefinitions="*,Auto">
                                                 <Entry IsPassword="{Binding IsPasswordHidden}"
                                                        Placeholder="********"
+                                                       Text="{Binding Password, Mode=TwoWay}"
                                                        TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource TextWhiteColor}}"
                                                        BackgroundColor="Transparent"/>
 
@@ -434,6 +440,7 @@
                                             <Grid ColumnDefinitions="*,Auto">
                                                 <Entry IsPassword="{Binding IsConfirmPasswordHidden}"
                                                        Placeholder="********"
+                                                       Text="{Binding ConfirmPassword, Mode=TwoWay}"
                                                        TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource TextWhiteColor}}"
                                                        BackgroundColor="Transparent"/>
 
@@ -467,7 +474,22 @@
                                     FontSize="16"
                                     HeightRequest="52"
                                     CornerRadius="14"
-                                    Margin="0,15,0,0"/>
+                                    Margin="0,15,0,0"
+                                    IsVisible="{Binding IsNotSubmitting}"/>
+
+                            <!-- Yükleniyor Animasyonu -->
+                            <Grid HeightRequest="52" Margin="0,15,0,0" IsVisible="{Binding IsSubmitting}">
+                                <Border BackgroundColor="{AppThemeBinding Light=#e5e7eb, Dark=#1e293b}"
+                                        StrokeThickness="0">
+                                    <Border.StrokeShape>
+                                        <RoundRectangle CornerRadius="14" />
+                                    </Border.StrokeShape>
+                                    <HorizontalStackLayout HorizontalOptions="Center" VerticalOptions="Center" Spacing="10">
+                                        <ActivityIndicator IsRunning="{Binding IsSubmitting}" Color="{AppThemeBinding Light=#111827, Dark=#3b82f6}" WidthRequest="20" HeightRequest="20" />
+                                        <Label Text="Kayıt Oluşturuluyor..." TextColor="{AppThemeBinding Light=#6b7280, Dark=#94a3b8}" VerticalOptions="Center" FontAttributes="Bold"/>
+                                    </HorizontalStackLayout>
+                                </Border>
+                            </Grid>
 
                         </VerticalStackLayout>
 
@@ -476,4 +498,47 @@
             </Grid>
         </ScrollView>
     </RefreshView>
+
+    <!-- Custom Popup Overlay -->
+    <Grid BackgroundColor="#80000000" IsVisible="{Binding IsPopupVisible}">
+        <Border BackgroundColor="{AppThemeBinding Light=White, Dark=#1e293b}"
+                Stroke="{Binding PopupColor}"
+                StrokeThickness="2"
+                HorizontalOptions="Center"
+                VerticalOptions="Center"
+                Padding="25"
+                WidthRequest="320">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="20" />
+            </Border.StrokeShape>
+            <Border.Shadow>
+                <Shadow Brush="Black" Offset="0,10" Radius="20" Opacity="0.3" />
+            </Border.Shadow>
+
+            <VerticalStackLayout Spacing="15" HorizontalOptions="Center">
+                <!-- Icon Circle -->
+                <Border BackgroundColor="{Binding PopupColor}" WidthRequest="60" HeightRequest="60" StrokeThickness="0">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="30" />
+                    </Border.StrokeShape>
+                    <Label Text="{Binding PopupIcon}" TextColor="White" FontSize="28" FontAttributes="Bold" HorizontalOptions="Center" VerticalOptions="Center" />
+                </Border>
+
+                <!-- Title & Message -->
+                <Label Text="{Binding PopupTitle}" FontSize="20" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="{AppThemeBinding Light=#111827, Dark=White}" />
+                <Label Text="{Binding PopupMessage}" FontSize="14" HorizontalTextAlignment="Center" TextColor="{AppThemeBinding Light=#6b7280, Dark=#94a3b8}" Margin="0,0,0,10" />
+
+                <!-- Action Button -->
+                <Button Text="Tamam" 
+                        Command="{Binding ClosePopupCommand}"
+                        BackgroundColor="{Binding PopupColor}" 
+                        TextColor="White" 
+                        FontAttributes="Bold"
+                        CornerRadius="10" 
+                        HeightRequest="44" 
+                        WidthRequest="200" />
+            </VerticalStackLayout>
+        </Border>
+    </Grid>
+    </Grid>
 </ContentPage>
