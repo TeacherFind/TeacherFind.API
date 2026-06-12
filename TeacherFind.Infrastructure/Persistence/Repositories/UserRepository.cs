@@ -38,6 +38,16 @@ public class UserRepository : IUserRepository
         await _context.Users.AddAsync(user);
     }
 
+    public async Task UpdatePresenceAsync(Guid userId, bool isOnline, DateTime lastSeenAt)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(x => x.Id == userId);
+        if (user is null)
+            return;
+
+        user.IsOnline = isOnline;
+        user.LastSeenAt = lastSeenAt;
+    }
+
     public async Task SaveChangesAsync()
     {
         await _context.SaveChangesAsync();

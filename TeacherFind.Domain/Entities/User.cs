@@ -33,6 +33,10 @@ public class User : AuditableEntity
 
     public DateTime? LastLoginAt { get; set; }
 
+    public bool IsOnline { get; set; } = false;
+
+    public DateTime? LastSeenAt { get; set; }
+
     public string? RefreshToken { get; set; }
 
     public DateTime? RefreshTokenExpiryTime { get; set; }

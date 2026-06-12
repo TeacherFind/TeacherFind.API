@@ -10,4 +10,5 @@ public class SendMessageDto
 {
     public Guid ReceiverId { get; set; }
     public string Content { get; set; } = "";
+    public Guid? ReplyToMessageId { get; set; }
 }

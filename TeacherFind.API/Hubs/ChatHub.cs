@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using System.Collections.Concurrent;
 using System.Security.Claims;
 using TeacherFind.Application.Abstractions.Services;
 using TeacherFind.Contracts.Chat;
@@ -9,6 +10,8 @@ namespace TeacherFind.API.Hubs;
 [Authorize]
 public class ChatHub : Hub
 {
+    private static readonly ConcurrentDictionary<Guid, int> UserConnectionCounts = new();
+
     private readonly IChatService _chatService;
 
     public ChatHub(IChatService chatService)
@@ -20,9 +23,20 @@ public class ChatHub : Hub
     {
         var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-        if (!string.IsNullOrWhiteSpace(userId))
+        if (Guid.TryParse(userId, out var parsedUserId))
         {
-            await Groups.AddToGroupAsync(Context.ConnectionId, $"user-{userId}");
+            await Groups.AddToGroupAsync(Context.ConnectionId, $"user-{parsedUserId}");
+
+            var lastSeenAt = DateTime.UtcNow;
+            UserConnectionCounts.AddOrUpdate(parsedUserId, 1, (_, count) => count + 1);
+            await _chatService.UpdateUserPresenceAsync(parsedUserId, true, lastSeenAt);
+
+            await Clients.All.SendAsync("UserStatusChanged", new
+            {
+                userId = parsedUserId,
+                isOnline = true,
+                lastSeenAt
+            });
         }
 
         await base.OnConnectedAsync();
@@ -32,9 +46,29 @@ public class ChatHub : Hub
     {
         var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-        if (!string.IsNullOrWhiteSpace(userId))
+        if (Guid.TryParse(userId, out var parsedUserId))
         {
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"user-{userId}");
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"user-{parsedUserId}");
+
+            var remainingConnections = UserConnectionCounts.AddOrUpdate(
+                parsedUserId,
+                0,
+                (_, count) => Math.Max(0, count - 1));
+
+            if (remainingConnections == 0)
+            {
+                UserConnectionCounts.TryRemove(parsedUserId, out _);
+
+                var lastSeenAt = DateTime.UtcNow;
+                await _chatService.UpdateUserPresenceAsync(parsedUserId, false, lastSeenAt);
+
+                await Clients.All.SendAsync("UserStatusChanged", new
+                {
+                    userId = parsedUserId,
+                    isOnline = false,
+                    lastSeenAt
+                });
+            }
         }
 
         await base.OnDisconnectedAsync(exception);

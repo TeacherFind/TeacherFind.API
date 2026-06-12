@@ -13,6 +13,11 @@ public class MessageDto
     public Guid SenderId { get; set; }
     public Guid ReceiverId { get; set; }
     public string Content { get; set; } = "";
+    public Guid? ReplyToMessageId { get; set; }
+    public string? ReplyToMessageContent { get; set; }
+    public Guid? ReplyToMessageSenderId { get; set; }
+    public bool IsDeletedBySender { get; set; }
+    public bool IsDeletedByReceiver { get; set; }
     public bool IsRead { get; set; }
     public DateTime SentAt { get; set; }
 }
