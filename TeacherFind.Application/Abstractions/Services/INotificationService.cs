@@ -22,7 +22,8 @@ public interface INotificationService
         string type,
         string? link = null,
         Guid? senderUserId = null,
-        string? senderName = null);
+        string? senderName = null,
+        Dictionary<string, string>? data = null);
 
     // kept for BookingService compatibility
     Task SendNotificationAsync(
@@ -32,5 +33,6 @@ public interface INotificationService
         string type,
         Guid? senderUserId = null,
         string? senderName = null,
-        string? link = null);
+        string? link = null,
+        Dictionary<string, string>? data = null);
 }

@@ -17,7 +17,11 @@ public class FcmPushNotificationService : IPushNotificationService
     public FcmPushNotificationService(ILogger<FcmPushNotificationService> logger)
         => _logger = logger;
 
-    public async Task<string?> SendToDeviceAsync(string deviceToken, string title, string body)
+    public async Task<string?> SendToDeviceAsync(
+        string deviceToken,
+        string title,
+        string body,
+        Dictionary<string, string>? data = null)
     {
         if (FirebaseApp.DefaultInstance == null)
         {
@@ -25,12 +29,19 @@ public class FcmPushNotificationService : IPushNotificationService
             return null;
         }
 
+        if (string.IsNullOrWhiteSpace(deviceToken))
+        {
+            _logger.LogWarning("Boş FCM token ile push bildirimi gönderilemedi.");
+            return null;
+        }
+
         try
         {
             var message = new Message
             {
-                Token = deviceToken,
-                Notification = new Notification { Title = title, Body = body }
+                Token = deviceToken.Trim(),
+                Notification = new Notification { Title = title, Body = body },
+                Data = NormalizeData(data)
             };
 
             return await FirebaseMessaging.DefaultInstance.SendAsync(message);
@@ -42,24 +53,87 @@ public class FcmPushNotificationService : IPushNotificationService
         }
     }
 
-    public async Task SendToMultipleAsync(List<string> deviceTokens, string title, string body)
+    public async Task<List<string>> SendToMultipleAsync(
+        List<string> deviceTokens,
+        string title,
+        string body,
+        Dictionary<string, string>? data = null)
     {
-        if (FirebaseApp.DefaultInstance == null || deviceTokens.Count == 0)
-            return;
+        var failedTokens = new List<string>();
+
+        if (FirebaseApp.DefaultInstance == null)
+        {
+            _logger.LogWarning("Firebase başlatılmadı, toplu push bildirimi gönderilemedi.");
+            return failedTokens;
+        }
+
+        var tokens = deviceTokens
+            .Where(token => !string.IsNullOrWhiteSpace(token))
+            .Select(token => token.Trim())
+            .Distinct()
+            .ToList();
+
+        if (tokens.Count == 0)
+        {
+            _logger.LogWarning("Geçerli FCM token bulunamadığı için toplu push bildirimi gönderilmedi.");
+            return failedTokens;
+        }
 
         try
         {
-            var message = new MulticastMessage
+            foreach (var tokenBatch in tokens.Chunk(500))
             {
-                Tokens = deviceTokens,
-                Notification = new Notification { Title = title, Body = body }
-            };
+                var batchTokens = tokenBatch.ToList();
+                var message = new MulticastMessage
+                {
+                    Tokens = batchTokens,
+                    Notification = new Notification { Title = title, Body = body },
+                    Data = NormalizeData(data)
+                };
 
-            await FirebaseMessaging.DefaultInstance.SendEachForMulticastAsync(message);
+                var response = await FirebaseMessaging.DefaultInstance.SendEachForMulticastAsync(message);
+
+                for (var i = 0; i < response.Responses.Count; i++)
+                {
+                    var sendResponse = response.Responses[i];
+                    if (sendResponse.IsSuccess)
+                        continue;
+
+                    var failedToken = batchTokens[i];
+                    if (IsInvalidToken(sendResponse.Exception))
+                        failedTokens.Add(failedToken);
+
+                    _logger.LogWarning(
+                        sendResponse.Exception,
+                        "Push bildirimi token için başarısız oldu. Token: {Token}",
+                        failedToken);
+                }
+
+                _logger.LogInformation(
+                    "Toplu push bildirimi tamamlandı. Başarılı: {SuccessCount}, Başarısız: {FailureCount}",
+                    response.SuccessCount,
+                    response.FailureCount);
+            }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Toplu push bildirimi gönderilemedi.");
         }
+
+        return failedTokens.Distinct().ToList();
     }
+
+    private static Dictionary<string, string>? NormalizeData(Dictionary<string, string>? data)
+    {
+        var normalizedData = data?
+            .Where(item => !string.IsNullOrWhiteSpace(item.Key) && item.Value is not null)
+            .ToDictionary(item => item.Key, item => item.Value);
+
+        return normalizedData?.Count > 0 ? normalizedData : null;
+    }
+
+    private static bool IsInvalidToken(Exception? exception)
+        => exception is FirebaseMessagingException messagingException &&
+           (messagingException.MessagingErrorCode == MessagingErrorCode.Unregistered ||
+            messagingException.MessagingErrorCode == MessagingErrorCode.InvalidArgument);
 }

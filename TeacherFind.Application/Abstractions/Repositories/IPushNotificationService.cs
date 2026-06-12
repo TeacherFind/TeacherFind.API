@@ -8,6 +8,15 @@ namespace TeacherFind.Application.Abstractions.Repositories;
 
 public interface IPushNotificationService
 {
-    Task<string?> SendToDeviceAsync(string deviceToken, string title, string body);
-    Task SendToMultipleAsync(List<string> deviceTokens, string title, string body);
+    Task<string?> SendToDeviceAsync(
+        string deviceToken,
+        string title,
+        string body,
+        Dictionary<string, string>? data = null);
+
+    Task<List<string>> SendToMultipleAsync(
+        List<string> deviceTokens,
+        string title,
+        string body,
+        Dictionary<string, string>? data = null);
 }

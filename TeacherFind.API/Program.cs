@@ -1,6 +1,4 @@
-using FirebaseAdmin;
-using Google.Apis.Auth.OAuth2;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -50,39 +48,6 @@ internal class Program
             "appsettings.Local.json",
             optional: true,
             reloadOnChange: true);
-
-        // =====================================================
-        // Firebase Admin SDK
-        // =====================================================
-
-        try
-        {
-            var firebaseCredentialPath = builder.Configuration["Firebase:ServiceAccountPath"];
-            var googleApplicationCredentials = Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS");
-
-            if (!string.IsNullOrWhiteSpace(firebaseCredentialPath) && File.Exists(firebaseCredentialPath))
-            {
-                FirebaseApp.Create(new AppOptions
-                {
-                    Credential = GoogleCredential.FromFile(firebaseCredentialPath)
-                });
-            }
-            else if (!string.IsNullOrWhiteSpace(googleApplicationCredentials) && File.Exists(googleApplicationCredentials))
-            {
-                FirebaseApp.Create(new AppOptions
-                {
-                    Credential = GoogleCredential.GetApplicationDefault()
-                });
-            }
-            else
-            {
-                Console.WriteLine("Firebase credential bulunamadı. Firebase Admin SDK başlatılmadı.");
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Firebase initialization skipped: {ex.Message}");
-        }
 
         // =====================================================
         // Database
@@ -344,7 +309,7 @@ internal class Program
         });
 
         // =====================================================
-        // Dependency Injection — Repositories
+        // Dependency Injection - Repositories
         // =====================================================
 
         builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -359,10 +324,9 @@ internal class Program
         builder.Services.AddScoped<IVerificationRepository, VerificationRepository>();
         builder.Services.AddScoped<IReportRepository, ReportRepository>();
         builder.Services.AddScoped<IBookingRepository, BookingRepository>();
-        builder.Services.AddScoped<IPushNotificationService, FcmPushNotificationService>();
 
         // =====================================================
-        // Dependency Injection — Application Services
+        // Dependency Injection - Application Services
         // =====================================================
 
         builder.Services.AddScoped<IAuthService, AuthService>();
@@ -390,7 +354,7 @@ internal class Program
         builder.Services.AddHttpClient<IEmailService, BrevoEmailService>();
 
         // =====================================================
-        // Dependency Injection — Admin Services
+        // Dependency Injection - Admin Services
         // =====================================================
 
         builder.Services.AddScoped<IAdminUserService, AdminUserService>();
@@ -400,6 +364,15 @@ internal class Program
         builder.Services.AddScoped<IAdminInvitationService, AdminInvitationService>();
 
         var app = builder.Build();
+
+        // =====================================================
+        // Firebase Admin SDK
+        // =====================================================
+
+        FirebaseAdminInitializer.Initialize(
+            builder.Configuration,
+            app.Logger,
+            builder.Environment.ContentRootPath);
 
         // =====================================================
         // Development Tools
