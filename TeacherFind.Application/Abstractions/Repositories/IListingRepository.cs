@@ -18,6 +18,8 @@ public interface IListingRepository
     Task<TeacherListing?> GetByIdForTeacherUserAsync(Guid listingId, Guid userId);
     Task<List<ListingPhoto>> GetPhotosByListingIdAsync(Guid listingId);
     Task RemovePhotoAsync(ListingPhoto photo);
+    Task<bool> HasBookingsOrReviewsAsync(Guid listingId);
+    void Remove(TeacherListing listing);
 
     IQueryable<TeacherListing> Query();
 

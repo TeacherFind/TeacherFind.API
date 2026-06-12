@@ -298,6 +298,17 @@ public class ListingRepository : IListingRepository
         return Task.CompletedTask;
     }
 
+    public async Task<bool> HasBookingsOrReviewsAsync(Guid listingId)
+    {
+        return await _context.Bookings.AnyAsync(x => x.TeacherListingId == listingId) ||
+               await _context.Reviews.AnyAsync(x => x.ListingId == listingId);
+    }
+
+    public void Remove(TeacherListing listing)
+    {
+        _context.TeacherListings.Remove(listing);
+    }
+
     public async Task SaveChangesAsync()
     {
         await _context.SaveChangesAsync();
