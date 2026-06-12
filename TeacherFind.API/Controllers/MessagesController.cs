@@ -91,6 +91,23 @@ public class MessagesController : ControllerBase
         return Ok(new { message = "Seçili mesajlar silindi." });
     }
 
+    // DELETE /api/messages/conversation/{otherUserId}
+    [HttpDelete("conversation/{otherUserId:guid}")]
+    public async Task<IActionResult> DeleteConversation(Guid otherUserId)
+    {
+        var currentUserId = GetUserId();
+
+        if (otherUserId == Guid.Empty || otherUserId == currentUserId)
+            return BadRequest(new { message = "Silinecek konuşma bulunamadı." });
+
+        var deleted = await _chatService.DeleteConversationAsync(currentUserId, otherUserId);
+
+        if (!deleted)
+            return NotFound(new { message = "Silinecek konuşma bulunamadı." });
+
+        return Ok(new { message = "Konuşma başarıyla silindi." });
+    }
+
     private Guid GetUserId()
         => Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 }
