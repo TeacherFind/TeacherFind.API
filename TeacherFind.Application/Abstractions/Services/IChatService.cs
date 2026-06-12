@@ -15,5 +15,6 @@ public interface IChatService
     Task<List<ConversationDto>> GetMyConversationsAsync(Guid currentUserId);
     Task MarkAsReadAsync(Guid conversationId, Guid currentUserId);
     Task DeleteMessagesAsync(Guid userId, List<Guid> messageIds);
+    Task<bool> DeleteConversationAsync(Guid currentUserId, Guid otherUserId);
     Task UpdateUserPresenceAsync(Guid userId, bool isOnline, DateTime lastSeenAt);
 }
