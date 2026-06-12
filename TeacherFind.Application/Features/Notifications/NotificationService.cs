@@ -58,7 +58,8 @@ public class NotificationService : INotificationService
         string type,
         string? link = null,
         Guid? senderUserId = null,
-        string? senderName = null)
+        string? senderName = null,
+        Dictionary<string, string>? data = null)
     {
         var notification = new Notification
         {
@@ -78,7 +79,18 @@ public class NotificationService : INotificationService
         var tokens = await _userDeviceRepository.GetUserTokensAsync(userId);
 
         if (tokens.Count > 0)
-            await _pushNotificationService.SendToMultipleAsync(tokens, title, message);
+        {
+            var notificationData = BuildNotificationData(type, link, senderUserId, senderName, data);
+            var invalidTokens = await _pushNotificationService.SendToMultipleAsync(tokens, title, message, notificationData);
+
+            foreach (var invalidToken in invalidTokens)
+            {
+                await _userDeviceRepository.DeleteByTokenAsync(invalidToken);
+            }
+
+            if (invalidTokens.Count > 0)
+                await _userDeviceRepository.SaveChangesAsync();
+        }
     }
 
     // kept for BookingService compatibility
@@ -89,8 +101,39 @@ public class NotificationService : INotificationService
         string type,
         Guid? senderUserId = null,
         string? senderName = null,
-        string? link = null)
-        => await CreateAsync(userId, title, message, type, link, senderUserId, senderName);
+        string? link = null,
+        Dictionary<string, string>? data = null)
+        => await CreateAsync(userId, title, message, type, link, senderUserId, senderName, data);
+
+    private static Dictionary<string, string> BuildNotificationData(
+        string type,
+        string? link,
+        Guid? senderUserId,
+        string? senderName,
+        Dictionary<string, string>? data)
+    {
+        var result = data is null
+            ? new Dictionary<string, string>()
+            : new Dictionary<string, string>(data);
+
+        result["type"] = NormalizeNotificationType(type);
+
+        if (!string.IsNullOrWhiteSpace(link))
+            result["link"] = link;
+
+        if (senderUserId.HasValue)
+            result["senderId"] = senderUserId.Value.ToString();
+
+        if (!string.IsNullOrWhiteSpace(senderName))
+            result["senderName"] = senderName;
+
+        return result;
+    }
+
+    private static string NormalizeNotificationType(string type)
+        => string.Equals(type, "Message", StringComparison.OrdinalIgnoreCase)
+            ? "chat_message"
+            : type;
 
     private static List<NotificationDto> Map(List<Notification> notifications)
         => notifications.Select(n => new NotificationDto

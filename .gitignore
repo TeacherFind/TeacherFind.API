@@ -363,3 +363,11 @@ MigrationBackup/
 FodyWeavers.xsd
 
 **/appsettings.Production.json
+
+# Firebase service account secrets
+firebase-service-account.json
+*firebase*service*account*.json
+serviceAccountKey.json
+**/firebase-service-account.json
+**/serviceAccountKey.json
+**/serviceAccountKey.json.json
