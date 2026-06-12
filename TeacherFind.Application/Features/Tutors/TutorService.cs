@@ -802,26 +802,39 @@ public class TutorService : ITutorService
 
     private string BuildFullUrl(string relativePath)
     {
-        if (string.IsNullOrWhiteSpace(relativePath)) return relativePath;
-        var request = _httpContextAccessor.HttpContext?.Request;
-        if (request == null) return relativePath;
-        return $"{request.Scheme}://{request.Host}{relativePath}";
-    }
+        if (string.IsNullOrWhiteSpace(relativePath))
+            return relativePath;
 
-    private static List<ListingPhotoDto> MapPhotos(IEnumerable<ListingPhoto>? photos)
-    {
-        return photos?
-            .OrderByDescending(p => p.IsMain)
-            .ThenBy(p => p.SortOrder)
-            .ThenBy(p => p.CreatedAt)
-            .Select(p => new ListingPhotoDto
-            {
-                Id = p.Id,
-                PhotoUrl = p.PhotoUrl,
-                IsMain = p.IsMain,
-                SortOrder = p.SortOrder
-            }).ToList() ?? new List<ListingPhotoDto>();
+        // Already a full URL? Don't touch it.
+        if (Uri.TryCreate(relativePath, UriKind.Absolute, out var uri)
+            && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+            return relativePath;
+
+        var request = _httpContextAccessor.HttpContext?.Request;
+
+        if (request == null)
+        {
+            var baseUrl = Environment.GetEnvironmentVariable("PUBLIC_API_BASE_URL")
+                          ?? "https://api.ozeldersvip.com";
+            return $"{baseUrl.TrimEnd('/')}/{relativePath.TrimStart('/')}";
+        }
+
+        return $"{request.Scheme}://{request.Host}/{relativePath.TrimStart('/')}";
     }
+    private List<ListingPhotoDto> MapPhotos(IEnumerable<ListingPhoto>? photos)
+{
+    return photos?
+        .OrderByDescending(p => p.IsMain)
+        .ThenBy(p => p.SortOrder)
+        .ThenBy(p => p.CreatedAt)
+        .Select(p => new ListingPhotoDto
+        {
+            Id = p.Id,
+            PhotoUrl = BuildFullUrl(p.PhotoUrl ?? ""),
+            IsMain = p.IsMain,
+            SortOrder = p.SortOrder
+        }).ToList() ?? new List<ListingPhotoDto>();
+}
 
     private static string? NormalizeYoutubeVideoUrl(string? youtubeVideoUrl)
     {
@@ -883,7 +896,7 @@ public class TutorService : ITutorService
         };
     }
 
-    private static MyTutorListingDto MapToMyTutorListingDto(TeacherListing listing)
+    private MyTutorListingDto MapToMyTutorListingDto(TeacherListing listing)
     {
         return new MyTutorListingDto
         {
