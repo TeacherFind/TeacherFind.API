@@ -75,7 +75,7 @@ internal class Program
         // =====================================================
 
         var jwtKey = builder.Configuration["Jwt:Key"]
-            ?? throw new InvalidOperationException("Jwt:Key bulunamadÄ±.");
+            ?? throw new InvalidOperationException("Jwt:Key bulunamadı.");
 
         var signingKey = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(jwtKey));
@@ -130,7 +130,7 @@ internal class Program
                 await context.HttpContext.Response.WriteAsync(
                     JsonSerializer.Serialize(new
                     {
-                        message = "Ã‡ok fazla istek gÃ¶nderdiniz. LÃ¼tfen biraz sonra tekrar deneyin."
+                        message = "Çok fazla istek gönderdiniz. Lütfen biraz sonra tekrar deneyin."
                     }),
                     cancellationToken);
             };
@@ -259,7 +259,7 @@ internal class Program
 
                 return new BadRequestObjectResult(new
                 {
-                    message = "Ä°stek doÄŸrulanamadÄ±.",
+                    message = "İstek doğrulanamadı.",
                     errors
                 });
             };
@@ -279,7 +279,7 @@ internal class Program
             {
                 Title = "TeacherFind API",
                 Version = "v1",
-                Description = "TeacherFind backend API dokÃ¼mantasyonu"
+                Description = "TeacherFind backend API dokümantasyonu"
             });
 
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -289,7 +289,7 @@ internal class Program
                 Scheme = "bearer",
                 BearerFormat = "JWT",
                 In = ParameterLocation.Header,
-                Description = "JWT token girin. Ã–rnek: Bearer abc123..."
+                Description = "JWT token girin. Örnek: Bearer abc123..."
             });
 
             options.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -309,7 +309,7 @@ internal class Program
         });
 
         // =====================================================
-        // Dependency Injection â€” Repositories
+        // Dependency Injection - Repositories
         // =====================================================
 
         builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -326,7 +326,7 @@ internal class Program
         builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 
         // =====================================================
-        // Dependency Injection â€” Application Services
+        // Dependency Injection - Application Services
         // =====================================================
 
         builder.Services.AddScoped<IAuthService, AuthService>();
@@ -354,7 +354,7 @@ internal class Program
         builder.Services.AddHttpClient<IEmailService, BrevoEmailService>();
 
         // =====================================================
-        // Dependency Injection â€” Admin Services
+        // Dependency Injection - Admin Services
         // =====================================================
 
         builder.Services.AddScoped<IAdminUserService, AdminUserService>();
