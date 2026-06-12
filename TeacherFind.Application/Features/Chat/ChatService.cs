@@ -144,6 +144,10 @@ public class ChatService : IChatService
                 .Where(x => CanUserSeeMessage(x, currentUserId))
                 .OrderByDescending(x => x.SentAt)
                 .ToList();
+
+            if (messages.Count == 0)
+                continue;
+
             var last = messages.FirstOrDefault();
             var unread = messages.Count(x => x.ReceiverId == currentUserId && !x.IsDeletedByReceiver && !x.IsRead);
             var now = DateTime.UtcNow;
@@ -188,6 +192,33 @@ public class ChatService : IChatService
         }
 
         await _messageRepository.SaveChangesAsync();
+    }
+
+    public async Task<bool> DeleteConversationAsync(Guid currentUserId, Guid otherUserId)
+    {
+        var conversation = await _conversationRepository.GetBetweenUsersAsync(currentUserId, otherUserId);
+
+        if (conversation is null)
+            return false;
+
+        var visibleMessages = conversation.Messages
+            .Where(x => CanUserSeeMessage(x, currentUserId))
+            .ToList();
+
+        if (visibleMessages.Count == 0)
+            return false;
+
+        foreach (var message in visibleMessages)
+        {
+            if (message.SenderId == currentUserId)
+                message.IsDeletedBySender = true;
+
+            if (message.ReceiverId == currentUserId)
+                message.IsDeletedByReceiver = true;
+        }
+
+        await _messageRepository.SaveChangesAsync();
+        return true;
     }
 
     public async Task UpdateUserPresenceAsync(Guid userId, bool isOnline, DateTime lastSeenAt)
