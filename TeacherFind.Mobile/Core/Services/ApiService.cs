@@ -29,7 +29,7 @@ namespace TeacherFind.Mobile.Core.Services
         public ApiService(HttpClient httpClient)
         {
             _httpClient = httpClient;
-            _httpClient.BaseAddress ??= CreateDefaultBaseAddress();
+            _httpClient.BaseAddress ??= new Uri("https://sxmq5mp0-7196.euw.devtunnels.ms/");
 
             Console.WriteLine($"API BaseAddress: {_httpClient.BaseAddress}");
         }
@@ -81,6 +81,36 @@ namespace TeacherFind.Mobile.Core.Services
             {
                 Console.WriteLine($"API Hatası: {ex.Message}");
                 return false;
+            }
+        }
+
+        public async Task<TResponse> PostAsync<TRequest, TResponse>(string endpoint, TRequest request)
+        {
+            try
+            {
+                await AttachAuthorizationHeaderAsync();
+
+                var response = await _httpClient.PostAsJsonAsync(
+                    NormalizeEndpoint(endpoint),
+                    request,
+                    JsonOptions);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var body = await response.Content.ReadAsStringAsync();
+                    var errorMessage = ParseErrorMessage(body) ?? $"{(int)response.StatusCode}: {body}";
+                    throw new Exception(errorMessage);
+                }
+
+                if (response.Content.Headers.ContentLength == 0)
+                    return default!;
+
+                return (await response.Content.ReadFromJsonAsync<TResponse>(JsonOptions))!;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"API Hatası: {ex.Message}");
+                return default!;
             }
         }
 
@@ -187,6 +217,58 @@ namespace TeacherFind.Mobile.Core.Services
 
             Console.WriteLine(
                 $"API Hatası: {(int)response.StatusCode} {response.ReasonPhrase} {body}");
+        }
+
+        private static string? ParseErrorMessage(string jsonBody)
+        {
+            if (string.IsNullOrWhiteSpace(jsonBody))
+                return null;
+
+            try
+            {
+                using var document = JsonDocument.Parse(jsonBody);
+                var root = document.RootElement;
+
+                // 1. Check if it's a ValidationProblemDetails (has "errors" object)
+                if (root.TryGetProperty("errors", out var errorsProp) && errorsProp.ValueKind == JsonValueKind.Object)
+                {
+                    var errorMessages = new List<string>();
+                    foreach (var property in errorsProp.EnumerateObject())
+                    {
+                        if (property.Value.ValueKind == JsonValueKind.Array)
+                        {
+                            foreach (var msg in property.Value.EnumerateArray())
+                            {
+                                errorMessages.Add(msg.GetString() ?? "");
+                            }
+                        }
+                        else if (property.Value.ValueKind == JsonValueKind.String)
+                        {
+                            errorMessages.Add(property.Value.GetString() ?? "");
+                        }
+                    }
+                    if (errorMessages.Count > 0)
+                        return string.Join("\n", errorMessages);
+                }
+
+                // 2. Check if it's a generic { "message": "error text" }
+                if (root.TryGetProperty("message", out var messageProp) && messageProp.ValueKind == JsonValueKind.String)
+                {
+                    return messageProp.GetString();
+                }
+
+                // 3. Check for specific Title if no explicit message
+                if (root.TryGetProperty("title", out var titleProp) && titleProp.ValueKind == JsonValueKind.String)
+                {
+                    return titleProp.GetString();
+                }
+            }
+            catch
+            {
+                // Not valid JSON, ignore
+            }
+
+            return null;
         }
     }
 }

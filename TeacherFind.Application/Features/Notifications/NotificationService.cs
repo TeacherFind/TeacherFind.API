@@ -8,9 +8,18 @@ namespace TeacherFind.Application.Features.Notifications;
 public class NotificationService : INotificationService
 {
     private readonly INotificationRepository _notificationRepository;
+    private readonly IUserDeviceRepository _userDeviceRepository;
+    private readonly IPushNotificationService _pushNotificationService;
 
-    public NotificationService(INotificationRepository notificationRepository)
-        => _notificationRepository = notificationRepository;
+    public NotificationService(
+        INotificationRepository notificationRepository,
+        IUserDeviceRepository userDeviceRepository,
+        IPushNotificationService pushNotificationService)
+    {
+        _notificationRepository = notificationRepository;
+        _userDeviceRepository = userDeviceRepository;
+        _pushNotificationService = pushNotificationService;
+    }
 
     public async Task<List<NotificationDto>> GetMyNotificationsAsync(Guid userId)
     {
@@ -64,6 +73,12 @@ public class NotificationService : INotificationService
 
         await _notificationRepository.AddAsync(notification);
         await _notificationRepository.SaveChangesAsync();
+
+        // Push notification (FCM) — fails silently, never breaks the main flow
+        var tokens = await _userDeviceRepository.GetUserTokensAsync(userId);
+
+        if (tokens.Count > 0)
+            await _pushNotificationService.SendToMultipleAsync(tokens, title, message);
     }
 
     // kept for BookingService compatibility
