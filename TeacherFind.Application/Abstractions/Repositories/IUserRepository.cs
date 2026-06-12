@@ -15,6 +15,8 @@ public interface IUserRepository
 
     Task AddAsync(User user);
 
+    Task UpdatePresenceAsync(Guid userId, bool isOnline, DateTime lastSeenAt);
+
     Task SaveChangesAsync();
     Task<List<User>> GetAdminUsersAsync();
 }
