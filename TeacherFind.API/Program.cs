@@ -1,6 +1,4 @@
-using FirebaseAdmin;
-using Google.Apis.Auth.OAuth2;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -52,39 +50,6 @@ internal class Program
             reloadOnChange: true);
 
         // =====================================================
-        // Firebase Admin SDK
-        // =====================================================
-
-        try
-        {
-            var firebaseCredentialPath = builder.Configuration["Firebase:ServiceAccountPath"];
-            var googleApplicationCredentials = Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS");
-
-            if (!string.IsNullOrWhiteSpace(firebaseCredentialPath) && File.Exists(firebaseCredentialPath))
-            {
-                FirebaseApp.Create(new AppOptions
-                {
-                    Credential = GoogleCredential.FromFile(firebaseCredentialPath)
-                });
-            }
-            else if (!string.IsNullOrWhiteSpace(googleApplicationCredentials) && File.Exists(googleApplicationCredentials))
-            {
-                FirebaseApp.Create(new AppOptions
-                {
-                    Credential = GoogleCredential.GetApplicationDefault()
-                });
-            }
-            else
-            {
-                Console.WriteLine("Firebase credential bulunamadı. Firebase Admin SDK başlatılmadı.");
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Firebase initialization skipped: {ex.Message}");
-        }
-
-        // =====================================================
         // Database
         // =====================================================
 
@@ -110,7 +75,7 @@ internal class Program
         // =====================================================
 
         var jwtKey = builder.Configuration["Jwt:Key"]
-            ?? throw new InvalidOperationException("Jwt:Key bulunamadı.");
+            ?? throw new InvalidOperationException("Jwt:Key bulunamadÄ±.");
 
         var signingKey = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(jwtKey));
@@ -165,7 +130,7 @@ internal class Program
                 await context.HttpContext.Response.WriteAsync(
                     JsonSerializer.Serialize(new
                     {
-                        message = "Çok fazla istek gönderdiniz. Lütfen biraz sonra tekrar deneyin."
+                        message = "Ã‡ok fazla istek gÃ¶nderdiniz. LÃ¼tfen biraz sonra tekrar deneyin."
                     }),
                     cancellationToken);
             };
@@ -294,7 +259,7 @@ internal class Program
 
                 return new BadRequestObjectResult(new
                 {
-                    message = "İstek doğrulanamadı.",
+                    message = "Ä°stek doÄŸrulanamadÄ±.",
                     errors
                 });
             };
@@ -314,7 +279,7 @@ internal class Program
             {
                 Title = "TeacherFind API",
                 Version = "v1",
-                Description = "TeacherFind backend API dokümantasyonu"
+                Description = "TeacherFind backend API dokÃ¼mantasyonu"
             });
 
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -324,7 +289,7 @@ internal class Program
                 Scheme = "bearer",
                 BearerFormat = "JWT",
                 In = ParameterLocation.Header,
-                Description = "JWT token girin. Örnek: Bearer abc123..."
+                Description = "JWT token girin. Ã–rnek: Bearer abc123..."
             });
 
             options.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -344,7 +309,7 @@ internal class Program
         });
 
         // =====================================================
-        // Dependency Injection — Repositories
+        // Dependency Injection â€” Repositories
         // =====================================================
 
         builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -359,10 +324,9 @@ internal class Program
         builder.Services.AddScoped<IVerificationRepository, VerificationRepository>();
         builder.Services.AddScoped<IReportRepository, ReportRepository>();
         builder.Services.AddScoped<IBookingRepository, BookingRepository>();
-        builder.Services.AddScoped<IPushNotificationService, FcmPushNotificationService>();
 
         // =====================================================
-        // Dependency Injection — Application Services
+        // Dependency Injection â€” Application Services
         // =====================================================
 
         builder.Services.AddScoped<IAuthService, AuthService>();
@@ -390,7 +354,7 @@ internal class Program
         builder.Services.AddHttpClient<IEmailService, BrevoEmailService>();
 
         // =====================================================
-        // Dependency Injection — Admin Services
+        // Dependency Injection â€” Admin Services
         // =====================================================
 
         builder.Services.AddScoped<IAdminUserService, AdminUserService>();
@@ -400,6 +364,15 @@ internal class Program
         builder.Services.AddScoped<IAdminInvitationService, AdminInvitationService>();
 
         var app = builder.Build();
+
+        // =====================================================
+        // Firebase Admin SDK
+        // =====================================================
+
+        FirebaseAdminInitializer.Initialize(
+            builder.Configuration,
+            app.Logger,
+            builder.Environment.ContentRootPath);
 
         // =====================================================
         // Development Tools

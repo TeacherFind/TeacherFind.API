@@ -89,7 +89,14 @@ public class ChatService : IChatService
                 "Message",
                 senderId,
                 sender.FullName,
-                $"/messages/{senderId}");
+                $"/messages/{senderId}",
+                new Dictionary<string, string>
+                {
+                    ["type"] = "chat_message",
+                    ["conversationId"] = conversation.Id.ToString(),
+                    ["senderId"] = senderId.ToString(),
+                    ["messageId"] = message.Id.ToString()
+                });
         }
         catch (Exception ex)
         {
