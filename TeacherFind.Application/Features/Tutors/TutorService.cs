@@ -222,7 +222,8 @@ public class TutorService : ITutorService
                     Id = a.Id,
                     Day = a.Day,
                     Start = a.Start,
-                    End = a.End
+                    End = a.End,
+                    Type = a.Type
                 }).ToList(),
 
             Subjects = profile.Subjects.Select(s => new TutorProfileSubjectDto
