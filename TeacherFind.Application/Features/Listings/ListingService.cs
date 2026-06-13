@@ -178,17 +178,7 @@ public class ListingService : IListingService
         if (listing == null)
             return false;
 
-        var hasHistoricalActivity = await _listingRepository.HasBookingsOrReviewsAsync(listing.Id);
-
-        if (hasHistoricalActivity)
-        {
-            listing.IsActive = false;
-            listing.UpdatedAt = DateTime.UtcNow;
-        }
-        else
-        {
-            _listingRepository.Remove(listing);
-        }
+        _listingRepository.Remove(listing);
 
         await _listingRepository.SaveChangesAsync();
         return true;
