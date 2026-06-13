@@ -2,11 +2,54 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="TeacherFind.Mobile.Features.Teachers.Views.TeacherDetailPage"
-             Title="TeacherDetailPage">
-    <VerticalStackLayout>
-        <Label 
-            Text="Welcome to .NET MAUI!"
-            VerticalOptions="Center" 
-            HorizontalOptions="Center" />
-    </VerticalStackLayout>
+             Title="Eğitmen Detayı"
+             BackgroundColor="{AppThemeBinding Light=#f8fafc, Dark=#0f172a}"
+             NavigationPage.HasNavigationBar="False">
+    <Grid>
+        <ScrollView>
+            <VerticalStackLayout Spacing="18" Padding="20,40,20,30">
+                <Label Text="←" FontSize="24" TextColor="{AppThemeBinding Light=#0f172a, Dark=#ffffff}" FontAttributes="Bold">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnBackButtonClicked" />
+                    </Label.GestureRecognizers>
+                </Label>
+
+                <Border Stroke="Transparent" BackgroundColor="{AppThemeBinding Light=#ffffff, Dark=#1e293b}">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="24" />
+                    </Border.StrokeShape>
+                    <VerticalStackLayout>
+                        <Image Source="{Binding CoverPhotoUrl}" HeightRequest="240" Aspect="AspectFill" />
+
+                        <VerticalStackLayout Padding="18" Spacing="8">
+                            <Label Text="{Binding TeacherName}" FontSize="24" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#0f172a, Dark=#ffffff}" />
+                            <Label Text="{Binding TitleText}" FontSize="16" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#1e293b, Dark=#f8fafc}" />
+                            <HorizontalStackLayout Spacing="12">
+                                <Label Text="{Binding Rating}" FontSize="14" TextColor="#eab308" FontAttributes="Bold" />
+                                <Label Text="{Binding Price}" FontSize="14" TextColor="#2d79f3" FontAttributes="Bold" />
+                            </HorizontalStackLayout>
+                            <Label Text="{Binding Bio}" FontSize="14" TextColor="{AppThemeBinding Light=#64748b, Dark=#94a3b8}" LineBreakMode="WordWrap" />
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+                <CollectionView ItemsSource="{Binding Photos}" ItemsLayout="HorizontalList" HeightRequest="96">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Border WidthRequest="96" HeightRequest="96" Margin="0,0,10,0" Stroke="Transparent">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="14" />
+                                </Border.StrokeShape>
+                                <Image Source="{Binding PhotoUrl}" Aspect="AspectFill" />
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <Grid IsVisible="{Binding IsBusy}" BackgroundColor="#80000000">
+            <ActivityIndicator IsRunning="True" Color="#2d79f3" HorizontalOptions="Center" VerticalOptions="Center"/>
+        </Grid>
+    </Grid>
 </ContentPage>

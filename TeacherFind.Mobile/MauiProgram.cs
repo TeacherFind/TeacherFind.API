@@ -49,6 +49,7 @@ namespace TeacherFind.Mobile
 
             // --- Öğretmen Arama Modülü (Teachers) ---
             builder.Services.AddTransient<TeacherFind.Mobile.Features.Teachers.Views.TeacherListPage>();
+            builder.Services.AddTransient<TeacherFind.Mobile.Features.Teachers.Views.TeacherDetailPage>();
             builder.Services.AddTransient<TeacherFind.Mobile.Features.Teachers.ViewModels.TeacherListViewModel>();
 
             // --- Profil Modülü (Profile) ---

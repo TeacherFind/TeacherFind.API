@@ -141,8 +141,14 @@
 
                                         <Grid ColumnDefinitions="*, Auto" Padding="15">
                                             <Label Grid.Column="0" Text="{Binding FirstName}" FontAttributes="Bold" FontSize="14" TextColor="#0A194F"/>
-                                            <Label Grid.Column="1" Text="⭐ 4.8" TextColor="#FFA000" FontSize="12" FontAttributes="Bold"/>
+                                            <Label Grid.Column="1" Text="{Binding Rating, StringFormat='⭐ {0:F1}'}" TextColor="#FFA000" FontSize="12" FontAttributes="Bold"/>
                                         </Grid>
+
+                                        <VerticalStackLayout Padding="15,0,15,15" Spacing="4">
+                                            <Label Text="{Binding Title}" FontSize="12" FontAttributes="Bold" TextColor="#1e293b" LineBreakMode="TailTruncation"/>
+                                            <Label Text="{Binding Description}" FontSize="11" TextColor="Gray" LineBreakMode="TailTruncation" MaxLines="2"/>
+                                            <Label Text="{Binding Price}" FontSize="12" FontAttributes="Bold" TextColor="#2d79f3"/>
+                                        </VerticalStackLayout>
                                     </VerticalStackLayout>
                                 </Border>
                             </DataTemplate>

@@ -4,7 +4,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Maui.Controls;
+using TeacherFind.Contracts.Common;
+using TeacherFind.Contracts.Tutors;
 using TeacherFind.Mobile.Core.Abstractions;
+using TeacherFind.Mobile.Core.Utilities;
 using System.Text.Json.Serialization;
 using System.Windows.Input;
 
@@ -71,6 +74,9 @@ public class TeacherModel
 {
     public string FirstName { get; set; }
     public string ProfilePictureUrl { get; set; }
+    public string Title { get; set; }
+    public string Description { get; set; }
+    public string Price { get; set; }
     public double Rating { get; set; }
 }
 
@@ -121,18 +127,7 @@ public class HomeViewModel : BindableObject
         Categories = new ObservableCollection<CategoryModel>();
         FeaturedTeachers = new ObservableCollection<TeacherModel>();
 
-        LoadDummyTeacherData(); // Sadece öğretmenler sahte kalsın
-
         RefreshCommand = new Command(async () => await RefreshDataAsync());
-    }
-
-    private void LoadDummyTeacherData()
-    {
-        // Öğretmenler şimdilik vitrin olarak kalıyor, buraya dokunmadık
-        FeaturedTeachers.Clear();
-        FeaturedTeachers.Add(new TeacherModel { FirstName = "Emre Koç", ProfilePictureUrl = "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500&auto=format&fit=crop&q=60", Rating = 4.8 });
-        FeaturedTeachers.Add(new TeacherModel { FirstName = "Ayşe Yılmaz", ProfilePictureUrl = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=500&auto=format&fit=crop&q=60", Rating = 4.9 });
-        FeaturedTeachers.Add(new TeacherModel { FirstName = "Burak Kaya", ProfilePictureUrl = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&auto=format&fit=crop&q=60", Rating = 4.7 });
     }
 
     private async Task RefreshDataAsync()
@@ -194,6 +189,32 @@ public class HomeViewModel : BindableObject
                             Subtitle = $"{(apiCat.Subjects?.Count ?? 0)} Farklı Ders",
                             // Otomatik ikon seçiciyi çağırıyoruz
                             Icon = GetIconForCategory(apiCat.CategoryName)
+                        });
+                    }
+                }
+            }
+
+            if (forceRefresh || FeaturedTeachers.Count == 0)
+            {
+                var featured = await _apiService.GetAsync<PagedResultDto<TutorListItemDto>>(
+                    "api/tutors?page=1&pageSize=10&sort=rating");
+
+                if (featured?.Items is not null)
+                {
+                    FeaturedTeachers.Clear();
+
+                    foreach (var tutor in featured.Items)
+                    {
+                        FeaturedTeachers.Add(new TeacherModel
+                        {
+                            FirstName = DisplayValueHelper.ToPlainText(tutor.TeacherName),
+                            ProfilePictureUrl = DisplayValueHelper.ResolveTutorImageUrl(
+                                _apiService,
+                                tutor.Photos),
+                            Title = DisplayValueHelper.ToPlainText(tutor.Title),
+                            Description = DisplayValueHelper.TruncatePlainText(tutor.Description, 90),
+                            Price = $"{tutor.Price:N0} TL/saat",
+                            Rating = tutor.Rating
                         });
                     }
                 }
