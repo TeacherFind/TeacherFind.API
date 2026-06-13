@@ -43,6 +43,16 @@ public class NotificationRepository : INotificationRepository
             n.IsRead = true;
     }
 
+    public async Task DeleteAllUserNotificationsAsync(Guid userId)
+    {
+        var notifications = await _context.Notifications
+            .Where(x => x.UserId == userId)
+            .ToListAsync();
+
+        if (notifications.Count > 0)
+            _context.Notifications.RemoveRange(notifications);
+    }
+
     public async Task SaveChangesAsync()
         => await _context.SaveChangesAsync();
 }

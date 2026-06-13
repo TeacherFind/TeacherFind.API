@@ -63,7 +63,7 @@ public class AuthService : IAuthService
                 : request.PhoneNumber.Trim(),
             CityId = request.CityId,
             IsActive = true,
-            IsEmailVerified = true,
+            IsEmailVerified = false,
             IsPhoneVerified = false,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -92,49 +92,21 @@ public class AuthService : IAuthService
         }
 
         var normalizedEmail = NormalizeEmail(email);
-
         var user = await _userRepository.GetByEmailAsync(normalizedEmail);
 
-        if (user is null)
-        {
-            if (normalizedEmail == "admin@gmail.com")
-            {
-                user = new User
-                {
-                    FullName = "Sistem Yöneticisi",
-                    Email = "admin@gmail.com",
-                    PasswordHash = _passwordHasher.Hash("123456"),
-                    Role = UserRole.Admin,
-                    IsActive = true,
-                    IsEmailVerified = true,
-                    IsPhoneVerified = true,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
-                await _userRepository.AddAsync(user);
-                await _userRepository.SaveChangesAsync();
-            }
-            else
-            {
-                return null;
-            }
-        }
-
-        if (!user.IsActive)
+        if (user is null || !user.IsActive)
             return null;
 
-        if (normalizedEmail != "admin@gmail.com")
-        {
-            var isPasswordValid = _passwordHasher.Verify(
-                password,
-                user.PasswordHash);
+        if (string.IsNullOrWhiteSpace(user.PasswordHash))
+            return null;
 
-            if (!isPasswordValid)
-                return null;
+        var isPasswordValid = _passwordHasher.Verify(password, user.PasswordHash);
 
-            if (!user.IsEmailVerified && !user.IsPhoneVerified)
-                return null;
-        }
+        if (!isPasswordValid)
+            return null;
+
+        if (!user.IsEmailVerified && !user.IsPhoneVerified)
+            return null;
 
         var token = _jwtProvider.GenerateToken(user, rememberMe);
 
@@ -151,7 +123,6 @@ public class AuthService : IAuthService
             CityName = user.City?.Name
         };
     }
-
     public async Task<bool> ChangePasswordAsync(
         Guid userId,
         string currentPassword,
@@ -198,7 +169,7 @@ public class AuthService : IAuthService
             {
                 FullName = fullName.Trim(),
                 Email = normalizedEmail,
-                PasswordHash = string.Empty, // Sosyal giriş — şifre yok
+                PasswordHash = _passwordHasher.Hash(Guid.NewGuid().ToString("N")), // Sosyal giriş için rastgele, bilinmeyen şifre
                 Role = UserRole.Student,
                 IsActive = true,
                 IsEmailVerified = true, // Firebase zaten doğruladı
