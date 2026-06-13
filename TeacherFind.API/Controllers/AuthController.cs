@@ -353,10 +353,19 @@ public class AuthController : ControllerBase
         if (dto is null || string.IsNullOrWhiteSpace(dto.NewEmail))
             return BadRequest(new { message = "Yeni e-posta adresi zorunludur." });
 
+        if (string.IsNullOrWhiteSpace(dto.Password))
+            return BadRequest(new { message = "Mevcut şifrenizi girmeniz gerekiyor." });
+
         var currentUser = await GetCurrentUserAsync();
 
         if (currentUser is null)
             return Unauthorized(new { message = "Geçersiz token." });
+
+        if (string.IsNullOrWhiteSpace(currentUser.PasswordHash) ||
+            !_passwordHasher.Verify(dto.Password, currentUser.PasswordHash))
+        {
+            return BadRequest(new { message = "Şifreniz hatalı." });
+        }
 
         var newEmail = NormalizeEmail(dto.NewEmail);
         var existingUser = await _userRepository.GetByEmailAsync(newEmail);
@@ -401,7 +410,7 @@ public class AuthController : ControllerBase
             dto.Code.Trim(),
             "EmailChange");
 
-        if (code is null)
+        if (code is null || !string.Equals(code.TargetValue, newEmail, StringComparison.OrdinalIgnoreCase))
             return BadRequest(new { message = InvalidCodeMessage });
 
         currentUser.Email = newEmail;
@@ -409,9 +418,14 @@ public class AuthController : ControllerBase
         currentUser.UpdatedAt = DateTime.UtcNow;
         code.IsUsed = true;
 
+        // E-posta (benzersiz kimlik) değiştiği için mevcut oturumu geçersiz kıl;
+        // kullanıcı yeni e-posta adresiyle tekrar giriş yapmalı.
+        currentUser.RefreshToken = null;
+        currentUser.RefreshTokenExpiryTime = null;
+
         await _userRepository.SaveChangesAsync();
 
-        return Ok(new { message = "E-posta adresiniz başarıyla değiştirildi." });
+        return Ok(new { message = "E-posta adresiniz başarıyla değiştirildi. Lütfen yeni e-posta adresinizle tekrar giriş yapın." });
     }
 
     // POST /api/auth/social-login
@@ -537,6 +551,7 @@ public class AuthController : ControllerBase
             UserId = user.Id,
             Code = GenerateSixDigitCode(),
             Type = "EmailChange",
+            TargetValue = newEmail, // kod yalnızca bu yeni e-posta için geçerlidir
             ExpireAt = DateTime.UtcNow.AddMinutes(VerificationCodeExpireMinutes),
             IsUsed = false
         };
