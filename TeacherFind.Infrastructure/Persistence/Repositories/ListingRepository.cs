@@ -306,6 +306,17 @@ public class ListingRepository : IListingRepository
 
     public void Remove(TeacherListing listing)
     {
+        var listingId = listing.Id;
+
+        _context.Favorites.RemoveRange(
+            _context.Favorites.Where(x => x.ListingId == listingId));
+
+        _context.Reviews.RemoveRange(
+            _context.Reviews.Where(x => x.ListingId == listingId));
+
+        _context.Bookings.RemoveRange(
+            _context.Bookings.Where(x => x.TeacherListingId == listingId));
+
         _context.TeacherListings.Remove(listing);
     }
 
