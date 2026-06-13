@@ -14,5 +14,6 @@ public interface INotificationRepository
     Task<Notification?> GetByIdAsync(Guid id);
     Task MarkAsReadAsync(Guid notificationId, Guid userId);
     Task MarkAllAsReadAsync(Guid userId);
+    Task DeleteAllUserNotificationsAsync(Guid userId);
     Task SaveChangesAsync();
 }

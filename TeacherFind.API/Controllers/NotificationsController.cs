@@ -51,6 +51,14 @@ public class NotificationsController : ControllerBase
         return Ok(new { message = "Tüm bildirimler okundu olarak işaretlendi." });
     }
 
+    // DELETE /api/notifications/clear
+    [HttpDelete("clear")]
+    public async Task<IActionResult> ClearAllNotifications()
+    {
+        await _notificationService.ClearAllNotificationsAsync(GetUserId());
+        return Ok(new { message = "Tüm bildirimler başarıyla silindi." });
+    }
+
     private Guid GetUserId()
         => Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 }

@@ -103,28 +103,27 @@ public class AuthController : ControllerBase
         }
 
         var email = NormalizeEmail(request.Email);
-        
-        if (email != "admin@gmail.com")
+        var user = await _userRepository.GetByEmailAsync(email);
+
+        if (user is null || !user.IsActive)
+            return Unauthorized(new { message = InvalidLoginMessage });
+
+        if (string.IsNullOrWhiteSpace(user.PasswordHash))
+            return Unauthorized(new { message = InvalidLoginMessage });
+
+        var isPasswordValid = _passwordHasher.Verify(request.Password, user.PasswordHash);
+
+        if (!isPasswordValid)
+            return Unauthorized(new { message = InvalidLoginMessage });
+
+        if (!user.IsEmailVerified && !user.IsPhoneVerified)
         {
-            var user = await _userRepository.GetByEmailAsync(email);
-
-            if (user is null || !user.IsActive)
-                return Unauthorized(new { message = InvalidLoginMessage });
-
-            var isPasswordValid = _passwordHasher.Verify(request.Password, user.PasswordHash);
-
-            if (!isPasswordValid)
-                return Unauthorized(new { message = InvalidLoginMessage });
-
-            if (!user.IsEmailVerified && !user.IsPhoneVerified)
+            return Unauthorized(new
             {
-                return Unauthorized(new
-                {
-                    message = "Hesabınızı kullanmadan önce e-posta veya telefon doğrulaması yapmanız gerekiyor.",
-                    requiresVerification = true,
-                    userId = user.Id
-                });
-            }
+                message = "Hesabınızı kullanmadan önce e-posta veya telefon doğrulaması yapmanız gerekiyor.",
+                requiresVerification = true,
+                userId = user.Id
+            });
         }
 
         var result = await _authService.LoginAsync(email, request.Password, request.RememberMe);
@@ -134,7 +133,6 @@ public class AuthController : ControllerBase
 
         return Ok(result);
     }
-
     // GET /api/auth/me
     [Authorize]
     [HttpGet("me")]
