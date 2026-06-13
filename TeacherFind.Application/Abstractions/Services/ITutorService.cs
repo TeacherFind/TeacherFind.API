@@ -31,6 +31,8 @@ public interface ITutorService
         Guid listingId,
         UpdateMyTutorListingDto request);
 
+    Task<bool> DeleteMyListingAsync(Guid userId, Guid listingId);
+
     Task<List<ListingPhotoDto>> UploadListingPhotosAsync(
         Guid currentUserId,
         Guid listingId,
