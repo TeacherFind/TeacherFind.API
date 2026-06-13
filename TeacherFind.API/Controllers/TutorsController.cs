@@ -630,13 +630,11 @@ public class TutorsController : ControllerBase
         };
     }
 
-    private static string ResolveSlotStart(string slot) => slot.ToLowerInvariant() switch
+    private static string ResolveSlotStart(string slot) => (slot ?? "").Replace(" ", "").ToLowerInvariant() switch
     {
         "sabah" => "09:00",
         "öğle" => "12:00",
         "ogle" => "12:00",
-        "akşamüstü" => "15:00",
-        "aksamustu" => "15:00",
         "öğledensonra" => "15:00",
         "ogledensonra" => "15:00",
         "akşam" => "18:00",
@@ -644,13 +642,11 @@ public class TutorsController : ControllerBase
         _ => "09:00"
     };
 
-    private static string ResolveSlotEnd(string slot) => slot.ToLowerInvariant() switch
+    private static string ResolveSlotEnd(string slot) => (slot ?? "").Replace(" ", "").ToLowerInvariant() switch
     {
         "sabah" => "12:00",
         "öğle" => "15:00",
         "ogle" => "15:00",
-        "akşamüstü" => "18:00",
-        "aksamustu" => "18:00",
         "öğledensonra" => "18:00",
         "ogledensonra" => "18:00",
         "akşam" => "21:00",
