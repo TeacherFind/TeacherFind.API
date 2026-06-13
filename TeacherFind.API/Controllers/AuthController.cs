@@ -344,6 +344,76 @@ public class AuthController : ControllerBase
         return Ok(new { message = "Şifre başarıyla değiştirildi." });
     }
 
+    // POST /api/auth/request-email-change
+    [Authorize]
+    [HttpPost("request-email-change")]
+    [EnableRateLimiting("auth-limit")]
+    public async Task<IActionResult> RequestEmailChange([FromBody] RequestEmailChangeDto dto)
+    {
+        if (dto is null || string.IsNullOrWhiteSpace(dto.NewEmail))
+            return BadRequest(new { message = "Yeni e-posta adresi zorunludur." });
+
+        var currentUser = await GetCurrentUserAsync();
+
+        if (currentUser is null)
+            return Unauthorized(new { message = "Geçersiz token." });
+
+        var newEmail = NormalizeEmail(dto.NewEmail);
+        var existingUser = await _userRepository.GetByEmailAsync(newEmail);
+
+        if (existingUser is not null && existingUser.Id != currentUser.Id)
+            return BadRequest(new { message = "Bu e-posta adresi başka bir hesap tarafından kullanılıyor." });
+
+        if (string.Equals(currentUser.Email, newEmail, StringComparison.OrdinalIgnoreCase))
+            return BadRequest(new { message = "Yeni e-posta adresi mevcut adresinizden farklı olmalıdır." });
+
+        await CreateAndSendEmailChangeCodeAsync(currentUser, newEmail);
+
+        return Ok(new { message = "Doğrulama kodu yeni e-posta adresinize gönderildi." });
+    }
+
+    // POST /api/auth/verify-email-change
+    [Authorize]
+    [HttpPost("verify-email-change")]
+    [EnableRateLimiting("auth-limit")]
+    public async Task<IActionResult> VerifyEmailChange([FromBody] VerifyEmailChangeDto dto)
+    {
+        if (dto is null ||
+            string.IsNullOrWhiteSpace(dto.NewEmail) ||
+            string.IsNullOrWhiteSpace(dto.Code))
+        {
+            return BadRequest(new { message = InvalidCodeMessage });
+        }
+
+        var currentUser = await GetCurrentUserAsync();
+
+        if (currentUser is null)
+            return Unauthorized(new { message = "Geçersiz token." });
+
+        var newEmail = NormalizeEmail(dto.NewEmail);
+        var existingUser = await _userRepository.GetByEmailAsync(newEmail);
+
+        if (existingUser is not null && existingUser.Id != currentUser.Id)
+            return BadRequest(new { message = "Bu e-posta adresi başka bir hesap tarafından kullanılıyor." });
+
+        var code = await _verificationRepository.GetValidCode(
+            currentUser.Id,
+            dto.Code.Trim(),
+            "EmailChange");
+
+        if (code is null)
+            return BadRequest(new { message = InvalidCodeMessage });
+
+        currentUser.Email = newEmail;
+        currentUser.IsEmailVerified = true;
+        currentUser.UpdatedAt = DateTime.UtcNow;
+        code.IsUsed = true;
+
+        await _userRepository.SaveChangesAsync();
+
+        return Ok(new { message = "E-posta adresiniz başarıyla değiştirildi." });
+    }
+
     // POST /api/auth/social-login
     [HttpPost("social-login")]
     [EnableRateLimiting("auth-limit")]
@@ -458,6 +528,48 @@ public class AuthController : ControllerBase
             <h1>{code.Code}</h1>
             <p>Bu kod {VerificationCodeExpireMinutes} dakika geçerlidir.</p>
             """);
+    }
+
+    private async Task CreateAndSendEmailChangeCodeAsync(User user, string newEmail)
+    {
+        var code = new VerificationCode
+        {
+            UserId = user.Id,
+            Code = GenerateSixDigitCode(),
+            Type = "EmailChange",
+            ExpireAt = DateTime.UtcNow.AddMinutes(VerificationCodeExpireMinutes),
+            IsUsed = false
+        };
+
+        await _verificationRepository.AddAsync(code);
+        await _verificationRepository.SaveChangesAsync();
+
+        _logger.LogWarning("\n===========================================\n" +
+                           "GELİŞTİRİCİ NOTU - E-POSTA DEĞİŞTİRME KODU\n" +
+                           "Kullanıcı: {Email}\n" +
+                           "Yeni e-posta: {NewEmail}\n" +
+                           "Kod: {Code}\n" +
+                           "===========================================\n", user.Email, newEmail, code.Code);
+
+        await _emailService.SendAsync(
+            newEmail,
+            "Özel Ders VIP E-posta Değiştirme Kodunuz",
+            $"""
+            <h2>E-posta Değiştirme</h2>
+            <p>Merhaba,</p>
+            <p>Özel Ders VIP hesabınızdaki e-posta adresini değiştirmek için aşağıdaki kodu kullanın:</p>
+            <h1>{code.Code}</h1>
+            <p>Bu kod {VerificationCodeExpireMinutes} dakika geçerlidir.</p>
+            """);
+    }
+
+    private async Task<User?> GetCurrentUserAsync()
+    {
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        return Guid.TryParse(userIdValue, out var userId)
+            ? await _userRepository.GetByIdAsync(userId)
+            : null;
     }
 
     private static string GenerateSixDigitCode()

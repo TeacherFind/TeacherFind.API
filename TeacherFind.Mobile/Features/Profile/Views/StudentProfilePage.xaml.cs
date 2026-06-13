@@ -1,4 +1,5 @@
 using System.Windows.Input;
+using System.Net.Mail;
 using Microsoft.Maui.Media;
 using TeacherFind.Contracts.Students;
 using TeacherFind.Mobile.Core.Abstractions;
@@ -31,8 +32,47 @@ public partial class StudentProfilePage : ContentPage
     private string _profileImageUrl = "default_avatar.png";
     public string ProfileImageUrl { get => _profileImageUrl; set { _profileImageUrl = value; OnPropertyChanged(); } }
 
+    private bool _isEmailChangeModalVisible;
+    public bool IsEmailChangeModalVisible
+    {
+        get => _isEmailChangeModalVisible;
+        set
+        {
+            _isEmailChangeModalVisible = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(IsEmailChangeRequestStepVisible));
+        }
+    }
+
+    private bool _isEmailChangeCodeStepVisible;
+    public bool IsEmailChangeCodeStepVisible
+    {
+        get => _isEmailChangeCodeStepVisible;
+        set
+        {
+            _isEmailChangeCodeStepVisible = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(IsEmailChangeRequestStepVisible));
+        }
+    }
+
+    public bool IsEmailChangeRequestStepVisible => IsEmailChangeModalVisible && !IsEmailChangeCodeStepVisible;
+
+    private string _newEmail = string.Empty;
+    public string NewEmail { get => _newEmail; set { _newEmail = value; OnPropertyChanged(); } }
+
+    private string _emailChangeCode = string.Empty;
+    public string EmailChangeCode { get => _emailChangeCode; set { _emailChangeCode = value; OnPropertyChanged(); } }
+
+    private string _emailChangeMessage = string.Empty;
+    public string EmailChangeMessage { get => _emailChangeMessage; set { _emailChangeMessage = value; OnPropertyChanged(); } }
+
     public ICommand SaveCommand { get; }
     public ICommand UploadAvatarCommand { get; }
+    public ICommand OpenEmailChangeCommand { get; }
+    public ICommand CloseEmailChangeCommand { get; }
+    public ICommand SendEmailChangeCodeCommand { get; }
+    public ICommand VerifyEmailChangeCommand { get; }
 
     public StudentProfilePage(IApiService apiService)
     {
@@ -41,6 +81,10 @@ public partial class StudentProfilePage : ContentPage
 
         SaveCommand = new Command(async () => await SaveProfileAsync());
         UploadAvatarCommand = new Command(async () => await UploadAvatarActionAsync());
+        OpenEmailChangeCommand = new Command(OpenEmailChangeModal);
+        CloseEmailChangeCommand = new Command(CloseEmailChangeModal);
+        SendEmailChangeCodeCommand = new Command(async () => await SendEmailChangeCodeAsync());
+        VerifyEmailChangeCommand = new Command(async () => await VerifyEmailChangeAsync());
 
         BindingContext = this;
     }
@@ -143,8 +187,108 @@ public partial class StudentProfilePage : ContentPage
         }
     }
 
+    private void OpenEmailChangeModal()
+    {
+        NewEmail = string.Empty;
+        EmailChangeCode = string.Empty;
+        EmailChangeMessage = string.Empty;
+        IsEmailChangeCodeStepVisible = false;
+        IsEmailChangeModalVisible = true;
+    }
+
+    private void CloseEmailChangeModal()
+    {
+        IsEmailChangeModalVisible = false;
+        IsEmailChangeCodeStepVisible = false;
+        EmailChangeMessage = string.Empty;
+    }
+
+    private async Task SendEmailChangeCodeAsync()
+    {
+        if (!IsValidEmail(NewEmail))
+        {
+            EmailChangeMessage = "Geçerli bir e-posta adresi girin.";
+            return;
+        }
+
+        IsBusy = true;
+
+        try
+        {
+            var response = await _apiService.PostAsync<object, ApiMessageResponse>(
+                "api/auth/request-email-change",
+                new { newEmail = NewEmail.Trim() });
+
+            EmailChangeMessage = response?.Message ?? "Doğrulama kodu gönderildi.";
+            IsEmailChangeCodeStepVisible = true;
+        }
+        catch (Exception ex)
+        {
+            EmailChangeMessage = ex.Message;
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private async Task VerifyEmailChangeAsync()
+    {
+        if (!IsValidEmail(NewEmail) || string.IsNullOrWhiteSpace(EmailChangeCode))
+        {
+            EmailChangeMessage = "Yeni e-posta ve doğrulama kodu zorunludur.";
+            return;
+        }
+
+        IsBusy = true;
+
+        try
+        {
+            var response = await _apiService.PostAsync<object, ApiMessageResponse>(
+                "api/auth/verify-email-change",
+                new
+                {
+                    newEmail = NewEmail.Trim(),
+                    code = EmailChangeCode.Trim()
+                });
+
+            CloseEmailChangeModal();
+            await LoadProfileAsync();
+            await DisplayAlert("Başarılı", response?.Message ?? "E-posta adresiniz güncellendi.", "Tamam");
+        }
+        catch (Exception ex)
+        {
+            EmailChangeMessage = ex.Message;
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private static bool IsValidEmail(string? email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            return false;
+
+        try
+        {
+            _ = new MailAddress(email.Trim());
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private sealed class AvatarUploadResponse
     {
         public string? ProfileImageUrl { get; set; }
+    }
+
+    private sealed class ApiMessageResponse
+    {
+        public string? Message { get; set; }
     }
 }

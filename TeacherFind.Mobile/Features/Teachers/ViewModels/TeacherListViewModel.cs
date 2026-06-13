@@ -4,9 +4,11 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Maui.Controls;
+using TeacherFind.Contracts.Common;
+using TeacherFind.Contracts.Tutors;
 using TeacherFind.Mobile.Core.Abstractions;
+using TeacherFind.Mobile.Core.Utilities;
 using TeacherFind.Mobile.Features.Teachers.Models;
-using TeacherFind.Domain.Entities; // Veritabanı User/Teacher entity'niz
 
 namespace TeacherFind.Mobile.Features.Teachers.ViewModels;
 
@@ -42,34 +44,31 @@ public class TeacherListViewModel : BindableObject
             IsBusy = true;
             Teachers.Clear();
 
-            // 1. GERÇEK API'DEN VERİYİ ÇEKİYORUZ
-            var apiTeachers = await _apiService.GetAsync<List<User>>("api/teachers");
+            var apiTeachers = await _apiService.GetAsync<PagedResultDto<TutorListItemDto>>(
+                "api/tutors?page=1&pageSize=20&sort=rating");
 
-            if (apiTeachers != null && apiTeachers.Any())
+            if (apiTeachers?.Items != null && apiTeachers.Items.Any())
             {
-                // 2. VERİTABANINDAN GELEN GERÇEK VERİYİ ARAYÜZE BAĞLIYORUZ
-                foreach (var teacher in apiTeachers)
+                foreach (var teacher in apiTeachers.Items)
                 {
                     Teachers.Add(new TeacherCardModel
                     {
-                        // ARTIK DOĞRUDAN VERİTABANINDAKİ SÜTUNLARI ÇEKİYORUZ
-                        Name = teacher.FullName ?? "İsimsiz Eğitmen",
-                        AvatarUrl = teacher.ProfileImageUrl ?? "dotnet_bot.png", // Veritabanında resim yoksa varsayılan resim
-                        Description = teacher.Bio ?? "Eğitmen açıklaması bulunmuyor.", // Biyografiyi de bağladık!
-
-                        // NOT: Puan, Fiyat ve Etiketler senin 'User' sınıfında değil, 
-                        // muhtemelen TeacherProfile veya TeacherListings tablosunda tutuluyor.
-                        // Onları API'den "Include" ile çektiğinde buraya bağlayacağız. Şimdilik tasarımsal olarak kalıyorlar:
-                        Rating = "4.8",
-                        ReviewCount = "(12 Değerlendirme)",
-                        Price = "₺5000/saat",
-                        IsOnline = teacher.IsActive, // Çevrimiçi durumunu aktiflikten aldık
-                        Title = "Uzman Eğitmen",
+                        Id = teacher.Id,
+                        Name = DisplayValueHelper.ToPlainText(teacher.TeacherName),
+                        AvatarUrl = DisplayValueHelper.ResolveTutorImageUrl(
+                            _apiService,
+                            teacher.Photos),
+                        Description = DisplayValueHelper.TruncatePlainText(teacher.Description, 140),
+                        Rating = teacher.Rating.ToString("0.0"),
+                        ReviewCount = $"({teacher.ReviewCount} Değerlendirme)",
+                        Price = $"₺{teacher.Price:N0}/saat",
+                        IsOnline = true,
+                        Title = DisplayValueHelper.ToPlainText(teacher.Title),
 
                         Badges = new ObservableCollection<BadgeModel>
                         {
-                            new BadgeModel { Text = "Çevrimiçi" },
-                            new BadgeModel { Text = "Matematik" }
+                            new BadgeModel { Text = DisplayValueHelper.ToPlainText(teacher.ServiceType) },
+                            new BadgeModel { Text = DisplayValueHelper.ToPlainText(teacher.Subject ?? "Ders") }
                         }
                     });
                 }

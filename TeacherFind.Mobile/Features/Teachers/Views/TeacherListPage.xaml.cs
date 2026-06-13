@@ -1,5 +1,7 @@
 using System;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.Controls;
+using TeacherFind.Mobile.Features.Teachers.Models;
 using TeacherFind.Mobile.Features.Teachers.ViewModels;
 
 namespace TeacherFind.Mobile.Features.Teachers.Views;
@@ -36,5 +38,19 @@ public partial class TeacherListPage : ContentPage
     private async void OnBackButtonClicked(object sender, EventArgs e)
     {
         await Navigation.PopAsync();
+    }
+
+    private async void OnProfileButtonClicked(object sender, EventArgs e)
+    {
+        if (sender is not Button { BindingContext: TeacherCardModel teacher })
+            return;
+
+        var detailPage = Handler.MauiContext.Services.GetService<TeacherDetailPage>();
+
+        if (detailPage is null)
+            return;
+
+        await detailPage.LoadAsync(teacher.Id);
+        await Navigation.PushAsync(detailPage);
     }
 }
