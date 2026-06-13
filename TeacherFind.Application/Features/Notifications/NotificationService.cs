@@ -51,6 +51,12 @@ public class NotificationService : INotificationService
         await _notificationRepository.SaveChangesAsync();
     }
 
+    public async Task ClearAllNotificationsAsync(Guid userId)
+    {
+        await _notificationRepository.DeleteAllUserNotificationsAsync(userId);
+        await _notificationRepository.SaveChangesAsync();
+    }
+
     public async Task CreateAsync(
         Guid userId,
         string title,
