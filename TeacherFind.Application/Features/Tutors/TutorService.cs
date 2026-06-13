@@ -374,6 +374,19 @@ public class TutorService : ITutorService
         return MapToMyTutorListingDto(listing);
     }
 
+    public async Task<bool> DeleteMyListingAsync(Guid userId, Guid listingId)
+    {
+        var listing = await _listingRepository.GetByIdForOwnerAsync(listingId, userId);
+
+        if (listing is null)
+            return false;
+
+        _listingRepository.Remove(listing);
+        await _listingRepository.SaveChangesAsync();
+
+        return true;
+    }
+
     public async Task<List<ListingPhotoDto>> UploadListingPhotosAsync(
         Guid userId,
         Guid listingId,

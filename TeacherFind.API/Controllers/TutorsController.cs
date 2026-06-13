@@ -230,6 +230,20 @@ public class TutorsController : ControllerBase
     }
 
     [Authorize(Policy = "TutorOnly")]
+    [HttpDelete("my-listings/{id:guid}")]
+    public async Task<IActionResult> DeleteMyListing(Guid id)
+    {
+        var currentUserId = GetRequiredCurrentUserId();
+
+        var result = await _tutorService.DeleteMyListingAsync(currentUserId, id);
+
+        if (!result)
+            return NotFound(new { message = "İlan bulunamadı veya bu ilana erişim yetkiniz yok." });
+
+        return Ok(new { message = "İlan silindi." });
+    }
+
+    [Authorize(Policy = "TutorOnly")]
     [HttpPost("my-listings/{listingId:guid}/photos")]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> UploadListingPhotos(
