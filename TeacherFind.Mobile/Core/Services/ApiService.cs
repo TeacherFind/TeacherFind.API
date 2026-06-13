@@ -86,32 +86,24 @@ namespace TeacherFind.Mobile.Core.Services
 
         public async Task<TResponse> PostAsync<TRequest, TResponse>(string endpoint, TRequest request)
         {
-            try
+            await AttachAuthorizationHeaderAsync();
+
+            var response = await _httpClient.PostAsJsonAsync(
+                NormalizeEndpoint(endpoint),
+                request,
+                JsonOptions);
+
+            if (!response.IsSuccessStatusCode)
             {
-                await AttachAuthorizationHeaderAsync();
-
-                var response = await _httpClient.PostAsJsonAsync(
-                    NormalizeEndpoint(endpoint),
-                    request,
-                    JsonOptions);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    var body = await response.Content.ReadAsStringAsync();
-                    var errorMessage = ParseErrorMessage(body) ?? $"{(int)response.StatusCode}: {body}";
-                    throw new Exception(errorMessage);
-                }
-
-                if (response.Content.Headers.ContentLength == 0)
-                    return default!;
-
-                return (await response.Content.ReadFromJsonAsync<TResponse>(JsonOptions))!;
+                var body = await response.Content.ReadAsStringAsync();
+                var errorMessage = ParseErrorMessage(body) ?? $"{(int)response.StatusCode}: {body}";
+                throw new Exception(errorMessage);
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"API Hatası: {ex.Message}");
+
+            if (response.Content.Headers.ContentLength == 0)
                 return default!;
-            }
+
+            return (await response.Content.ReadFromJsonAsync<TResponse>(JsonOptions))!;
         }
 
         public async Task<TResponse> UploadFileAsync<TResponse>(

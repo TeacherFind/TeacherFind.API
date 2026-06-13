@@ -83,7 +83,18 @@
                         <!-- Email (Read-only) -->
                         <VerticalStackLayout Spacing="5">
                             <Label Text="E-POSTA ADRESİ" FontSize="12" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#64748b, Dark=#94a3b8}"/>
-                            <Entry Text="{Binding Email}" IsReadOnly="True" BackgroundColor="{AppThemeBinding Light=#f1f5f9, Dark=#1e293b}" TextColor="{AppThemeBinding Light=#94a3b8, Dark=#64748b}" />
+                            <Grid ColumnDefinitions="*, Auto" ColumnSpacing="10">
+                                <Entry Grid.Column="0" Text="{Binding Email}" IsReadOnly="True" BackgroundColor="{AppThemeBinding Light=#f1f5f9, Dark=#1e293b}" TextColor="{AppThemeBinding Light=#94a3b8, Dark=#64748b}" />
+                                <Button Grid.Column="1"
+                                        Text="Değiştir"
+                                        Command="{Binding OpenEmailChangeCommand}"
+                                        BackgroundColor="Transparent"
+                                        BorderColor="#2d79f3"
+                                        BorderWidth="1"
+                                        TextColor="#2d79f3"
+                                        CornerRadius="12"
+                                        HeightRequest="44"/>
+                            </Grid>
                         </VerticalStackLayout>
 
                         <!-- Phone -->
@@ -119,6 +130,59 @@
         </ScrollView>
 
         <components:BottomNavBar />
+
+        <Grid IsVisible="{Binding IsEmailChangeModalVisible}" BackgroundColor="#99000000" Padding="20">
+            <Border VerticalOptions="Center"
+                    Stroke="{AppThemeBinding Light=#e2e8f0, Dark=#334155}"
+                    BackgroundColor="{AppThemeBinding Light=#ffffff, Dark=#1e293b}"
+                    Padding="20">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="24" />
+                </Border.StrokeShape>
+
+                <VerticalStackLayout Spacing="16">
+                    <Grid ColumnDefinitions="*, Auto">
+                        <Label Text="E-posta Değiştir" FontSize="20" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#111827, Dark=#ffffff}" />
+                        <Button Grid.Column="1"
+                                Text="✕"
+                                Command="{Binding CloseEmailChangeCommand}"
+                                BackgroundColor="Transparent"
+                                TextColor="{AppThemeBinding Light=#64748b, Dark=#cbd5e1}"
+                                WidthRequest="42"
+                                HeightRequest="42"/>
+                    </Grid>
+
+                    <VerticalStackLayout IsVisible="{Binding IsEmailChangeRequestStepVisible}" Spacing="10">
+                        <Label Text="Yeni e-posta adresinizi girin. Doğrulama kodu bu adrese gönderilecek."
+                               FontSize="13"
+                               TextColor="{AppThemeBinding Light=#64748b, Dark=#94a3b8}" />
+                        <Entry Text="{Binding NewEmail}" Keyboard="Email" Placeholder="yeni-email@example.com" />
+                        <Button Text="Kod Gönder"
+                                Command="{Binding SendEmailChangeCodeCommand}"
+                                BackgroundColor="#2d79f3"
+                                TextColor="White"
+                                CornerRadius="16"
+                                HeightRequest="50"/>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout IsVisible="{Binding IsEmailChangeCodeStepVisible}" Spacing="10">
+                        <Label Text="{Binding NewEmail}" FontSize="13" FontAttributes="Bold" TextColor="#2d79f3" />
+                        <Entry Text="{Binding EmailChangeCode}" Keyboard="Numeric" Placeholder="6 haneli kod" MaxLength="6" />
+                        <Button Text="E-postayı Değiştir"
+                                Command="{Binding VerifyEmailChangeCommand}"
+                                BackgroundColor="#2d79f3"
+                                TextColor="White"
+                                CornerRadius="16"
+                                HeightRequest="50"/>
+                    </VerticalStackLayout>
+
+                    <Label Text="{Binding EmailChangeMessage}"
+                           FontSize="13"
+                           TextColor="{AppThemeBinding Light=#ef4444, Dark=#fca5a5}"
+                           LineBreakMode="WordWrap" />
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
         
         <Grid IsVisible="{Binding IsBusy}" BackgroundColor="#80000000">
             <ActivityIndicator IsRunning="True" Color="#2d79f3" HorizontalOptions="Center" VerticalOptions="Center"/>

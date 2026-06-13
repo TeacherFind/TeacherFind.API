@@ -281,7 +281,6 @@
 	<ItemGroup>
 		<Compile Update="App\MainApp.xaml.cs">
 			<DependentUpon>MainApp.xaml</DependentUpon>
-			Expand Down
 		</Compile>
 	</ItemGroup>
 </Project>
